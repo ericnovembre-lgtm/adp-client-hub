@@ -16,6 +16,7 @@ import CompaniesPage from "@/pages/CompaniesPage";
 import DealsPage from "@/pages/DealsPage";
 import TasksPage from "@/pages/TasksPage";
 import AIDiscoveryPage from "@/pages/AIDiscoveryPage";
+import EmailTemplatesPage from "@/pages/EmailTemplatesPage";
 import SettingsPage from "@/pages/SettingsPage";
 import NotFound from "@/pages/NotFound";
 import AIChatWidget from "@/components/AIChatWidget";
@@ -97,6 +98,7 @@ const App = () => (
               <Route path="/deals">{() => <ProtectedPage><DealsPage /></ProtectedPage>}</Route>
               <Route path="/tasks">{() => <ProtectedPage><TasksPage /></ProtectedPage>}</Route>
               <Route path="/ai-discovery">{() => <ProtectedPage><AIDiscoveryPage /></ProtectedPage>}</Route>
+              <Route path="/email-templates">{() => <ProtectedPage><EmailTemplatesPage /></ProtectedPage>}</Route>
               <Route path="/settings">{() => <ProtectedPage><SettingsPage /></ProtectedPage>}</Route>
               <Route component={NotFound} />
             </Switch>

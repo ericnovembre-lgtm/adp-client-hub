@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useDashboardStats, usePipelineData, type StatItem } from "@/hooks/useDashboardStats";
+import { useUserSettings } from "@/hooks/useUserSettings";
 import { formatDistanceToNow } from "date-fns";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +11,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import {
   TrendingUp, TrendingDown, Phone, Mail, Calendar, FileText, Activity,
-  Users, DollarSign, Target, CheckSquare,
+  Users, DollarSign, Target, CheckSquare, Sparkles,
 } from "lucide-react";
 
 const formatCurrency = (v: number) =>
@@ -81,7 +82,12 @@ const pipelineChartConfig = {
 export default function DashboardPage() {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: pipeline, isLoading: pipelineLoading } = usePipelineData();
+  const { data: userSettings } = useUserSettings();
   const [, navigate] = useLocation();
+
+  const schedulerEnabled = (userSettings as any)?.scheduler_enabled;
+  const lastRun = (userSettings as any)?.scheduler_last_run;
+  const lastCount = (userSettings as any)?.scheduler_last_count;
 
   const { data: activities, isLoading: activitiesLoading } = useQuery({
     queryKey: ["dashboard-activities"],
@@ -199,6 +205,28 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Auto-Discovery Status */}
+      <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate("/ai-discovery")}>
+        <CardContent className="p-4 flex items-center gap-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+            <Sparkles className="h-5 w-5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-foreground">Auto-Discovery</span>
+              <Badge variant={schedulerEnabled ? "default" : "outline"} className="text-xs">
+                {schedulerEnabled ? "Active" : "Paused"}
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {lastRun
+                ? `Last run ${formatDistanceToNow(new Date(lastRun), { addSuffix: true })}${lastCount !== undefined ? ` · ${lastCount} leads found` : ""}`
+                : "No runs yet"}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Pipeline Chart */}
       <Card>

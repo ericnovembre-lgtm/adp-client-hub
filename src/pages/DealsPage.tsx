@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useDeals, useCreateDeal, useUpdateDeal, useDeleteDeal } from "@/hooks/useDeals";
 import { useCreateActivity } from "@/hooks/useActivities";
+import { logActivity } from "@/lib/logActivity";
 import { format } from "date-fns";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -29,6 +30,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, D
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Search, Pencil, Trash2, MoreHorizontal, CalendarIcon, Check, ChevronsUpDown, DollarSign, ArrowRight } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import DealDetailSheet from "@/components/DealDetailSheet";
 
 // ── Constants ──
 const STAGES = ["lead", "qualified", "proposal", "negotiation", "closed_won", "closed_lost"] as const;
@@ -198,7 +200,8 @@ function DealFormDialog({
         await updateDeal.mutateAsync({ id: deal.id, ...payload });
         toast.success("Deal updated");
       } else {
-        await createDeal.mutateAsync(payload);
+        const created = await createDeal.mutateAsync(payload);
+        await logActivity("note", `Deal created: ${payload.title}`, payload.contact_id, created.id);
         toast.success("Deal created");
       }
       onOpenChange(false);
@@ -286,12 +289,14 @@ function KanbanView({
   companies,
   onEdit,
   onDelete,
+  onClickDeal,
 }: {
   deals: Deal[];
   contacts: Pick<Contact, "id" | "first_name" | "last_name">[];
   companies: Pick<Company, "id" | "name">[];
   onEdit: (d: Deal) => void;
   onDelete: (id: string) => void;
+  onClickDeal: (d: Deal) => void;
 }) {
   const updateDeal = useUpdateDeal();
   const createActivity = useCreateActivity();
@@ -345,7 +350,7 @@ function KanbanView({
                   <Card key={deal.id} className="transition-shadow hover:shadow-md">
                     <CardContent className="p-3 space-y-2">
                       <div className="flex items-start justify-between">
-                        <p className="font-medium text-sm leading-tight">{deal.title}</p>
+                        <button onClick={() => onClickDeal(deal)} className="font-medium text-sm leading-tight text-primary hover:underline text-left">{deal.title}</button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0"><MoreHorizontal className="h-3.5 w-3.5" /></Button>
@@ -400,6 +405,7 @@ function ListView({
   onPageChange,
   onEdit,
   onDelete,
+  onClickDeal,
 }: {
   deals: Deal[];
   contacts: Pick<Contact, "id" | "first_name" | "last_name">[];
@@ -411,6 +417,7 @@ function ListView({
   onPageChange: (p: number) => void;
   onEdit: (d: Deal) => void;
   onDelete: (id: string) => void;
+  onClickDeal: (d: Deal) => void;
 }) {
   const contactMap = useMemo(() => new Map(contacts.map((c) => [c.id, `${c.first_name} ${c.last_name}`])), [contacts]);
   const companyMap = useMemo(() => new Map(companies.map((c) => [c.id, c.name])), [companies]);
@@ -441,7 +448,9 @@ function ListView({
             ) : (
               deals.map((d) => (
                 <TableRow key={d.id}>
-                  <TableCell className="font-medium">{d.title}</TableCell>
+                  <TableCell className="font-medium">
+                    <button onClick={() => onClickDeal(d)} className="text-primary hover:underline text-left">{d.title}</button>
+                  </TableCell>
                   <TableCell>{fmtCurrency(d.value)}</TableCell>
                   <TableCell>
                     {d.stage && <Badge className={STAGE_BADGE_COLORS[d.stage as Stage] ?? ""} variant="outline">{STAGE_LABELS[d.stage as Stage] ?? d.stage}</Badge>}
@@ -483,6 +492,7 @@ export default function DealsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [detailDeal, setDetailDeal] = useState<Deal | null>(null);
 
   // Kanban uses all deals; list uses paginated
   const allDealsQuery = useAllDeals();
@@ -551,6 +561,7 @@ export default function DealsPage() {
             companies={companies ?? []}
             onEdit={openEdit}
             onDelete={(id) => setDeleteId(id)}
+            onClickDeal={(d) => setDetailDeal(d)}
           />
         )
       ) : (
@@ -565,6 +576,7 @@ export default function DealsPage() {
           onPageChange={setPage}
           onEdit={openEdit}
           onDelete={(id) => setDeleteId(id)}
+          onClickDeal={(d) => setDetailDeal(d)}
         />
       )}
 
@@ -584,6 +596,14 @@ export default function DealsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <DealDetailSheet
+        deal={detailDeal}
+        contactName={detailDeal?.contact_id ? (contacts ?? []).find(c => c.id === detailDeal.contact_id) ? `${(contacts ?? []).find(c => c.id === detailDeal.contact_id)!.first_name} ${(contacts ?? []).find(c => c.id === detailDeal.contact_id)!.last_name}` : undefined : undefined}
+        companyName={detailDeal?.company_id ? (companies ?? []).find(c => c.id === detailDeal.company_id)?.name : undefined}
+        open={!!detailDeal}
+        onOpenChange={(open) => { if (!open) setDetailDeal(null); }}
+      />
     </div>
   );
 }

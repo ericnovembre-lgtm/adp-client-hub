@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useContacts, useCreateContact, useUpdateContact, useDeleteContact } from "@/hooks/useContacts";
+import { logActivity } from "@/lib/logActivity";
 import { format } from "date-fns";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -18,6 +19,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Pencil, Trash2 } from "lucide-react";
+import ContactDetailSheet from "@/components/ContactDetailSheet";
 
 const contactSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
@@ -85,7 +87,8 @@ function ContactFormDialog({
         await updateContact.mutateAsync({ id: contact.id, ...payload });
         toast.success("Contact updated");
       } else {
-        await createContact.mutateAsync(payload);
+        const created = await createContact.mutateAsync(payload);
+        await logActivity("note", `Contact created: ${payload.first_name} ${payload.last_name}`, created.id);
         toast.success("Contact created");
       }
       onOpenChange(false);
@@ -164,6 +167,7 @@ export default function ContactsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [detailContact, setDetailContact] = useState<Contact | null>(null);
 
   const { data, isLoading } = useContacts({ page, limit: 25 });
   const deleteContact = useDeleteContact();
@@ -231,7 +235,11 @@ export default function ContactsPage() {
             ) : (
               filtered.map(c => (
                 <TableRow key={c.id}>
-                  <TableCell className="font-medium">{c.first_name} {c.last_name}</TableCell>
+                  <TableCell className="font-medium">
+                    <button onClick={() => setDetailContact(c)} className="text-primary hover:underline text-left">
+                      {c.first_name} {c.last_name}
+                    </button>
+                  </TableCell>
                   <TableCell>{c.email ? <a href={`mailto:${c.email}`} className="text-primary hover:underline">{c.email}</a> : "—"}</TableCell>
                   <TableCell>{c.phone ?? "—"}</TableCell>
                   <TableCell>{c.company ?? "—"}</TableCell>
@@ -279,6 +287,8 @@ export default function ContactsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ContactDetailSheet contact={detailContact} open={!!detailContact} onOpenChange={(open) => { if (!open) setDetailContact(null); }} />
     </div>
   );
 }

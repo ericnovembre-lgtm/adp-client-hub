@@ -18,7 +18,15 @@ import AIDiscoveryPage from "@/pages/AIDiscoveryPage";
 import SettingsPage from "@/pages/SettingsPage";
 import NotFound from "@/pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      refetchOnWindowFocus: true,
+      retry: 1,
+    },
+  },
+});
 
 function ProtectedPage({ children }: { children: React.ReactNode }) {
   return (

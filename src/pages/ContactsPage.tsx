@@ -20,8 +20,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Pencil, Trash2, Download, Loader2, UserPlus } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Download, Loader2, UserPlus, Mail } from "lucide-react";
 import ContactDetailSheet from "@/components/ContactDetailSheet";
+import DraftEmailDialog from "@/components/DraftEmailDialog";
 
 const contactSchema = z.object({
   first_name: z.string().trim().min(1, "First name is required").max(100, "Max 100 characters"),
@@ -170,6 +171,7 @@ export default function ContactsPage() {
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [detailContact, setDetailContact] = useState<Contact | null>(null);
+  const [emailContact, setEmailContact] = useState<Contact | null>(null);
 
   const { data, isLoading } = useContacts({ page, limit: 25 });
   const deleteContact = useDeleteContact();
@@ -282,6 +284,7 @@ export default function ContactsPage() {
                   <TableCell>{c.created_at ? format(new Date(c.created_at), "MMM d, yyyy") : "—"}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => setEmailContact(c)} aria-label="Draft email"><Mail className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="icon" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="icon" onClick={() => setDeleteId(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     </div>
@@ -321,6 +324,19 @@ export default function ContactsPage() {
       </AlertDialog>
 
       <ContactDetailSheet contact={detailContact} open={!!detailContact} onOpenChange={(open) => { if (!open) setDetailContact(null); }} />
+
+      {emailContact && (
+        <DraftEmailDialog
+          open={!!emailContact}
+          onOpenChange={(v) => { if (!v) setEmailContact(null); }}
+          mergeFields={{
+            contact_name: `${emailContact.first_name} ${emailContact.last_name}`,
+            contact_title: emailContact.job_title ?? "",
+            company_name: emailContact.company ?? "",
+          }}
+          contactId={emailContact.id}
+        />
+      )}
     </div>
   );
 }

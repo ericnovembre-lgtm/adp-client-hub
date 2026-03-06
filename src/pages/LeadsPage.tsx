@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Search, MoreHorizontal, Phone, Mail, UserCheck, ArrowRightLeft, XCircle, Pencil, Trash2, Download, Loader2, Users } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Phone, Mail, UserCheck, ArrowRightLeft, XCircle, Pencil, Trash2, Download, Loader2, Users, FileText } from "lucide-react";
 import { useLeads, useCreateLead, useUpdateLead, useDeleteLead } from "@/hooks/useLeads";
 import { useCreateCompany } from "@/hooks/useCompanies";
 import { useCreateContact } from "@/hooks/useContacts";
@@ -23,6 +23,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import DraftEmailDialog from "@/components/DraftEmailDialog";
 
 const leadSchema = z.object({
   company_name: z.string().trim().min(1, "Company name is required").max(200, "Max 200 characters"),
@@ -196,6 +197,7 @@ export default function LeadsPage() {
   const [convertLead, setConvertLead] = useState<Lead | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [converting, setConverting] = useState(false);
+  const [emailLead, setEmailLead] = useState<Lead | null>(null);
 
   const { data, isLoading } = useLeads({ page, limit: 25 });
   const createLead = useCreateLead();
@@ -445,6 +447,9 @@ export default function LeadsPage() {
                             <DropdownMenuItem onClick={() => setConvertLead(lead)}>
                               <ArrowRightLeft className="h-4 w-4 mr-2" /> Convert to Deal
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setEmailLead(lead)}>
+                              <FileText className="h-4 w-4 mr-2" /> Draft Email
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleStatusAction(lead, "dismissed", "status_change", `Lead "${lead.company_name}" dismissed`)}>
                               <XCircle className="h-4 w-4 mr-2" /> Dismiss
                             </DropdownMenuItem>
@@ -527,6 +532,19 @@ export default function LeadsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {emailLead && (
+        <DraftEmailDialog
+          open={!!emailLead}
+          onOpenChange={(v) => { if (!v) setEmailLead(null); }}
+          mergeFields={{
+            contact_name: emailLead.decision_maker_name ?? emailLead.company_name,
+            contact_title: emailLead.decision_maker_title ?? "",
+            company_name: emailLead.company_name,
+            headcount: emailLead.headcount ? String(emailLead.headcount) : "",
+          }}
+        />
+      )}
     </div>
   );
 }

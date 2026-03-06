@@ -6,6 +6,7 @@ import {
   Handshake,
   CheckSquare,
   Sparkles,
+  Mail,
   Settings,
   LogOut,
   ChevronLeft,
@@ -24,6 +25,7 @@ const navItems = [
   { title: "Deals", path: "/deals", icon: Handshake },
   { title: "Tasks", path: "/tasks", icon: CheckSquare },
   { title: "AI Discovery", path: "/ai-discovery", icon: Sparkles },
+  { title: "Email Templates", path: "/email-templates", icon: Mail },
   { title: "Settings", path: "/settings", icon: Settings },
 ];
 

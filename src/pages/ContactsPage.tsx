@@ -24,15 +24,15 @@ import { Plus, Search, Pencil, Trash2, Download, Loader2, UserPlus } from "lucid
 import ContactDetailSheet from "@/components/ContactDetailSheet";
 
 const contactSchema = z.object({
-  first_name: z.string().min(1, "First name is required"),
-  last_name: z.string().min(1, "Last name is required"),
-  email: z.string().email("Invalid email").optional().or(z.literal("")),
-  phone: z.string().optional().or(z.literal("")),
-  company: z.string().optional().or(z.literal("")),
-  job_title: z.string().optional().or(z.literal("")),
+  first_name: z.string().trim().min(1, "First name is required").max(100, "Max 100 characters"),
+  last_name: z.string().trim().min(1, "Last name is required").max(100, "Max 100 characters"),
+  email: z.string().trim().email("Invalid email format").max(255).optional().or(z.literal("")),
+  phone: z.string().max(30, "Max 30 characters").optional().or(z.literal("")),
+  company: z.string().max(200).optional().or(z.literal("")),
+  job_title: z.string().max(200).optional().or(z.literal("")),
   status: z.string().optional().or(z.literal("")),
-  source: z.string().optional().or(z.literal("")),
-  notes: z.string().optional().or(z.literal("")),
+  source: z.string().max(200).optional().or(z.literal("")),
+  notes: z.string().max(5000).optional().or(z.literal("")),
 });
 
 type ContactFormValues = z.infer<typeof contactSchema>;

@@ -98,13 +98,13 @@ function useAllDeals() {
 
 // ── Schema ──
 const dealSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  value: z.coerce.number().min(0).optional().or(z.literal("")),
+  title: z.string().trim().min(1, "Title is required").max(200, "Max 200 characters"),
+  value: z.coerce.number().min(0, "Value must be 0 or more").optional().or(z.literal("")),
   stage: z.string().optional(),
   contact_id: z.string().optional().or(z.literal("")),
   company_id: z.string().optional().or(z.literal("")),
   expected_close_date: z.date().optional().nullable(),
-  notes: z.string().optional().or(z.literal("")),
+  notes: z.string().max(5000).optional().or(z.literal("")),
 });
 type DealFormValues = z.infer<typeof dealSchema>;
 

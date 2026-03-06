@@ -128,8 +128,8 @@ function SearchableSelect({
 
 // ── Schema ──
 const taskSchema = z.object({
-  title: z.string().min(1, "Title is required").max(200),
-  description: z.string().max(2000).optional().or(z.literal("")),
+  title: z.string().trim().min(1, "Title is required").max(200, "Max 200 characters"),
+  description: z.string().max(2000, "Max 2000 characters").optional().or(z.literal("")),
   due_date: z.date().optional().nullable(),
   priority: z.string().optional(),
   status: z.string().optional(),

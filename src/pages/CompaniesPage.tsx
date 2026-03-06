@@ -20,13 +20,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Plus, Search, MoreHorizontal, Pencil, Trash2, Building2, Users, Globe, Phone, DollarSign, Download, Loader2 } from "lucide-react";
 
 const companySchema = z.object({
-  name: z.string().min(1, "Company name is required"),
-  industry: z.string().optional().or(z.literal("")),
-  website: z.string().optional().or(z.literal("")),
-  employees: z.coerce.number().int().positive().optional().or(z.literal("")),
-  revenue: z.string().optional().or(z.literal("")),
-  address: z.string().optional().or(z.literal("")),
-  phone: z.string().optional().or(z.literal("")),
+  name: z.string().trim().min(1, "Company name is required").max(200, "Max 200 characters"),
+  industry: z.string().max(200).optional().or(z.literal("")),
+  website: z.string().max(500).optional().or(z.literal("")),
+  employees: z.coerce.number().int().min(0, "Must be 0 or more").optional().or(z.literal("")),
+  revenue: z.string().max(100).optional().or(z.literal("")),
+  address: z.string().max(500).optional().or(z.literal("")),
+  phone: z.string().max(30).optional().or(z.literal("")),
 });
 
 type CompanyFormValues = z.infer<typeof companySchema>;

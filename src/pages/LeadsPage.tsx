@@ -25,16 +25,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 
 const leadSchema = z.object({
-  company_name: z.string().min(1, "Company name is required"),
-  decision_maker_name: z.string().optional(),
-  decision_maker_email: z.string().email().optional().or(z.literal("")),
-  decision_maker_phone: z.string().optional(),
-  decision_maker_title: z.string().optional(),
-  headcount: z.coerce.number().int().positive().optional().or(z.literal(0)),
-  industry: z.string().optional(),
-  website: z.string().optional(),
-  state: z.string().optional(),
-  trigger_event: z.string().optional(),
+  company_name: z.string().trim().min(1, "Company name is required").max(200, "Max 200 characters"),
+  decision_maker_name: z.string().max(200).optional(),
+  decision_maker_email: z.string().trim().email("Invalid email format").max(255).optional().or(z.literal("")),
+  decision_maker_phone: z.string().max(30).optional(),
+  decision_maker_title: z.string().max(200).optional(),
+  headcount: z.coerce.number().int().min(0, "Must be 0 or more").optional().or(z.literal(0)),
+  industry: z.string().max(200).optional(),
+  website: z.string().max(500).optional(),
+  state: z.string().max(50).optional(),
+  trigger_event: z.string().max(2000).optional(),
   status: z.string().optional(),
 });
 

@@ -216,7 +216,7 @@ function DealFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto w-full">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Deal" : "Add Deal"}</DialogTitle>
         </DialogHeader>
@@ -225,7 +225,7 @@ function DealFormDialog({
             <FormField control={form.control} name="title" render={({ field }) => (
               <FormItem><FormLabel>Title *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
             )} />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField control={form.control} name="value" render={({ field }) => (
                 <FormItem><FormLabel>Value ($)</FormLabel><FormControl><Input type="number" min={0} {...field} /></FormControl><FormMessage /></FormItem>
               )} />
@@ -425,7 +425,7 @@ function ListView({
 
   return (
     <>
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -445,7 +445,11 @@ function ListView({
                 <TableRow key={i}>{Array.from({ length: 8 }).map((_, j) => <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>)}</TableRow>
               ))
             ) : deals.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No deals found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-12">
+                <DollarSign className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
+                <p className="font-medium">No deals yet</p>
+                <p className="text-sm mt-1">Create your first deal to track your pipeline!</p>
+              </TableCell></TableRow>
             ) : (
               deals.map((d) => (
                 <TableRow key={d.id}>

@@ -1,3 +1,284 @@
+import { useState, useMemo } from "react";
+import { useContacts, useCreateContact, useUpdateContact, useDeleteContact } from "@/hooks/useContacts";
+import { format } from "date-fns";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
+import type { Contact } from "@/types/database";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Search, Pencil, Trash2 } from "lucide-react";
+
+const contactSchema = z.object({
+  first_name: z.string().min(1, "First name is required"),
+  last_name: z.string().min(1, "Last name is required"),
+  email: z.string().email("Invalid email").optional().or(z.literal("")),
+  phone: z.string().optional().or(z.literal("")),
+  company: z.string().optional().or(z.literal("")),
+  job_title: z.string().optional().or(z.literal("")),
+  status: z.string().optional().or(z.literal("")),
+  source: z.string().optional().or(z.literal("")),
+  notes: z.string().optional().or(z.literal("")),
+});
+
+type ContactFormValues = z.infer<typeof contactSchema>;
+
+const statusColors: Record<string, string> = {
+  lead: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
+  prospect: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
+  customer: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  inactive: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
+};
+
+function ContactFormDialog({
+  open,
+  onOpenChange,
+  contact,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  contact: Contact | null;
+}) {
+  const createContact = useCreateContact();
+  const updateContact = useUpdateContact();
+  const isEdit = !!contact;
+
+  const form = useForm<ContactFormValues>({
+    resolver: zodResolver(contactSchema),
+    defaultValues: {
+      first_name: contact?.first_name ?? "",
+      last_name: contact?.last_name ?? "",
+      email: contact?.email ?? "",
+      phone: contact?.phone ?? "",
+      company: contact?.company ?? "",
+      job_title: contact?.job_title ?? "",
+      status: contact?.status ?? "lead",
+      source: contact?.source ?? "",
+      notes: contact?.notes ?? "",
+    },
+  });
+
+  const onSubmit = async (values: ContactFormValues) => {
+    try {
+      const payload = {
+        first_name: values.first_name,
+        last_name: values.last_name,
+        email: values.email || null,
+        phone: values.phone || null,
+        company: values.company || null,
+        job_title: values.job_title || null,
+        status: values.status || null,
+        source: values.source || null,
+        notes: values.notes || null,
+      };
+      if (isEdit) {
+        await updateContact.mutateAsync({ id: contact.id, ...payload });
+        toast.success("Contact updated");
+      } else {
+        await createContact.mutateAsync(payload);
+        toast.success("Contact created");
+      }
+      onOpenChange(false);
+    } catch (e: any) {
+      toast.error(e.message ?? "Something went wrong");
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{isEdit ? "Edit Contact" : "Add Contact"}</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="first_name" render={({ field }) => (
+                <FormItem><FormLabel>First Name *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <FormField control={form.control} name="last_name" render={({ field }) => (
+                <FormItem><FormLabel>Last Name *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+            </div>
+            <FormField control={form.control} name="email" render={({ field }) => (
+              <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+            <FormField control={form.control} name="phone" render={({ field }) => (
+              <FormItem><FormLabel>Phone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="company" render={({ field }) => (
+                <FormItem><FormLabel>Company</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <FormField control={form.control} name="job_title" render={({ field }) => (
+                <FormItem><FormLabel>Job Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="status" render={({ field }) => (
+                <FormItem><FormLabel>Status</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      <SelectItem value="lead">Lead</SelectItem>
+                      <SelectItem value="prospect">Prospect</SelectItem>
+                      <SelectItem value="customer">Customer</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                <FormMessage /></FormItem>
+              )} />
+              <FormField control={form.control} name="source" render={({ field }) => (
+                <FormItem><FormLabel>Source</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+            </div>
+            <FormField control={form.control} name="notes" render={({ field }) => (
+              <FormItem><FormLabel>Notes</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button type="submit" disabled={createContact.isPending || updateContact.isPending}>
+                {isEdit ? "Save" : "Create"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function ContactsPage() {
-  return <h2 className="text-2xl font-bold text-foreground">Contacts</h2>;
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const { data, isLoading } = useContacts({ page, limit: 25 });
+  const deleteContact = useDeleteContact();
+
+  const filtered = useMemo(() => {
+    if (!data?.data) return [];
+    if (!search.trim()) return data.data;
+    const q = search.toLowerCase();
+    return data.data.filter(c =>
+      c.first_name.toLowerCase().includes(q) ||
+      c.last_name.toLowerCase().includes(q) ||
+      (c.email?.toLowerCase().includes(q)) ||
+      (c.company?.toLowerCase().includes(q))
+    );
+  }, [data?.data, search]);
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await deleteContact.mutateAsync(deleteId);
+      toast.success("Contact deleted");
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to delete");
+    }
+    setDeleteId(null);
+  };
+
+  const openEdit = (c: Contact) => { setEditingContact(c); setDialogOpen(true); };
+  const openAdd = () => { setEditingContact(null); setDialogOpen(true); };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-2xl font-bold text-foreground">Contacts</h1>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search contacts…" className="pl-9 w-64" value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
+          <Button onClick={openAdd}><Plus className="h-4 w-4 mr-1" />Add Contact</Button>
+        </div>
+      </div>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>Company</TableHead>
+              <TableHead>Job Title</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Created</TableHead>
+              <TableHead className="w-24">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              Array.from({ length: 8 }).map((_, i) => (
+                <TableRow key={i}>{Array.from({ length: 8 }).map((_, j) => <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>)}</TableRow>
+              ))
+            ) : filtered.length === 0 ? (
+              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No contacts found</TableCell></TableRow>
+            ) : (
+              filtered.map(c => (
+                <TableRow key={c.id}>
+                  <TableCell className="font-medium">{c.first_name} {c.last_name}</TableCell>
+                  <TableCell>{c.email ? <a href={`mailto:${c.email}`} className="text-primary hover:underline">{c.email}</a> : "—"}</TableCell>
+                  <TableCell>{c.phone ?? "—"}</TableCell>
+                  <TableCell>{c.company ?? "—"}</TableCell>
+                  <TableCell>{c.job_title ?? "—"}</TableCell>
+                  <TableCell>
+                    {c.status ? <Badge className={statusColors[c.status] ?? ""} variant="outline">{c.status}</Badge> : "—"}
+                  </TableCell>
+                  <TableCell>{c.created_at ? format(new Date(c.created_at), "MMM d, yyyy") : "—"}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => setDeleteId(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {data && data.totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">Page {data.page} of {data.totalPages} ({data.total} contacts)</p>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Previous</Button>
+            <Button variant="outline" size="sm" disabled={page >= data.totalPages} onClick={() => setPage(p => p + 1)}>Next</Button>
+          </div>
+        </div>
+      )}
+
+      {dialogOpen && (
+        <ContactFormDialog open={dialogOpen} onOpenChange={setDialogOpen} contact={editingContact} />
+      )}
+
+      <AlertDialog open={!!deleteId} onOpenChange={open => { if (!open) setDeleteId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Contact</AlertDialogTitle>
+            <AlertDialogDescription>This action cannot be undone. Are you sure?</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
 }

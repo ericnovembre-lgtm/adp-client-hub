@@ -5,6 +5,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import type { Company } from "@/types/database";
+import { exportToCSV } from "@/lib/exportCSV";
+import { supabase } from "@/integrations/supabase/client";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Building2, Users, Globe, Phone, DollarSign } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, Building2, Users, Globe, Phone, DollarSign, Download, Loader2 } from "lucide-react";
 
 const companySchema = z.object({
   name: z.string().min(1, "Company name is required"),
@@ -158,6 +160,28 @@ export default function CompaniesPage() {
 
   const openEdit = (c: Company) => { setEditingCompany(c); setDialogOpen(true); };
   const openAdd = () => { setEditingCompany(null); setDialogOpen(true); };
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const { data: all, error } = await supabase.from("companies").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      exportToCSV(all ?? [], "companies", [
+        { header: "Name", accessor: (r) => r.name },
+        { header: "Industry", accessor: (r) => r.industry },
+        { header: "Website", accessor: (r) => r.website },
+        { header: "Employees", accessor: (r) => r.employees },
+        { header: "Revenue", accessor: (r) => r.revenue },
+        { header: "Address", accessor: (r) => r.address },
+        { header: "Phone", accessor: (r) => r.phone },
+        { header: "Created Date", accessor: (r) => r.created_at ? new Date(r.created_at).toLocaleDateString() : "" },
+      ]);
+    } catch (e: any) {
+      toast.error(e.message ?? "Export failed");
+    }
+    setExporting(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -168,6 +192,9 @@ export default function CompaniesPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search companies…" className="pl-9 w-64" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
+          <Button variant="outline" onClick={handleExport} disabled={exporting}>
+            {exporting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Download className="h-4 w-4 mr-1" />}Export CSV
+          </Button>
           <Button onClick={openAdd}><Plus className="h-4 w-4 mr-1" />Add Company</Button>
         </div>
       </div>

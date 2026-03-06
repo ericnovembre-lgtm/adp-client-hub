@@ -1,12 +1,14 @@
 import { useState, useMemo } from "react";
 import { useContacts, useCreateContact, useUpdateContact, useDeleteContact } from "@/hooks/useContacts";
 import { logActivity } from "@/lib/logActivity";
+import { exportToCSV } from "@/lib/exportCSV";
+import { supabase } from "@/integrations/supabase/client";
+import type { Contact } from "@/types/database";
 import { format } from "date-fns";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import type { Contact } from "@/types/database";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Download, Loader2 } from "lucide-react";
 import ContactDetailSheet from "@/components/ContactDetailSheet";
 
 const contactSchema = z.object({
@@ -197,6 +199,29 @@ export default function ContactsPage() {
 
   const openEdit = (c: Contact) => { setEditingContact(c); setDialogOpen(true); };
   const openAdd = () => { setEditingContact(null); setDialogOpen(true); };
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const { data: all, error } = await supabase.from("contacts").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      exportToCSV(all ?? [], "contacts", [
+        { header: "First Name", accessor: (r) => r.first_name },
+        { header: "Last Name", accessor: (r) => r.last_name },
+        { header: "Email", accessor: (r) => r.email },
+        { header: "Phone", accessor: (r) => r.phone },
+        { header: "Company", accessor: (r) => r.company },
+        { header: "Job Title", accessor: (r) => r.job_title },
+        { header: "Status", accessor: (r) => r.status },
+        { header: "Source", accessor: (r) => r.source },
+        { header: "Created Date", accessor: (r) => r.created_at ? new Date(r.created_at).toLocaleDateString() : "" },
+      ]);
+    } catch (e: any) {
+      toast.error(e.message ?? "Export failed");
+    }
+    setExporting(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -207,6 +232,9 @@ export default function ContactsPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search contacts…" className="pl-9 w-64" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
+          <Button variant="outline" onClick={handleExport} disabled={exporting}>
+            {exporting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Download className="h-4 w-4 mr-1" />}Export CSV
+          </Button>
           <Button onClick={openAdd}><Plus className="h-4 w-4 mr-1" />Add Contact</Button>
         </div>
       </div>

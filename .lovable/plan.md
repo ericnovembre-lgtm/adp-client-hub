@@ -1,39 +1,35 @@
 
 
-## Leads Page Implementation
+## Contacts Page Implementation
 
-### Files to modify
+### File to modify
 
 | File | Action |
 |------|--------|
-| `src/pages/LeadsPage.tsx` | Rewrite — full CRUD page |
+| `src/pages/ContactsPage.tsx` | Rewrite — full CRUD page |
 
 ### Implementation
 
-Single file `LeadsPage.tsx` containing all components inline:
+Follow the same pattern as `LeadsPage.tsx` — single file with inline components:
 
-**State**: `page` (number), `search` (string), `dialogOpen` (boolean), `editingLead` (Lead | null), `convertDialogLead` (Lead | null), `deleteId` (string | null)
+**Schema**: Zod with `first_name` (required), `last_name` (required), `email` (optional, valid email if provided via `.email().optional().or(z.literal(""))`), `phone`, `company`, `job_title`, `status` (select), `source`, `notes` (textarea).
 
-**Hooks used**: `useLeads({ page, limit: 25 })`, `useCreateLead()`, `useUpdateLead()`, `useDeleteLead()`, `useCreateCompany()`, `useCreateContact()`, `useCreateDeal()`, `useCreateActivity()`
+**State**: `page`, `search`, `dialogOpen`, `editingContact`, `deleteId`
 
-**Components within the file**:
+**Hooks**: `useContacts({ page, limit: 25 })`, `useCreateContact()`, `useUpdateContact()`, `useDeleteContact()`
 
-1. **LeadFormDialog** — Dialog with zod-validated form (react-hook-form + @hookform/resolvers/zod). Fields: company_name (required), decision_maker_name/email/phone/title, headcount (number), industry, website, state, trigger_event (textarea), status (select). Reused for both add and edit.
-
-2. **LeadActionsDropdown** — DropdownMenu per row with actions:
-   - Mark Contacted / Qualify / Dismiss — calls `updateLead` + `createActivity` with appropriate type/description
-   - Convert to Deal — opens confirmation dialog, then sequentially: createCompany → createContact (with company ref) → createDeal (linked to contact + company, title = "[Company] - ADP TotalSource", stage='qualified') → updateLead(status='converted') → createActivity(type='conversion')
-   - Edit — opens form dialog with pre-filled values
-   - Delete — AlertDialog confirmation → deleteLead
-
-3. **Main layout**:
-   - Header: title + "Add Lead" button + search Input
-   - Table with columns: Company Name, Decision Maker (name + title), Headcount, Industry, State, Trigger Event (truncated 50 chars), Status (Badge with color map), Actions
-   - Client-side search filter on `company_name` and `decision_maker_name`
+**Components**:
+1. **ContactFormDialog** — Dialog with form fields, reused for add/edit
+2. **Main layout**:
+   - Header: title + "Add Contact" button + search Input
+   - Table: Name (first+last), Email (mailto link), Phone, Company, Job Title, Status (Badge), Created (formatted `Jan 15, 2026` via `date-fns format`), Actions (Edit/Delete buttons)
+   - Client-side search filter on first_name, last_name, email, company
    - Skeleton rows while loading
-   - Pagination: Previous/Next buttons + "Page X of Y" text
+   - Pagination: Previous/Next + "Page X of Y"
 
-**Status badge colors**: new=blue (`bg-blue-100 text-blue-800`), contacted=yellow, qualified=green, converted=purple, dismissed=gray
+**Status badges**: lead=blue, prospect=yellow, customer=green, inactive=gray (same color pattern as Leads page)
 
-**Toast notifications** via `sonner`'s `toast` for success/error on all mutations.
+**Delete**: AlertDialog confirmation before calling `useDeleteContact`
+
+**Toasts**: sonner toast on success/error for all mutations
 

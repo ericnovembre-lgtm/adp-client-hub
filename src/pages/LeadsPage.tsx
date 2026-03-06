@@ -2,12 +2,14 @@ import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Search, MoreHorizontal, Phone, Mail, UserCheck, ArrowRightLeft, XCircle, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Phone, Mail, UserCheck, ArrowRightLeft, XCircle, Pencil, Trash2, Download, Loader2 } from "lucide-react";
 import { useLeads, useCreateLead, useUpdateLead, useDeleteLead } from "@/hooks/useLeads";
 import { useCreateCompany } from "@/hooks/useCompanies";
 import { useCreateContact } from "@/hooks/useContacts";
 import { useCreateDeal } from "@/hooks/useDeals";
 import { useCreateActivity } from "@/hooks/useActivities";
+import { exportToCSV } from "@/lib/exportCSV";
+import { supabase } from "@/integrations/supabase/client";
 import type { Lead } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -319,6 +321,32 @@ export default function LeadsPage() {
     setEditingLead(null);
     setDialogOpen(true);
   };
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const { data: all, error } = await supabase.from("leads").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      exportToCSV(all ?? [], "leads", [
+        { header: "Company Name", accessor: (r) => r.company_name },
+        { header: "Decision Maker", accessor: (r) => r.decision_maker_name },
+        { header: "Email", accessor: (r) => r.decision_maker_email },
+        { header: "Phone", accessor: (r) => r.decision_maker_phone },
+        { header: "Title", accessor: (r) => r.decision_maker_title },
+        { header: "Headcount", accessor: (r) => r.headcount },
+        { header: "Industry", accessor: (r) => r.industry },
+        { header: "State", accessor: (r) => r.state },
+        { header: "Trigger Event", accessor: (r) => r.trigger_event },
+        { header: "Status", accessor: (r) => r.status },
+        { header: "Source", accessor: (r) => r.source },
+        { header: "Created Date", accessor: (r) => r.created_at ? new Date(r.created_at).toLocaleDateString() : "" },
+      ]);
+    } catch (e: any) {
+      toast.error(e.message ?? "Export failed");
+    }
+    setExporting(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -335,6 +363,9 @@ export default function LeadsPage() {
               className="pl-9"
             />
           </div>
+          <Button variant="outline" onClick={handleExport} disabled={exporting}>
+            {exporting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Download className="h-4 w-4 mr-1" />}Export CSV
+          </Button>
           <Button onClick={openAdd}>
             <Plus className="h-4 w-4" />
             Add Lead

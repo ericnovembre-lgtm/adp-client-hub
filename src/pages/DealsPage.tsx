@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { exportToCSV } from "@/lib/exportCSV";
 import { useDeals, useCreateDeal, useUpdateDeal, useDeleteDeal } from "@/hooks/useDeals";
 import { useCreateActivity } from "@/hooks/useActivities";
 import { logActivity } from "@/lib/logActivity";
@@ -28,7 +29,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, Pencil, Trash2, MoreHorizontal, CalendarIcon, Check, ChevronsUpDown, DollarSign, ArrowRight } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, MoreHorizontal, CalendarIcon, Check, ChevronsUpDown, DollarSign, ArrowRight, Download, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import DealDetailSheet from "@/components/DealDetailSheet";
 
@@ -521,6 +522,29 @@ export default function DealsPage() {
 
   const openEdit = (d: Deal) => { setEditingDeal(d); setDialogOpen(true); };
   const openAdd = () => { setEditingDeal(null); setDialogOpen(true); };
+  const [exporting, setExporting] = useState(false);
+  const contactMap = useMemo(() => new Map((contacts ?? []).map((c) => [c.id, `${c.first_name} ${c.last_name}`])), [contacts]);
+  const companyMap = useMemo(() => new Map((companies ?? []).map((c) => [c.id, c.name])), [companies]);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const { data: all, error } = await supabase.from("deals").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      exportToCSV(all ?? [], "deals", [
+        { header: "Title", accessor: (r) => r.title },
+        { header: "Value", accessor: (r) => r.value },
+        { header: "Stage", accessor: (r) => r.stage },
+        { header: "Contact", accessor: (r) => r.contact_id ? contactMap.get(r.contact_id) ?? "" : "" },
+        { header: "Company", accessor: (r) => r.company_id ? companyMap.get(r.company_id) ?? "" : "" },
+        { header: "Expected Close Date", accessor: (r) => r.expected_close_date ? new Date(r.expected_close_date).toLocaleDateString() : "" },
+        { header: "Created Date", accessor: (r) => r.created_at ? new Date(r.created_at).toLocaleDateString() : "" },
+      ]);
+    } catch (e: any) {
+      toast.error(e.message ?? "Export failed");
+    }
+    setExporting(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -538,6 +562,9 @@ export default function DealsPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search deals…" className="pl-9 w-56" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
+          <Button variant="outline" onClick={handleExport} disabled={exporting}>
+            {exporting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Download className="h-4 w-4 mr-1" />}Export CSV
+          </Button>
           <Button onClick={openAdd}><Plus className="h-4 w-4 mr-1" />Add Deal</Button>
         </div>
       </div>

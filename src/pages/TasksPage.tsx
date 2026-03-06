@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCreateTask, useUpdateTask, useDeleteTask } from "@/hooks/useTasks";
+import { logActivity } from "@/lib/logActivity";
 import { format, isToday, isBefore, isAfter, startOfDay, differenceInDays, formatDistanceToNow } from "date-fns";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -384,6 +385,9 @@ export default function TasksPage() {
     const newStatus = task.status === "completed" ? "pending" : "completed";
     try {
       await updateTask.mutateAsync({ id: task.id, status: newStatus });
+      if (newStatus === "completed") {
+        await logActivity("note", `Task completed: ${task.title}`, task.contact_id, task.deal_id);
+      }
       toast.success(newStatus === "completed" ? "Task completed" : "Task reopened");
     } catch (e: any) {
       toast.error(e.message ?? "Failed to update");

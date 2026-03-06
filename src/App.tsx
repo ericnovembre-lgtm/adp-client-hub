@@ -17,6 +17,7 @@ import TasksPage from "@/pages/TasksPage";
 import AIDiscoveryPage from "@/pages/AIDiscoveryPage";
 import SettingsPage from "@/pages/SettingsPage";
 import NotFound from "@/pages/NotFound";
+import AIChatWidget from "@/components/AIChatWidget";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -55,6 +56,7 @@ const App = () => (
             <Route path="/settings">{() => <ProtectedPage><SettingsPage /></ProtectedPage>}</Route>
             <Route component={NotFound} />
           </Switch>
+          <AIChatWidget />
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>

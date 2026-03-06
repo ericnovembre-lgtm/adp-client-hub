@@ -14,7 +14,312 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      activities: {
+        Row: {
+          contact_id: string | null
+          created_at: string | null
+          deal_id: string | null
+          description: string
+          id: string
+          type: string
+        }
+        Insert: {
+          contact_id?: string | null
+          created_at?: string | null
+          deal_id?: string | null
+          description: string
+          id?: string
+          type: string
+        }
+        Update: {
+          contact_id?: string | null
+          created_at?: string | null
+          deal_id?: string | null
+          description?: string
+          id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activities_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      companies: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          employees: number | null
+          id: string
+          industry: string | null
+          name: string
+          phone: string | null
+          revenue: string | null
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string | null
+          employees?: number | null
+          id?: string
+          industry?: string | null
+          name: string
+          phone?: string | null
+          revenue?: string | null
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string | null
+          employees?: number | null
+          id?: string
+          industry?: string | null
+          name?: string
+          phone?: string | null
+          revenue?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
+      contacts: {
+        Row: {
+          company: string | null
+          created_at: string | null
+          email: string | null
+          first_name: string
+          id: string
+          job_title: string | null
+          last_name: string
+          notes: string | null
+          phone: string | null
+          source: string | null
+          status: string | null
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string | null
+          email?: string | null
+          first_name: string
+          id?: string
+          job_title?: string | null
+          last_name: string
+          notes?: string | null
+          phone?: string | null
+          source?: string | null
+          status?: string | null
+        }
+        Update: {
+          company?: string | null
+          created_at?: string | null
+          email?: string | null
+          first_name?: string
+          id?: string
+          job_title?: string | null
+          last_name?: string
+          notes?: string | null
+          phone?: string | null
+          source?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      deals: {
+        Row: {
+          company_id: string | null
+          contact_id: string | null
+          created_at: string | null
+          expected_close_date: string | null
+          id: string
+          notes: string | null
+          stage: string | null
+          title: string
+          value: number | null
+        }
+        Insert: {
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          expected_close_date?: string | null
+          id?: string
+          notes?: string | null
+          stage?: string | null
+          title: string
+          value?: number | null
+        }
+        Update: {
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          expected_close_date?: string | null
+          id?: string
+          notes?: string | null
+          stage?: string | null
+          title?: string
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deals_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          ai_pitch_summary: string | null
+          company_name: string
+          created_at: string | null
+          decision_maker_email: string | null
+          decision_maker_name: string | null
+          decision_maker_phone: string | null
+          decision_maker_title: string | null
+          headcount: number | null
+          id: string
+          industry: string | null
+          source: string | null
+          state: string | null
+          status: string | null
+          trigger_event: string | null
+          trigger_type: string | null
+          website: string | null
+        }
+        Insert: {
+          ai_pitch_summary?: string | null
+          company_name: string
+          created_at?: string | null
+          decision_maker_email?: string | null
+          decision_maker_name?: string | null
+          decision_maker_phone?: string | null
+          decision_maker_title?: string | null
+          headcount?: number | null
+          id?: string
+          industry?: string | null
+          source?: string | null
+          state?: string | null
+          status?: string | null
+          trigger_event?: string | null
+          trigger_type?: string | null
+          website?: string | null
+        }
+        Update: {
+          ai_pitch_summary?: string | null
+          company_name?: string
+          created_at?: string | null
+          decision_maker_email?: string | null
+          decision_maker_name?: string | null
+          decision_maker_phone?: string | null
+          decision_maker_title?: string | null
+          headcount?: number | null
+          id?: string
+          industry?: string | null
+          source?: string | null
+          state?: string | null
+          status?: string | null
+          trigger_event?: string | null
+          trigger_type?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          contact_id: string | null
+          created_at: string | null
+          deal_id: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string | null
+          status: string | null
+          title: string
+        }
+        Insert: {
+          contact_id?: string | null
+          created_at?: string | null
+          deal_id?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          title: string
+        }
+        Update: {
+          contact_id?: string | null
+          created_at?: string | null
+          deal_id?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          avatar: string | null
+          email: string | null
+          id: string
+          name: string | null
+          role: string | null
+          username: string
+        }
+        Insert: {
+          avatar?: string | null
+          email?: string | null
+          id: string
+          name?: string | null
+          role?: string | null
+          username: string
+        }
+        Update: {
+          avatar?: string | null
+          email?: string | null
+          id?: string
+          name?: string | null
+          role?: string | null
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

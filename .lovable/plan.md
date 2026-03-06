@@ -1,46 +1,39 @@
 
 
-## Dashboard Page Implementation
+## Leads Page Implementation
 
-### Overview
-Replace the placeholder `DashboardPage.tsx` with a full dashboard featuring stat cards, activity feed, top leads, and a deals pipeline chart.
-
-### Data Fetching Strategy
-Use the existing hooks (`useDeals`, `useLeads`, `useTasks`, `useActivities`) plus direct Supabase queries for aggregations (counts, sums, month-over-month comparisons). Create a single `useDashboardStats` hook that runs parallel queries for:
-- Leads count (status != 'dismissed') + last month comparison
-- Active deals count (stage not in closed_won/closed_lost) + last month comparison  
-- Won deals revenue sum + last month comparison
-- Tasks due today count + last month comparison
-
-### Files to Create/Modify
+### Files to modify
 
 | File | Action |
 |------|--------|
-| `src/hooks/useDashboardStats.ts` | Create — aggregation queries for 4 stat cards with month-over-month trends |
-| `src/pages/DashboardPage.tsx` | Rewrite — full dashboard layout |
+| `src/pages/LeadsPage.tsx` | Rewrite — full CRUD page |
 
-### Component Structure
+### Implementation
 
-**DashboardPage.tsx** will contain:
+Single file `LeadsPage.tsx` containing all components inline:
 
-1. **StatCard** — reusable card component showing label, value, trend arrow (green/red), and percentage change. Uses `Card` from shadcn.
+**State**: `page` (number), `search` (string), `dialogOpen` (boolean), `editingLead` (Lead | null), `convertDialogLead` (Lead | null), `deleteId` (string | null)
 
-2. **Stats Row** — 4 `StatCard`s in a responsive grid (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`).
+**Hooks used**: `useLeads({ page, limit: 25 })`, `useCreateLead()`, `useUpdateLead()`, `useDeleteLead()`, `useCreateCompany()`, `useCreateContact()`, `useCreateDeal()`, `useCreateActivity()`
 
-3. **Two-Column Section** (`grid-cols-1 lg:grid-cols-2`):
-   - **Recent Activity** — fetch latest 10 activities, show type icon (Phone/Mail/Calendar/FileText based on type), description, and relative time using `date-fns formatDistanceToNow`.
-   - **Top Leads** — fetch latest 10 leads (status != 'dismissed'), show company name, decision maker, headcount, status badge. Rows clickable via `useLocation` from wouter to navigate to `/leads`.
+**Components within the file**:
 
-4. **Pipeline Chart** — `BarChart` from Recharts showing deal counts per stage. Uses `ChartContainer` from the existing `chart.tsx` component.
+1. **LeadFormDialog** — Dialog with zod-validated form (react-hook-form + @hookform/resolvers/zod). Fields: company_name (required), decision_maker_name/email/phone/title, headcount (number), industry, website, state, trigger_event (textarea), status (select). Reused for both add and edit.
 
-5. **Loading States** — `Skeleton` components for each section while data loads.
+2. **LeadActionsDropdown** — DropdownMenu per row with actions:
+   - Mark Contacted / Qualify / Dismiss — calls `updateLead` + `createActivity` with appropriate type/description
+   - Convert to Deal — opens confirmation dialog, then sequentially: createCompany → createContact (with company ref) → createDeal (linked to contact + company, title = "[Company] - ADP TotalSource", stage='qualified') → updateLead(status='converted') → createActivity(type='conversion')
+   - Edit — opens form dialog with pre-filled values
+   - Delete — AlertDialog confirmation → deleteLead
 
-### useDashboardStats Hook
-Runs 8 parallel Supabase queries (4 current counts + 4 previous month counts) using `useQuery`. Returns stat objects with `value`, `previousValue`, `trend` (percentage), and `isPositive` (boolean).
+3. **Main layout**:
+   - Header: title + "Add Lead" button + search Input
+   - Table with columns: Company Name, Decision Maker (name + title), Headcount, Industry, State, Trigger Event (truncated 50 chars), Status (Badge with color map), Actions
+   - Client-side search filter on `company_name` and `decision_maker_name`
+   - Skeleton rows while loading
+   - Pagination: Previous/Next buttons + "Page X of Y" text
 
-### Technical Notes
-- Currency formatting via `Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })`
-- "Today" filter: `due_date >= startOfDay AND due_date <= endOfDay` using `date-fns`
-- Month boundaries via `date-fns` `startOfMonth`, `endOfMonth`, `subMonths`
-- Activity type icons mapped: call→Phone, email→Mail, meeting→Calendar, note→FileText, default→Activity
+**Status badge colors**: new=blue (`bg-blue-100 text-blue-800`), contacted=yellow, qualified=green, converted=purple, dismissed=gray
+
+**Toast notifications** via `sonner`'s `toast` for success/error on all mutations.
 

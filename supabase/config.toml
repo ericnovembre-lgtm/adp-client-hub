@@ -1,1 +1,4 @@
 project_id = "rcnndfrqkelekzhspjud"
+
+[functions.scheduled-discovery]
+verify_jwt = false

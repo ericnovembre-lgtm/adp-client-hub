@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageCircle, X, Trash2, Send, Loader2 } from "lucide-react";
+import { MessageCircle, X, ArrowLeft, Trash2, Send, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -147,32 +147,50 @@ export default function AIChatWidget() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all flex items-center justify-center"
+          className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          aria-label="Open AI chat assistant"
         >
-          <MessageCircle className="h-6 w-6" />
+          <MessageCircle className="h-6 w-6" aria-hidden="true" />
         </button>
       )}
 
-      {/* Chat panel */}
+      {/* Chat panel — full screen on mobile, floating on desktop */}
       {open && (
-        <div className="fixed bottom-6 right-6 z-50 w-[400px] h-[500px] rounded-xl border bg-background shadow-2xl flex flex-col overflow-hidden">
+        <div className={cn(
+          "fixed z-50 flex flex-col overflow-hidden bg-background border shadow-2xl",
+          "inset-0 md:inset-auto md:bottom-6 md:right-6 md:w-[400px] md:h-[500px] md:rounded-xl"
+        )}>
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b bg-primary text-primary-foreground">
-            <span className="font-semibold text-sm">CRM Assistant</span>
+            {/* Back button on mobile, hidden on desktop */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/20 md:hidden"
+                onClick={() => setOpen(false)}
+                aria-label="Close chat"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <span className="font-semibold text-sm">CRM Assistant</span>
+            </div>
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/20"
                 onClick={() => setMessages([])}
+                aria-label="Clear chat"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/20"
+                className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/20 hidden md:flex"
                 onClick={() => setOpen(false)}
+                aria-label="Close chat"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -223,8 +241,9 @@ export default function AIChatWidget() {
               placeholder="Ask me anything…"
               disabled={isLoading}
               className="text-sm"
+              aria-label="Chat message input"
             />
-            <Button size="icon" onClick={send} disabled={isLoading || !input.trim()}>
+            <Button size="icon" onClick={send} disabled={isLoading || !input.trim()} aria-label="Send message">
               <Send className="h-4 w-4" />
             </Button>
           </div>

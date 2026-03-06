@@ -27,7 +27,7 @@ const navItems = [
   { title: "Settings", path: "/settings", icon: Settings },
 ];
 
-export default function AppSidebar() {
+export default function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const [location] = useLocation();
   const { signOut, user } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
@@ -44,27 +44,30 @@ export default function AppSidebar() {
         {!collapsed && <span className="font-bold text-lg text-sidebar-primary-foreground">ADP CRM</span>}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="p-1 rounded hover:bg-sidebar-accent text-sidebar-muted"
+          className="p-1 rounded hover:bg-sidebar-accent text-sidebar-muted hidden md:block"
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           <ChevronLeft className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} />
         </button>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 py-4 space-y-1 px-2">
+      <nav className="flex-1 py-4 space-y-1 px-2" aria-label="Main navigation">
         {navItems.map((item) => {
           const active = location === item.path || (item.path !== "/" && location.startsWith(item.path));
           return (
             <Link key={item.path} href={item.path}>
               <span
+                onClick={onNavigate}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium cursor-pointer transition-colors",
                   active
                     ? "bg-sidebar-accent text-sidebar-primary"
                     : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 )}
+                aria-current={active ? "page" : undefined}
               >
-                <item.icon className="h-5 w-5 shrink-0" />
+                <item.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
                 {!collapsed && <span>{item.title}</span>}
               </span>
             </Link>
@@ -82,8 +85,9 @@ export default function AppSidebar() {
           size="sm"
           onClick={signOut}
           className="w-full justify-start text-sidebar-muted hover:text-sidebar-foreground hover:bg-sidebar-accent"
+          aria-label="Sign out"
         >
-          <LogOut className="h-4 w-4 mr-2 shrink-0" />
+          <LogOut className="h-4 w-4 mr-2 shrink-0" aria-hidden="true" />
           {!collapsed && "Sign Out"}
         </Button>
       </div>

@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Search, MoreHorizontal, Phone, Mail, UserCheck, ArrowRightLeft, XCircle, Pencil, Trash2, Download, Loader2 } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Phone, Mail, UserCheck, ArrowRightLeft, XCircle, Pencil, Trash2, Download, Loader2, Users } from "lucide-react";
 import { useLeads, useCreateLead, useUpdateLead, useDeleteLead } from "@/hooks/useLeads";
 import { useCreateCompany } from "@/hooks/useCompanies";
 import { useCreateContact } from "@/hooks/useContacts";
@@ -100,7 +100,7 @@ function LeadFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto w-full">
         <DialogHeader>
           <DialogTitle>{editingLead ? "Edit Lead" : "Add Lead"}</DialogTitle>
         </DialogHeader>
@@ -115,7 +115,7 @@ function LeadFormDialog({
               <p className="text-sm text-destructive">{form.formState.errors.company_name.message}</p>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="decision_maker_name">Decision Maker</Label>
               <Input id="decision_maker_name" {...form.register("decision_maker_name")} />
@@ -125,7 +125,7 @@ function LeadFormDialog({
               <Input id="decision_maker_title" {...form.register("decision_maker_title")} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="decision_maker_email">Email</Label>
               <Input id="decision_maker_email" type="email" {...form.register("decision_maker_email")} />
@@ -135,7 +135,7 @@ function LeadFormDialog({
               <Input id="decision_maker_phone" {...form.register("decision_maker_phone")} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="headcount">Headcount</Label>
               <Input id="headcount" type="number" {...form.register("headcount")} />
@@ -145,7 +145,7 @@ function LeadFormDialog({
               <Input id="industry" {...form.register("industry")} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="website">Website</Label>
               <Input id="website" {...form.register("website")} />
@@ -374,7 +374,7 @@ export default function LeadsPage() {
       </div>
 
       {/* Table */}
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -401,8 +401,10 @@ export default function LeadsPage() {
                 ))
               : filteredLeads.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground py-10">
-                      No leads found.
+                    <TableCell colSpan={8} className="text-center text-muted-foreground py-12">
+                      <Users className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
+                      <p className="font-medium">No leads yet</p>
+                      <p className="text-sm mt-1">Start discovering leads to fill your pipeline!</p>
                     </TableCell>
                   </TableRow>
                 ) : (

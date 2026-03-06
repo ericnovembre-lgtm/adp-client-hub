@@ -20,7 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Pencil, Trash2, Download, Loader2 } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Download, Loader2, UserPlus } from "lucide-react";
 import ContactDetailSheet from "@/components/ContactDetailSheet";
 
 const contactSchema = z.object({
@@ -101,13 +101,13 @@ function ContactFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto sm:max-w-lg w-full">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Contact" : "Add Contact"}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField control={form.control} name="first_name" render={({ field }) => (
                 <FormItem><FormLabel>First Name *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
               )} />
@@ -121,7 +121,7 @@ function ContactFormDialog({
             <FormField control={form.control} name="phone" render={({ field }) => (
               <FormItem><FormLabel>Phone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
             )} />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField control={form.control} name="company" render={({ field }) => (
                 <FormItem><FormLabel>Company</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
               )} />
@@ -129,7 +129,7 @@ function ContactFormDialog({
                 <FormItem><FormLabel>Job Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
               )} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField control={form.control} name="status" render={({ field }) => (
                 <FormItem><FormLabel>Status</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
@@ -239,7 +239,7 @@ export default function ContactsPage() {
         </div>
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -259,7 +259,11 @@ export default function ContactsPage() {
                 <TableRow key={i}>{Array.from({ length: 8 }).map((_, j) => <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>)}</TableRow>
               ))
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No contacts found</TableCell></TableRow>
+              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-12">
+                <UserPlus className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
+                <p className="font-medium">No contacts yet</p>
+                <p className="text-sm mt-1">Add your first contact to get started!</p>
+              </TableCell></TableRow>
             ) : (
               filtered.map(c => (
                 <TableRow key={c.id}>

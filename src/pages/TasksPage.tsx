@@ -25,7 +25,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Plus, Search, Pencil, Trash2, CalendarIcon, Check, ChevronsUpDown, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, CalendarIcon, Check, ChevronsUpDown, ChevronDown, ChevronRight, CheckSquare } from "lucide-react";
 
 // ── Constants ──
 const PRIORITY_COLORS: Record<string, string> = {
@@ -188,7 +188,7 @@ function TaskFormDialog({ open, onOpenChange, task }: { open: boolean; onOpenCha
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto w-full">
         <DialogHeader><DialogTitle>{isEdit ? "Edit Task" : "Add Task"}</DialogTitle></DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -198,7 +198,7 @@ function TaskFormDialog({ open, onOpenChange, task }: { open: boolean; onOpenCha
             <FormField control={form.control} name="description" render={({ field }) => (
               <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>
             )} />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField control={form.control} name="due_date" render={({ field }) => (
                 <FormItem className="flex flex-col"><FormLabel>Due Date</FormLabel>
                   <Popover>
@@ -442,7 +442,13 @@ export default function TasksPage() {
           <TaskGroup title="Due Today" accent="border-l-yellow-500" tasks={dueToday} contactMap={contactMap} dealMap={dealMap} defaultOpen onToggle={handleToggle} onEdit={openEdit} onDelete={(id) => setDeleteId(id)} />
           <TaskGroup title="Upcoming" accent="border-l-blue-500" tasks={upcoming} contactMap={contactMap} dealMap={dealMap} defaultOpen onToggle={handleToggle} onEdit={openEdit} onDelete={(id) => setDeleteId(id)} />
           <TaskGroup title="Completed" accent="border-l-emerald-500" tasks={completed} contactMap={contactMap} dealMap={dealMap} defaultOpen={false} onToggle={handleToggle} onEdit={openEdit} onDelete={(id) => setDeleteId(id)} />
-          {filtered.length === 0 && <p className="text-center text-muted-foreground py-8">No tasks found</p>}
+          {filtered.length === 0 && (
+            <div className="text-center text-muted-foreground py-12">
+              <CheckSquare className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
+              <p className="font-medium">No tasks yet</p>
+              <p className="text-sm mt-1">Create your first task to stay organized!</p>
+            </div>
+          )}
         </div>
       )}
 

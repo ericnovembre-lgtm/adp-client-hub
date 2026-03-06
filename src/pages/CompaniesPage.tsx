@@ -83,7 +83,7 @@ function CompanyFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto w-full">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Company" : "Add Company"}</DialogTitle>
         </DialogHeader>
@@ -92,7 +92,7 @@ function CompanyFormDialog({
             <FormField control={form.control} name="name" render={({ field }) => (
               <FormItem><FormLabel>Company Name *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
             )} />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField control={form.control} name="industry" render={({ field }) => (
                 <FormItem><FormLabel>Industry</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
               )} />
@@ -100,7 +100,7 @@ function CompanyFormDialog({
                 <FormItem><FormLabel>Employees</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField control={form.control} name="revenue" render={({ field }) => (
                 <FormItem><FormLabel>Revenue</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
               )} />
@@ -206,7 +206,11 @@ export default function CompaniesPage() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center text-muted-foreground py-16">No companies found</div>
+        <div className="text-center text-muted-foreground py-16">
+          <Building2 className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
+          <p className="font-medium">No companies yet</p>
+          <p className="text-sm mt-1">Add your first company to get started!</p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(c => (

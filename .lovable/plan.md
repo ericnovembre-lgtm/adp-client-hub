@@ -1,31 +1,27 @@
 
 
-## Fix: Dashboard Trend Calculations
+## Fix: Edge Function Auth Validation
 
-### Problem
-The current queries compare **all-time totals** vs **up-to-last-month totals**, so trends always show growth. The fix is to compare **this month** vs **last month** for accurate month-over-month trends, while also exposing all-time totals separately.
+### Changes
 
-### Changes (single file: `src/hooks/useDashboardStats.ts`)
+**1. `supabase/config.toml`** — Add `verify_jwt = false` for `ai-chat` (already set for `scheduled-discovery`):
+```toml
+[functions.ai-chat]
+verify_jwt = false
+```
 
-1. **Update `StatItem` interface** — add `allTime: number` field.
+**2. `supabase/functions/ai-chat/index.ts`** — Add auth check at start of try block:
+- Add `createClient` import
+- Extract Authorization header, parse Bearer token
+- Create anon-key Supabase client, call `auth.getClaims(token)`
+- Return 401 if no valid user
+- Then proceed with existing logic (parse body, call AI)
 
-2. **Rename `_thisMonthStart` / `_thisMonthEnd`** — remove underscore prefixes to use them.
+**3. `supabase/functions/scheduled-discovery/index.ts`** — Add auth check after line 31:
+- Create a second Supabase client using anon key (not service role) for auth validation
+- Call `auth.getClaims(token)` on the auth header
+- Return 401 if invalid
+- Keep existing service-role client for DB operations
 
-3. **Add 3 new all-time queries** to the `Promise.all`:
-   - All leads (status != dismissed, no date filter)
-   - All active deals (no date filter)
-   - All closed_won revenue (no date filter)
-
-4. **Fix existing month-filtered queries**:
-   - `leadsNow`: add `.gte("created_at", thisMonthStart).lte("created_at", thisMonthEnd)`
-   - `leadsPrev`: change to `.gte("created_at", lastMonthStart).lte("created_at", lastMonthEnd)`
-   - `dealsNow`: add `.gte("created_at", thisMonthStart).lte("created_at", thisMonthEnd)`
-   - `dealsPrev`: change to `.gte("created_at", lastMonthStart).lte("created_at", lastMonthEnd)`
-   - `revenueNow`: add `.gte("created_at", thisMonthStart).lte("created_at", thisMonthEnd)`
-   - `revenuePrev`: change to `.gte("created_at", lastMonthStart).lte("created_at", lastMonthEnd)`
-   - Tasks queries stay unchanged.
-
-5. **Update return object** — each stat gets `allTime` from the new unfiltered queries; `value` now reflects this-month count for trend accuracy. Tasks keep `allTime` same as `value` (tasks due today is inherently point-in-time).
-
-No other files modified.
+No other files modified. No logic changes beyond the auth gate.
 

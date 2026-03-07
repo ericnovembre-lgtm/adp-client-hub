@@ -613,11 +613,50 @@ export default function LeadsPage() {
         </div>
       </div>
 
+      {/* Bulk Action Bar */}
+      {someSelected && (
+        <div className="flex items-center gap-3 rounded-lg border bg-muted/50 px-4 py-3">
+          <CheckSquare className="h-4 w-4 text-primary" />
+          <span className="text-sm font-medium">{selectedIds.size} selected</span>
+          <div className="h-4 w-px bg-border" />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" disabled={bulkActionPending}>
+                {bulkActionPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                Update Status
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => handleBulkStatus("new")}>New</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleBulkStatus("contacted")}>Contacted</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleBulkStatus("qualified")}>Qualified</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleBulkStatus("dismissed")}>Dismissed</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button variant="outline" size="sm" onClick={handleBulkExport} disabled={bulkActionPending}>
+            <Download className="h-4 w-4 mr-1" />Export Selected
+          </Button>
+          <Button variant="destructive" size="sm" onClick={() => setBulkDeleteOpen(true)} disabled={bulkActionPending}>
+            <Trash2 className="h-4 w-4 mr-1" />Delete Selected
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())} disabled={bulkActionPending}>
+            <X className="h-4 w-4 mr-1" />Clear
+          </Button>
+        </div>
+      )}
+
       {/* Table */}
       <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={allVisibleSelected}
+                  onCheckedChange={toggleSelectAll}
+                  aria-label="Select all"
+                />
+              </TableHead>
               <TableHead>Company Name</TableHead>
               <TableHead>Decision Maker</TableHead>
               <TableHead className="hidden md:table-cell">Headcount</TableHead>
@@ -633,7 +672,7 @@ export default function LeadsPage() {
             {isLoading
               ? Array.from({ length: 8 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 9 }).map((_, j) => (
+                    {Array.from({ length: 10 }).map((_, j) => (
                       <TableCell key={j}>
                         <Skeleton className="h-4 w-full" />
                       </TableCell>
@@ -642,7 +681,7 @@ export default function LeadsPage() {
                 ))
               : filteredLeads.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center text-muted-foreground py-12">
+                    <TableCell colSpan={10} className="text-center text-muted-foreground py-12">
                       <Users className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
                       <p className="font-medium">No leads yet</p>
                       <p className="text-sm mt-1">Start discovering leads to fill your pipeline!</p>
@@ -652,7 +691,14 @@ export default function LeadsPage() {
                   filteredLeads.map((lead) => {
                     const ko = knockoutMap.get(lead.id) ?? { tier: 'clear' as const, matchedRules: [], message: '' };
                     return (
-                      <TableRow key={lead.id}>
+                      <TableRow key={lead.id} data-state={selectedIds.has(lead.id) ? "selected" : undefined}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedIds.has(lead.id)}
+                            onCheckedChange={() => toggleSelect(lead.id)}
+                            aria-label={`Select ${lead.company_name}`}
+                          />
+                        </TableCell>
                         <TableCell className="font-medium">{lead.company_name}</TableCell>
                         <TableCell>
                           <div>{lead.decision_maker_name ?? "—"}</div>

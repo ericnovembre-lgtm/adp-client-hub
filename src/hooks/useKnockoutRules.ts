@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { checkIndustryKnockout } from "@/lib/knockoutCheck";
 
@@ -31,5 +31,46 @@ export function useCheckKnockout(industry: string | null | undefined) {
     queryKey: ["knockout-check", industry],
     enabled: !!industry?.trim(),
     queryFn: () => checkIndustryKnockout(industry),
+  });
+}
+
+export function useCreateKnockoutRule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (rule: { industry_name: string; tier: string; wc_codes?: string | null; conditions?: string | null }) => {
+      const { data, error } = await supabase.from("knockout_rules").insert(rule).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["knockout-rules"] });
+    },
+  });
+}
+
+export function useUpdateKnockoutRule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string; industry_name?: string; tier?: string; wc_codes?: string | null; conditions?: string | null }) => {
+      const { data, error } = await supabase.from("knockout_rules").update(updates).eq("id", id).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["knockout-rules"] });
+    },
+  });
+}
+
+export function useDeleteKnockoutRule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("knockout_rules").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["knockout-rules"] });
+    },
   });
 }

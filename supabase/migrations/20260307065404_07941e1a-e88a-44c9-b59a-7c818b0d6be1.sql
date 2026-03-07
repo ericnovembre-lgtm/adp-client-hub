@@ -1,0 +1,3 @@
+CREATE POLICY "Authenticated users can insert knockout_rules" ON public.knockout_rules FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Authenticated users can update knockout_rules" ON public.knockout_rules FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Authenticated users can delete knockout_rules" ON public.knockout_rules FOR DELETE TO authenticated USING (true);

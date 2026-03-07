@@ -307,6 +307,9 @@ export default function LeadsPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [converting, setConverting] = useState(false);
   const [emailLead, setEmailLead] = useState<Lead | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkActionPending, setBulkActionPending] = useState(false);
 
   // Knockout dialog state
   const [knockoutDialogType, setKnockoutDialogType] = useState<'prohibited' | 'low_probability' | 'bluefield' | null>(null);
@@ -342,6 +345,91 @@ export default function LeadsPage() {
     }
     return map;
   }, [filteredLeads, knockoutRules]);
+
+  // Clear selection on page change
+  useEffect(() => { setSelectedIds(new Set()); }, [page]);
+
+  // Bulk selection helpers
+  const allVisibleSelected = filteredLeads.length > 0 && filteredLeads.every(l => selectedIds.has(l.id));
+  const someSelected = selectedIds.size > 0;
+
+  const toggleSelectAll = () => {
+    if (allVisibleSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredLeads.map(l => l.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  // Bulk status update
+  const handleBulkStatus = async (newStatus: string) => {
+    setBulkActionPending(true);
+    try {
+      await Promise.all(
+        Array.from(selectedIds).map(id =>
+          updateLead.mutateAsync({ id, status: newStatus })
+        )
+      );
+      await Promise.all(
+        Array.from(selectedIds).map(id => {
+          const lead = filteredLeads.find(l => l.id === id);
+          return createActivity.mutateAsync({
+            type: "status_change",
+            description: `Lead "${lead?.company_name ?? 'Unknown'}" bulk-updated to ${newStatus}`,
+          });
+        })
+      );
+      toast.success(`${selectedIds.size} lead(s) updated to ${newStatus}`);
+      setSelectedIds(new Set());
+    } catch (e: any) {
+      toast.error(e.message || "Bulk status update failed");
+    } finally {
+      setBulkActionPending(false);
+    }
+  };
+
+  // Bulk delete
+  const handleBulkDelete = async () => {
+    setBulkActionPending(true);
+    try {
+      await Promise.all(Array.from(selectedIds).map(id => deleteLead.mutateAsync(id)));
+      toast.success(`${selectedIds.size} lead(s) deleted`);
+      setSelectedIds(new Set());
+    } catch (e: any) {
+      toast.error(e.message || "Bulk delete failed");
+    } finally {
+      setBulkActionPending(false);
+      setBulkDeleteOpen(false);
+    }
+  };
+
+  // Bulk export selected
+  const handleBulkExport = () => {
+    const selected = filteredLeads.filter(l => selectedIds.has(l.id));
+    exportToCSV(selected, "leads-selected", [
+      { header: "Company Name", accessor: (r) => r.company_name },
+      { header: "Decision Maker", accessor: (r) => r.decision_maker_name },
+      { header: "Email", accessor: (r) => r.decision_maker_email },
+      { header: "Phone", accessor: (r) => r.decision_maker_phone },
+      { header: "Title", accessor: (r) => r.decision_maker_title },
+      { header: "Headcount", accessor: (r) => r.headcount },
+      { header: "Industry", accessor: (r) => r.industry },
+      { header: "State", accessor: (r) => r.state },
+      { header: "Trigger Event", accessor: (r) => r.trigger_event },
+      { header: "Status", accessor: (r) => r.status },
+      { header: "Source", accessor: (r) => r.source },
+      { header: "Created Date", accessor: (r) => r.created_at ? new Date(r.created_at).toLocaleDateString() : "" },
+    ]);
+    toast.success(`Exported ${selected.length} lead(s)`);
+  };
 
   const handleFormSubmit = async (values: LeadFormValues) => {
     try {

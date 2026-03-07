@@ -268,10 +268,11 @@ export default function AIDiscoveryPage() {
             <div className="rounded-lg border bg-muted/30 p-4 mt-4">
               <div className="flex items-center gap-2 mb-2">
                 <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-                <span className="text-sm font-medium text-foreground">
-                  Found {manualDiscover.data.found} leads, saved {manualDiscover.data.saved}
-                  {manualDiscover.data.errors > 0 && `, ${manualDiscover.data.errors} errors`}
-                </span>
+                 <span className="text-sm font-medium text-foreground">
+                   Found {manualDiscover.data.found} leads, saved {manualDiscover.data.saved}
+                   {manualDiscover.data.skipped > 0 && `, ${manualDiscover.data.skipped} duplicates skipped`}
+                   {manualDiscover.data.errors > 0 && `, ${manualDiscover.data.errors} errors`}
+                 </span>
               </div>
               <p className="text-xs text-muted-foreground">
                 Leads have been added to your Leads page with source "auto_discovery"

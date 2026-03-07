@@ -1,35 +1,48 @@
 
 
-## Add Bulk Actions to Leads Page
+## Plan: Persist AI Chat History Between Sessions
 
-### What changes
+Save chat conversations to the database so they survive page refreshes and sessions.
 
-Add multi-select capability to the leads table with a bulk action toolbar for batch status updates, batch deletion, and CSV export of selected leads.
+### Database Change
 
-### UI behavior
+Create a `chat_messages` table:
 
-1. **Checkbox column** — Add a checkbox to each table row plus a "select all" checkbox in the header (selects visible page only).
-2. **Bulk action bar** — When 1+ leads are selected, show a floating toolbar above the table with:
-   - Selected count indicator (e.g., "3 selected")
-   - **Update Status** dropdown (new, contacted, qualified, dismissed) — applies chosen status to all selected leads
-   - **Export Selected** button — exports only selected leads to CSV
-   - **Delete Selected** button — opens confirmation dialog, then batch-deletes
-   - **Clear Selection** button
-3. **Selection state** resets on page change or after bulk operations complete.
+```sql
+CREATE TABLE public.chat_messages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  role text NOT NULL CHECK (role IN ('user', 'assistant')),
+  content text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
 
-### Technical approach
+ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
 
-All changes are in `src/pages/LeadsPage.tsx` (no new files needed):
+CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
+CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
 
-- Add `selectedIds: Set<string>` state
-- Add `Checkbox` import from shadcn/ui
-- Insert checkbox `<TableHead>` and `<TableCell>` in the table
-- "Select all" toggles all visible `filteredLeads` IDs
-- Bulk status update: loop `Promise.all` over `updateLead.mutateAsync` for each selected ID, log one activity per lead
-- Bulk delete: `Promise.all` over `deleteLead.mutateAsync`, with AlertDialog confirmation showing count
-- Bulk export: filter `filteredLeads` by `selectedIds`, pass to existing `exportToCSV`
-- Clear selection on page change (`useEffect` on `page`), after bulk ops complete
-- Disable bulk actions while mutations are pending; show `Loader2` spinner
+CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
+```
 
-No database changes required.
+### Code Changes — `src/components/AIChatWidget.tsx`
+
+1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
+
+2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
+
+3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
+
+4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
+
+### Data flow
+
+```text
+User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
+Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
+Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
+```
+
+No new hooks file needed — keep the logic inline in the widget since it's self-contained.
 

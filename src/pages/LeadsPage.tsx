@@ -1,8 +1,8 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Search, MoreHorizontal, Phone, UserCheck, ArrowRightLeft, XCircle, Pencil, Trash2, Download, Loader2, Users, FileText, ShieldCheck, ShieldAlert, ShieldX, ShieldQuestion } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Phone, UserCheck, ArrowRightLeft, XCircle, Pencil, Trash2, Download, Loader2, Users, FileText, ShieldCheck, ShieldAlert, ShieldX, ShieldQuestion, X, CheckSquare } from "lucide-react";
 import { useLeads, useCreateLead, useUpdateLead, useDeleteLead } from "@/hooks/useLeads";
 import { useCreateCompany } from "@/hooks/useCompanies";
 import { useCreateContact } from "@/hooks/useContacts";
@@ -25,6 +25,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
 import DraftEmailDialog from "@/components/DraftEmailDialog";
 
 const leadSchema = z.object({
@@ -306,6 +307,9 @@ export default function LeadsPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [converting, setConverting] = useState(false);
   const [emailLead, setEmailLead] = useState<Lead | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkActionPending, setBulkActionPending] = useState(false);
 
   // Knockout dialog state
   const [knockoutDialogType, setKnockoutDialogType] = useState<'prohibited' | 'low_probability' | 'bluefield' | null>(null);
@@ -341,6 +345,91 @@ export default function LeadsPage() {
     }
     return map;
   }, [filteredLeads, knockoutRules]);
+
+  // Clear selection on page change
+  useEffect(() => { setSelectedIds(new Set()); }, [page]);
+
+  // Bulk selection helpers
+  const allVisibleSelected = filteredLeads.length > 0 && filteredLeads.every(l => selectedIds.has(l.id));
+  const someSelected = selectedIds.size > 0;
+
+  const toggleSelectAll = () => {
+    if (allVisibleSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredLeads.map(l => l.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  // Bulk status update
+  const handleBulkStatus = async (newStatus: string) => {
+    setBulkActionPending(true);
+    try {
+      await Promise.all(
+        Array.from(selectedIds).map(id =>
+          updateLead.mutateAsync({ id, status: newStatus })
+        )
+      );
+      await Promise.all(
+        Array.from(selectedIds).map(id => {
+          const lead = filteredLeads.find(l => l.id === id);
+          return createActivity.mutateAsync({
+            type: "status_change",
+            description: `Lead "${lead?.company_name ?? 'Unknown'}" bulk-updated to ${newStatus}`,
+          });
+        })
+      );
+      toast.success(`${selectedIds.size} lead(s) updated to ${newStatus}`);
+      setSelectedIds(new Set());
+    } catch (e: any) {
+      toast.error(e.message || "Bulk status update failed");
+    } finally {
+      setBulkActionPending(false);
+    }
+  };
+
+  // Bulk delete
+  const handleBulkDelete = async () => {
+    setBulkActionPending(true);
+    try {
+      await Promise.all(Array.from(selectedIds).map(id => deleteLead.mutateAsync(id)));
+      toast.success(`${selectedIds.size} lead(s) deleted`);
+      setSelectedIds(new Set());
+    } catch (e: any) {
+      toast.error(e.message || "Bulk delete failed");
+    } finally {
+      setBulkActionPending(false);
+      setBulkDeleteOpen(false);
+    }
+  };
+
+  // Bulk export selected
+  const handleBulkExport = () => {
+    const selected = filteredLeads.filter(l => selectedIds.has(l.id));
+    exportToCSV(selected, "leads-selected", [
+      { header: "Company Name", accessor: (r) => r.company_name },
+      { header: "Decision Maker", accessor: (r) => r.decision_maker_name },
+      { header: "Email", accessor: (r) => r.decision_maker_email },
+      { header: "Phone", accessor: (r) => r.decision_maker_phone },
+      { header: "Title", accessor: (r) => r.decision_maker_title },
+      { header: "Headcount", accessor: (r) => r.headcount },
+      { header: "Industry", accessor: (r) => r.industry },
+      { header: "State", accessor: (r) => r.state },
+      { header: "Trigger Event", accessor: (r) => r.trigger_event },
+      { header: "Status", accessor: (r) => r.status },
+      { header: "Source", accessor: (r) => r.source },
+      { header: "Created Date", accessor: (r) => r.created_at ? new Date(r.created_at).toLocaleDateString() : "" },
+    ]);
+    toast.success(`Exported ${selected.length} lead(s)`);
+  };
 
   const handleFormSubmit = async (values: LeadFormValues) => {
     try {
@@ -524,11 +613,50 @@ export default function LeadsPage() {
         </div>
       </div>
 
+      {/* Bulk Action Bar */}
+      {someSelected && (
+        <div className="flex items-center gap-3 rounded-lg border bg-muted/50 px-4 py-3">
+          <CheckSquare className="h-4 w-4 text-primary" />
+          <span className="text-sm font-medium">{selectedIds.size} selected</span>
+          <div className="h-4 w-px bg-border" />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" disabled={bulkActionPending}>
+                {bulkActionPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                Update Status
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => handleBulkStatus("new")}>New</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleBulkStatus("contacted")}>Contacted</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleBulkStatus("qualified")}>Qualified</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleBulkStatus("dismissed")}>Dismissed</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button variant="outline" size="sm" onClick={handleBulkExport} disabled={bulkActionPending}>
+            <Download className="h-4 w-4 mr-1" />Export Selected
+          </Button>
+          <Button variant="destructive" size="sm" onClick={() => setBulkDeleteOpen(true)} disabled={bulkActionPending}>
+            <Trash2 className="h-4 w-4 mr-1" />Delete Selected
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())} disabled={bulkActionPending}>
+            <X className="h-4 w-4 mr-1" />Clear
+          </Button>
+        </div>
+      )}
+
       {/* Table */}
       <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={allVisibleSelected}
+                  onCheckedChange={toggleSelectAll}
+                  aria-label="Select all"
+                />
+              </TableHead>
               <TableHead>Company Name</TableHead>
               <TableHead>Decision Maker</TableHead>
               <TableHead className="hidden md:table-cell">Headcount</TableHead>
@@ -544,7 +672,7 @@ export default function LeadsPage() {
             {isLoading
               ? Array.from({ length: 8 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 9 }).map((_, j) => (
+                    {Array.from({ length: 10 }).map((_, j) => (
                       <TableCell key={j}>
                         <Skeleton className="h-4 w-full" />
                       </TableCell>
@@ -553,7 +681,7 @@ export default function LeadsPage() {
                 ))
               : filteredLeads.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center text-muted-foreground py-12">
+                    <TableCell colSpan={10} className="text-center text-muted-foreground py-12">
                       <Users className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
                       <p className="font-medium">No leads yet</p>
                       <p className="text-sm mt-1">Start discovering leads to fill your pipeline!</p>
@@ -563,7 +691,14 @@ export default function LeadsPage() {
                   filteredLeads.map((lead) => {
                     const ko = knockoutMap.get(lead.id) ?? { tier: 'clear' as const, matchedRules: [], message: '' };
                     return (
-                      <TableRow key={lead.id}>
+                      <TableRow key={lead.id} data-state={selectedIds.has(lead.id) ? "selected" : undefined}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedIds.has(lead.id)}
+                            onCheckedChange={() => toggleSelect(lead.id)}
+                            aria-label={`Select ${lead.company_name}`}
+                          />
+                        </TableCell>
                         <TableCell className="font-medium">{lead.company_name}</TableCell>
                         <TableCell>
                           <div>{lead.decision_maker_name ?? "—"}</div>
@@ -769,6 +904,24 @@ export default function LeadsPage() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Confirmation */}
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedIds.size} Lead(s)</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete {selectedIds.size} selected lead(s). This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkActionPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} disabled={bulkActionPending} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {bulkActionPending ? "Deleting…" : "Delete All"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

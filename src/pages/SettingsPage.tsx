@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Loader2, Save, Download, Database, Info, Plus, Search, Pencil, Trash2, ShieldX, ShieldAlert, ShieldQuestion } from "lucide-react";
+import { Loader2, Save, Download, Database, Info, Plus, Search, Pencil, Trash2, ShieldX } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 const US_STATES = [

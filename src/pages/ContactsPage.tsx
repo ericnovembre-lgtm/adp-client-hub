@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useContacts, useCreateContact, useUpdateContact, useDeleteContact } from "@/hooks/useContacts";
 import { logActivity } from "@/lib/logActivity";
 import { exportToCSV } from "@/lib/exportCSV";
@@ -15,12 +15,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Pencil, Trash2, Download, Loader2, UserPlus, Mail } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Plus, Search, Pencil, Trash2, Download, Loader2, UserPlus, Mail, CheckSquare, X } from "lucide-react";
 import ContactDetailSheet from "@/components/ContactDetailSheet";
 import DraftEmailDialog from "@/components/DraftEmailDialog";
 
@@ -173,8 +175,14 @@ export default function ContactsPage() {
   const [detailContact, setDetailContact] = useState<Contact | null>(null);
   const [emailContact, setEmailContact] = useState<Contact | null>(null);
 
+  // Bulk action state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkActionPending, setBulkActionPending] = useState(false);
+
   const { data, isLoading } = useContacts({ page, limit: 25 });
   const deleteContact = useDeleteContact();
+  const updateContact = useUpdateContact();
 
   const filtered = useMemo(() => {
     if (!data?.data) return [];
@@ -187,6 +195,68 @@ export default function ContactsPage() {
       (c.company?.toLowerCase().includes(q))
     );
   }, [data?.data, search]);
+
+  // Clear selection on page change
+  useEffect(() => { setSelectedIds(new Set()); }, [page]);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selectedIds.size === filtered.length && filtered.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map(c => c.id)));
+    }
+  };
+
+  const handleBulkStatusUpdate = async (status: string) => {
+    setBulkActionPending(true);
+    try {
+      await Promise.all(
+        Array.from(selectedIds).map(id => updateContact.mutateAsync({ id, status }))
+      );
+      toast.success(`${selectedIds.size} contact(s) updated to ${status}`);
+      setSelectedIds(new Set());
+    } catch (e: any) {
+      toast.error(e.message ?? "Bulk status update failed");
+    }
+    setBulkActionPending(false);
+  };
+
+  const handleBulkDelete = async () => {
+    setBulkActionPending(true);
+    try {
+      await Promise.all(Array.from(selectedIds).map(id => deleteContact.mutateAsync(id)));
+      toast.success(`${selectedIds.size} contact(s) deleted`);
+      setSelectedIds(new Set());
+    } catch (e: any) {
+      toast.error(e.message ?? "Bulk delete failed");
+    }
+    setBulkDeleteOpen(false);
+    setBulkActionPending(false);
+  };
+
+  const handleBulkExport = () => {
+    const selected = filtered.filter(c => selectedIds.has(c.id));
+    exportToCSV(selected, "contacts_selected", [
+      { header: "First Name", accessor: (r) => r.first_name },
+      { header: "Last Name", accessor: (r) => r.last_name },
+      { header: "Email", accessor: (r) => r.email },
+      { header: "Phone", accessor: (r) => r.phone },
+      { header: "Company", accessor: (r) => r.company },
+      { header: "Job Title", accessor: (r) => r.job_title },
+      { header: "Status", accessor: (r) => r.status },
+      { header: "Source", accessor: (r) => r.source },
+      { header: "Created Date", accessor: (r) => r.created_at ? new Date(r.created_at).toLocaleDateString() : "" },
+    ]);
+    toast.success(`Exported ${selected.length} contact(s)`);
+  };
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -241,10 +311,54 @@ export default function ContactsPage() {
         </div>
       </div>
 
+      {/* Bulk action toolbar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 rounded-md border bg-muted/50 px-4 py-2 flex-wrap">
+          <span className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+            <CheckSquare className="h-4 w-4" /> {selectedIds.size} selected
+          </span>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" disabled={bulkActionPending}>
+                {bulkActionPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                Update Status
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {["lead", "prospect", "customer", "inactive"].map(s => (
+                <DropdownMenuItem key={s} onClick={() => handleBulkStatusUpdate(s)}>
+                  {s.charAt(0).toUpperCase() + s.slice(1)}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button variant="outline" size="sm" onClick={handleBulkExport} disabled={bulkActionPending}>
+            <Download className="h-4 w-4 mr-1" /> Export Selected
+          </Button>
+
+          <Button variant="destructive" size="sm" onClick={() => setBulkDeleteOpen(true)} disabled={bulkActionPending}>
+            <Trash2 className="h-4 w-4 mr-1" /> Delete Selected
+          </Button>
+
+          <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())} disabled={bulkActionPending}>
+            <X className="h-4 w-4 mr-1" /> Clear
+          </Button>
+        </div>
+      )}
+
       <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                  onCheckedChange={toggleAll}
+                  aria-label="Select all"
+                />
+              </TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Phone</TableHead>
@@ -258,17 +372,24 @@ export default function ContactsPage() {
           <TableBody>
             {isLoading ? (
               Array.from({ length: 8 }).map((_, i) => (
-                <TableRow key={i}>{Array.from({ length: 8 }).map((_, j) => <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>)}</TableRow>
+                <TableRow key={i}>{Array.from({ length: 9 }).map((_, j) => <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>)}</TableRow>
               ))
             ) : filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-12">
+              <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-12">
                 <UserPlus className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
                 <p className="font-medium">No contacts yet</p>
                 <p className="text-sm mt-1">Add your first contact to get started!</p>
               </TableCell></TableRow>
             ) : (
               filtered.map(c => (
-                <TableRow key={c.id}>
+                <TableRow key={c.id} data-state={selectedIds.has(c.id) ? "selected" : undefined}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedIds.has(c.id)}
+                      onCheckedChange={() => toggleSelect(c.id)}
+                      aria-label={`Select ${c.first_name} ${c.last_name}`}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium">
                     <button onClick={() => setDetailContact(c)} className="text-primary hover:underline text-left">
                       {c.first_name} {c.last_name}
@@ -310,6 +431,7 @@ export default function ContactsPage() {
         <ContactFormDialog open={dialogOpen} onOpenChange={setDialogOpen} contact={editingContact} />
       )}
 
+      {/* Single delete dialog */}
       <AlertDialog open={!!deleteId} onOpenChange={open => { if (!open) setDeleteId(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -319,6 +441,25 @@ export default function ContactsPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk delete dialog */}
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedIds.size} Contact(s)</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete {selectedIds.size} selected contact(s). This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {bulkActionPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+              Delete All
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

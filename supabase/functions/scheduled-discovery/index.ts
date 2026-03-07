@@ -20,7 +20,9 @@ Return a JSON array of lead objects. Each lead must have these fields:
 - decision_maker_email (string, realistic business email)
 - trigger_event (string, a brief reason why this company might need PEO services now)
 
-Generate exactly 5 leads. Return ONLY the JSON array, no markdown or extra text.`;
+Generate exactly 5 leads. Return ONLY the JSON array, no markdown or extra text.
+
+CRITICAL RULE: Do NOT generate leads for any of these prohibited industries: adult entertainment, aircraft operations, ambulance transport, armed security, asbestos/lead, casinos, courier/delivery services, crane operations, explosives, first responders, garbage collection, government entities, hazardous waste, home health care, logging, mining, oil/gas, roofing, slaughterhouses, steel erection, taxicab/livery, temp staffing, towing, tree removal, trucking with independent operators, wrecking/demolition. Focus only on small businesses in industries that are eligible for PEO services, such as: professional services, technology, healthcare offices (not hospitals), financial services, retail, manufacturing (light/non-hazardous), construction (non-heavy), real estate, education (private), and similar white-collar or light-commercial operations.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {

@@ -1,62 +1,66 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export interface KnockoutRule {
-  id: string;
-  industry_name: string;
-  tier: "prohibited" | "low_probability" | "bluefield";
-  wc_codes: string | null;
-  conditions: string | null;
-}
-
 export interface KnockoutResult {
-  tier: "prohibited" | "low_probability" | "bluefield" | null;
-  rule: KnockoutRule | null;
+  isKnockout: boolean;
+  tier: 'prohibited' | 'low_probability' | 'bluefield' | 'clear';
+  matchedRules: Array<{
+    industry_name: string;
+    tier: string;
+    conditions: string | null;
+    wc_codes: string | null;
+  }>;
+  message: string;
 }
 
-/**
- * Check if an industry matches any knockout rule.
- * Uses case-insensitive partial matching on industry_name.
- */
 export async function checkIndustryKnockout(
   industry: string | null | undefined,
-  _companyName?: string,
-  _description?: string
+  companyName?: string,
+  description?: string
 ): Promise<KnockoutResult> {
   if (!industry || !industry.trim()) {
-    return { tier: null, rule: null };
+    return { isKnockout: false, tier: 'clear', matchedRules: [], message: 'No industry provided.' };
   }
 
-  const normalised = industry.trim().toLowerCase();
-
-  const { data, error } = await supabase
+  // Fetch all knockout rules
+  const { data: rules, error } = await supabase
     .from("knockout_rules")
-    .select("*")
-    .ilike("industry_name", `%${normalised}%`);
+    .select("*");
 
-  if (error) {
-    console.error("Knockout check error:", error);
-    return { tier: null, rule: null };
+  if (error || !rules) {
+    return { isKnockout: false, tier: 'clear', matchedRules: [], message: 'Unable to check knockout rules' };
   }
 
-  if (!data || data.length === 0) {
-    return { tier: null, rule: null };
+  const searchText = [industry, companyName, description]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  // Check for matches (fuzzy keyword matching)
+  const matched = rules.filter(rule => {
+    const keywords = rule.industry_name.toLowerCase().split(/[\s\/,()]+/).filter(w => w.length > 3);
+    return keywords.some(keyword => searchText.includes(keyword));
+  });
+
+  if (matched.length === 0) {
+    return { isKnockout: false, tier: 'clear', matchedRules: [], message: 'No knockout rules matched. Industry appears eligible.' };
   }
 
-  // Priority: prohibited > low_probability > bluefield
-  const priorityOrder: Record<string, number> = {
-    prohibited: 0,
-    low_probability: 1,
-    bluefield: 2,
+  // Sort by severity: prohibited > low_probability > bluefield
+  const severity: Record<string, number> = { prohibited: 3, low_probability: 2, bluefield: 1 };
+  matched.sort((a, b) => (severity[b.tier] || 0) - (severity[a.tier] || 0));
+
+  const worstTier = matched[0].tier as KnockoutResult['tier'];
+
+  const messages: Record<string, string> = {
+    prohibited: `⛔ PROHIBITED: This industry is NOT eligible for ADP TotalSource. Matched: ${matched.map(r => r.industry_name).join(', ')}`,
+    low_probability: `⚠️ LOW PROBABILITY (95-99% prohibited): This industry is almost certainly ineligible. Best-in-class consideration only. Matched: ${matched.map(r => r.industry_name).join(', ')}`,
+    bluefield: `🔵 BLUEFIELD (Conditional): This industry may be eligible with specific conditions. Matched: ${matched.map(r => `${r.industry_name}${r.conditions ? ` — ${r.conditions}` : ''}`).join(', ')}`,
   };
 
-  const sorted = [...data].sort(
-    (a, b) =>
-      (priorityOrder[a.tier] ?? 99) - (priorityOrder[b.tier] ?? 99)
-  );
-
-  const match = sorted[0];
   return {
-    tier: match.tier as KnockoutResult["tier"],
-    rule: match as KnockoutRule,
+    isKnockout: worstTier === 'prohibited',
+    tier: worstTier,
+    matchedRules: matched,
+    message: messages[worstTier] || 'Unknown tier',
   };
 }

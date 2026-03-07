@@ -1,26 +1,22 @@
 
 
-## Add Quick-Action Buttons to AI Chat Widget
+## Fix: AI Chat "Unauthorized" Error
 
-Add a set of quick-action suggestion chips to the chat widget that appear when the conversation is empty, giving users one-click access to common CRM tasks.
+The AI chat widget sends the anon key as the Authorization Bearer token, but the edge function expects a real user JWT to validate via `getUser()`. This causes a 401 every time.
 
-### Changes
+### Root Cause
+In `src/components/AIChatWidget.tsx` line 35:
+```typescript
+Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+```
+This sends the publishable/anon key, not the logged-in user's session token.
+
+### Fix
 
 **`src/components/AIChatWidget.tsx`**
+1. Import `supabase` from `@/integrations/supabase/client`
+2. In the `streamChat` function, retrieve the current session token via `supabase.auth.getSession()` before making the fetch call
+3. Pass the session's `access_token` as the Bearer token, falling back to the anon key if no session exists
 
-1. Define a constant array of quick actions with label and pre-filled prompt:
-   - "Draft cold email" → sends a prompt asking the assistant to draft a cold outreach email
-   - "Suggest follow-up" → asks for follow-up strategy suggestions
-   - "Qualifying questions" → asks for prospect qualifying questions
-   - "Sales pitch ideas" → asks for pitch angles for PEO services
-
-2. Render these as clickable chips/buttons in the empty state (where the welcome message currently is), below the intro text.
-
-3. Clicking a chip calls `send()` with the chip's prompt text pre-filled, triggering the AI response immediately.
-
-4. The chips disappear once the conversation has messages (they only show in the empty state).
-
-### UI Design
-- Small outline/secondary buttons arranged in a flex-wrap grid below the welcome text
-- Use subtle styling consistent with the existing muted empty state
+This single change will resolve the 401 and allow the AI chat to authenticate properly with the edge function.
 

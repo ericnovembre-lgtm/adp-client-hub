@@ -1,35 +1,31 @@
 
 
-## Contacts Page Implementation
+## Fix: Dashboard Trend Calculations
 
-### File to modify
+### Problem
+The current queries compare **all-time totals** vs **up-to-last-month totals**, so trends always show growth. The fix is to compare **this month** vs **last month** for accurate month-over-month trends, while also exposing all-time totals separately.
 
-| File | Action |
-|------|--------|
-| `src/pages/ContactsPage.tsx` | Rewrite — full CRUD page |
+### Changes (single file: `src/hooks/useDashboardStats.ts`)
 
-### Implementation
+1. **Update `StatItem` interface** — add `allTime: number` field.
 
-Follow the same pattern as `LeadsPage.tsx` — single file with inline components:
+2. **Rename `_thisMonthStart` / `_thisMonthEnd`** — remove underscore prefixes to use them.
 
-**Schema**: Zod with `first_name` (required), `last_name` (required), `email` (optional, valid email if provided via `.email().optional().or(z.literal(""))`), `phone`, `company`, `job_title`, `status` (select), `source`, `notes` (textarea).
+3. **Add 3 new all-time queries** to the `Promise.all`:
+   - All leads (status != dismissed, no date filter)
+   - All active deals (no date filter)
+   - All closed_won revenue (no date filter)
 
-**State**: `page`, `search`, `dialogOpen`, `editingContact`, `deleteId`
+4. **Fix existing month-filtered queries**:
+   - `leadsNow`: add `.gte("created_at", thisMonthStart).lte("created_at", thisMonthEnd)`
+   - `leadsPrev`: change to `.gte("created_at", lastMonthStart).lte("created_at", lastMonthEnd)`
+   - `dealsNow`: add `.gte("created_at", thisMonthStart).lte("created_at", thisMonthEnd)`
+   - `dealsPrev`: change to `.gte("created_at", lastMonthStart).lte("created_at", lastMonthEnd)`
+   - `revenueNow`: add `.gte("created_at", thisMonthStart).lte("created_at", thisMonthEnd)`
+   - `revenuePrev`: change to `.gte("created_at", lastMonthStart).lte("created_at", lastMonthEnd)`
+   - Tasks queries stay unchanged.
 
-**Hooks**: `useContacts({ page, limit: 25 })`, `useCreateContact()`, `useUpdateContact()`, `useDeleteContact()`
+5. **Update return object** — each stat gets `allTime` from the new unfiltered queries; `value` now reflects this-month count for trend accuracy. Tasks keep `allTime` same as `value` (tasks due today is inherently point-in-time).
 
-**Components**:
-1. **ContactFormDialog** — Dialog with form fields, reused for add/edit
-2. **Main layout**:
-   - Header: title + "Add Contact" button + search Input
-   - Table: Name (first+last), Email (mailto link), Phone, Company, Job Title, Status (Badge), Created (formatted `Jan 15, 2026` via `date-fns format`), Actions (Edit/Delete buttons)
-   - Client-side search filter on first_name, last_name, email, company
-   - Skeleton rows while loading
-   - Pagination: Previous/Next + "Page X of Y"
-
-**Status badges**: lead=blue, prospect=yellow, customer=green, inactive=gray (same color pattern as Leads page)
-
-**Delete**: AlertDialog confirmation before calling `useDeleteContact`
-
-**Toasts**: sonner toast on success/error for all mutations
+No other files modified.
 

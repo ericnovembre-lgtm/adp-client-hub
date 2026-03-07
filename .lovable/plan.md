@@ -1,48 +1,35 @@
 
 
-## Plan: Persist AI Chat History Between Sessions
+## Seed Knockout Rules + Update Utility
 
-Save chat conversations to the database so they survive page refreshes and sessions.
+### 1. Seed Data (via insert tool)
 
-### Database Change
+Insert all 145 rows into `knockout_rules`:
+- 94 prohibited industries
+- 41 low_probability industries
+- 10 bluefield industries
 
-Create a `chat_messages` table:
+Using the exact INSERT statements provided. Will split into 3 batches (one per tier) to stay within limits.
 
-```sql
-CREATE TABLE public.chat_messages (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  role text NOT NULL CHECK (role IN ('user', 'assistant')),
-  content text NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
+### 2. Replace `src/lib/knockoutCheck.ts`
 
-ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+Replace the current utility with the user's provided version that uses:
+- Fuzzy keyword matching (splits industry names into keywords, checks against combined search text)
+- New `KnockoutResult` interface: `{ isKnockout, tier, matchedRules[], message }`
+- Human-readable messages with emoji indicators per tier
+- Fetches all rules client-side and filters in JS
 
-CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
-CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
-CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
+### 3. Update `src/hooks/useKnockoutRules.ts`
 
-CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
-```
+Adjust the `useCheckKnockout` hook to match the new return type from `checkIndustryKnockout`. The `KnockoutRule` type import will be removed since the new utility doesn't export it — the hook will use the rules query's own typing instead.
 
-### Code Changes — `src/components/AIChatWidget.tsx`
+### Files Modified
 
-1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
+| File | Action |
+|------|--------|
+| `knockout_rules` table | Seed 145 rows via insert tool |
+| `src/lib/knockoutCheck.ts` | Replace with new fuzzy-match utility |
+| `src/hooks/useKnockoutRules.ts` | Update imports/types for new interface |
 
-2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
-
-3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
-
-4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
-
-### Data flow
-
-```text
-User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
-Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
-Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
-```
-
-No new hooks file needed — keep the logic inline in the widget since it's self-contained.
+No UI or page changes.
 

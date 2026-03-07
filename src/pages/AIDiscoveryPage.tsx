@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserSettings, useUpdateUserSettings } from "@/hooks/useUserSettings";
-import { useKnockoutRules, type KnockoutRule } from "@/hooks/useKnockoutRules";
+import { useKnockoutRules } from "@/hooks/useKnockoutRules";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

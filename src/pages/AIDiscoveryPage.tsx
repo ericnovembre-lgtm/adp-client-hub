@@ -42,7 +42,6 @@ function getIntervalMs(freq: string) {
 
 
 
-
 export default function AIDiscoveryPage() {
   const { user } = useAuth();
   const qc = useQueryClient();

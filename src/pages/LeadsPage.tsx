@@ -1,8 +1,8 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Search, MoreHorizontal, Phone, UserCheck, ArrowRightLeft, XCircle, Pencil, Trash2, Download, Loader2, Users, FileText, ShieldCheck, ShieldAlert, ShieldX, ShieldQuestion } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Phone, UserCheck, ArrowRightLeft, XCircle, Pencil, Trash2, Download, Loader2, Users, FileText, ShieldCheck, ShieldAlert, ShieldX, ShieldQuestion, X, CheckSquare } from "lucide-react";
 import { useLeads, useCreateLead, useUpdateLead, useDeleteLead } from "@/hooks/useLeads";
 import { useCreateCompany } from "@/hooks/useCompanies";
 import { useCreateContact } from "@/hooks/useContacts";

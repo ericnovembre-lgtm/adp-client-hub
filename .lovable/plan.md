@@ -1,48 +1,33 @@
 
 
-## Plan: Persist AI Chat History Between Sessions
+## Fix False-Positive Knockout Eligibility Badges
 
-Save chat conversations to the database so they survive page refreshes and sessions.
+### Problem
 
-### Database Change
+The AI Discovery correctly avoids generating leads in prohibited industries (no roofing, trucking, mining, etc. appeared). However, the eligibility badges on the Leads page show false positives — "Financial Services", "Software Development", "Healthcare", and "Manufacturing" are incorrectly flagged as "Prohibited" due to overly aggressive fuzzy matching in `knockoutCheck.ts`.
 
-Create a `chat_messages` table:
+The current matcher splits knockout rule industry names into individual words >3 chars and checks if any single keyword appears in the lead's industry text. Common words like "services", "health", "care", "manufacturing" appear in both prohibited industry names and legitimate ones, causing false matches.
 
-```sql
-CREATE TABLE public.chat_messages (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  role text NOT NULL CHECK (role IN ('user', 'assistant')),
-  content text NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
+### Fix — `src/lib/knockoutCheck.ts`
 
-ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+Improve the matching algorithm to reduce false positives:
 
-CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
-CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
-CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
+1. **Full phrase matching first** — Check if the rule's full industry name (lowercased) is contained in the search text, or vice versa
+2. **Multi-word keyword matching** — Instead of matching any single word, require at least 2 keywords to match (or the single keyword must be >6 chars and specific)
+3. **Exclusion list for common words** — Skip generic words like "services", "general", "other", "operations", "products", "systems", "management" from keyword matching since they appear in many industries
 
-CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
-```
+### What stays the same
 
-### Code Changes — `src/components/AIChatWidget.tsx`
+- The `KnockoutResult` interface
+- The function signature
+- The overall flow (fetch rules, match, return worst tier)
+- The scheduled-discovery edge function prompt (already correctly excludes prohibited industries)
 
-1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
+### Expected outcome
 
-2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
-
-3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
-
-4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
-
-### Data flow
-
-```text
-User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
-Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
-Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
-```
-
-No new hooks file needed — keep the logic inline in the widget since it's self-contained.
+- "Financial Services" → Eligible (no longer matches "Ambulance Transport Services" via "services")
+- "Software Development" → Eligible
+- "Healthcare" → Eligible (no longer matches "Home Health Care" via "health"/"care")
+- "Manufacturing" → Eligible (no longer matches niche manufacturing knockouts)
+- Actual prohibited industries like "Roofing", "Trucking", "Mining" still correctly flagged
 

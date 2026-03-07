@@ -2,24 +2,21 @@ import { Link, useLocation } from "wouter";
 import { forwardRef, AnchorHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
-interface NavLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
+interface NavLinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href"> {
   to: string;
   className?: string;
   activeClassName?: string;
 }
 
 const NavLink = forwardRef<HTMLAnchorElement, NavLinkProps>(
-  ({ className, activeClassName, to, ...props }, ref) => {
+  ({ className, activeClassName, to, children, ...props }, ref) => {
     const [location] = useLocation();
     const isActive = location === to || (to !== "/" && location.startsWith(to));
 
     return (
-      <Link
-        ref={ref}
-        to={to}
-        className={cn(className, isActive && activeClassName)}
-        {...props}
-      />
+      <Link href={to} ref={ref} className={cn(className, isActive && activeClassName)} {...props}>
+        {children}
+      </Link>
     );
   }
 );

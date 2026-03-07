@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { checkIndustryKnockout, type KnockoutRule, type KnockoutResult } from "@/lib/knockoutCheck";
+import { checkIndustryKnockout, type KnockoutRule } from "@/lib/knockoutCheck";
 
 export function useKnockoutRules(tier?: string) {
   return useQuery({

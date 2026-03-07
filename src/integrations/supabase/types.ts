@@ -56,6 +56,30 @@ export type Database = {
           },
         ]
       }
+      chat_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           address: string | null
@@ -184,6 +208,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      knockout_rules: {
+        Row: {
+          conditions: string | null
+          created_at: string | null
+          id: string
+          industry_name: string
+          tier: string
+          wc_codes: string | null
+        }
+        Insert: {
+          conditions?: string | null
+          created_at?: string | null
+          id?: string
+          industry_name: string
+          tier: string
+          wc_codes?: string | null
+        }
+        Update: {
+          conditions?: string | null
+          created_at?: string | null
+          id?: string
+          industry_name?: string
+          tier?: string
+          wc_codes?: string | null
+        }
+        Relationships: []
       }
       leads: {
         Row: {

@@ -35,10 +35,42 @@ export async function checkIndustryKnockout(
     .join(' ')
     .toLowerCase();
 
-  // Check for matches (fuzzy keyword matching)
+  // Generic words that appear across many industries — skip for keyword matching
+  const GENERIC_WORDS = new Set([
+    'services', 'service', 'general', 'other', 'operations', 'operation',
+    'products', 'product', 'systems', 'system', 'management', 'companies',
+    'company', 'work', 'workers', 'professional', 'national', 'state',
+    'united', 'american', 'commercial', 'industrial', 'independent',
+    'health', 'care', 'home', 'transportation', 'construction',
+    'manufacturing', 'processing', 'equipment', 'installation',
+  ]);
+
   const matched = rules.filter(rule => {
-    const keywords = rule.industry_name.toLowerCase().split(/[\s\/,()]+/).filter(w => w.length > 3);
-    return keywords.some(keyword => searchText.includes(keyword));
+    const ruleName = rule.industry_name.toLowerCase().trim();
+
+    // 1. Exact / full phrase match (either direction)
+    if (searchText.includes(ruleName) || ruleName.includes(searchText.split(' ').slice(0, 4).join(' '))) {
+      // Only match if the search text is specific enough (>= 2 words overlap or exact)
+      if (searchText.includes(ruleName)) return true;
+      const searchWords = searchText.split(/\s+/).filter(w => w.length > 2);
+      const ruleWords = ruleName.split(/[\s\/,()]+/).filter(w => w.length > 2);
+      const overlap = ruleWords.filter(w => searchWords.includes(w)).length;
+      if (overlap >= 2) return true;
+    }
+
+    // 2. Keyword matching — require multiple specific keyword hits
+    const keywords = ruleName.split(/[\s\/,()]+/).filter(w => w.length > 3 && !GENERIC_WORDS.has(w));
+    if (keywords.length === 0) return false;
+
+    const matchedKeywords = keywords.filter(kw => searchText.includes(kw));
+
+    // Single keyword must be long and specific (>6 chars)
+    if (keywords.length === 1) {
+      return matchedKeywords.length === 1 && matchedKeywords[0].length > 6;
+    }
+
+    // Multiple keywords: require at least 2 matches
+    return matchedKeywords.length >= 2;
   });
 
   if (matched.length === 0) {

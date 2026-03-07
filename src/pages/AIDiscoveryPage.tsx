@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import {
   Search, Clock, Play, Loader2, CheckCircle, AlertCircle, Sparkles,
-  ShieldCheck, ShieldAlert, ShieldX, ShieldQuestion, Save,
+  ShieldCheck, ShieldAlert, ShieldX, ShieldQuestion,
 } from "lucide-react";
 
 const US_STATES = [

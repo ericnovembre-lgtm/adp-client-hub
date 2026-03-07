@@ -1,48 +1,52 @@
 
 
-## Plan: Persist AI Chat History Between Sessions
+## Knockout Rules: Database Table + Utility
 
-Save chat conversations to the database so they survive page refreshes and sessions.
+### 1. Database Migration
 
-### Database Change
-
-Create a `chat_messages` table:
+Create `knockout_rules` table with the provided schema, RLS (SELECT only for authenticated), and indexes on `tier` and `industry_name`.
 
 ```sql
-CREATE TABLE public.chat_messages (
+CREATE TABLE public.knockout_rules (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  role text NOT NULL CHECK (role IN ('user', 'assistant')),
-  content text NOT NULL,
+  industry_name text NOT NULL,
+  tier text NOT NULL,
+  wc_codes text,
+  conditions text,
   created_at timestamptz DEFAULT now()
 );
-
-ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
-CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
-CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
-
-CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
+ALTER TABLE public.knockout_rules ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Authenticated users can select knockout_rules"
+  ON public.knockout_rules FOR SELECT TO authenticated USING (true);
+CREATE INDEX idx_knockout_rules_tier ON public.knockout_rules(tier);
+CREATE INDEX idx_knockout_rules_industry ON public.knockout_rules(industry_name);
 ```
 
-### Code Changes — `src/components/AIChatWidget.tsx`
+Admin write policies (INSERT, UPDATE, DELETE) will not be added now — admin CRUD can be handled via service role in edge functions or added later with a roles system.
 
-1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
+### 2. Utility — `src/lib/knockoutCheck.ts`
 
-2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
+Create a utility function `checkIndustryKnockout(industry, companyName?, description?)` that:
+- Queries `knockout_rules` table for matching industry (case-insensitive partial match on `industry_name`)
+- Returns an object: `{ tier: 'prohibited' | 'low_probability' | 'bluefield' | null, rule: KnockoutRule | null }`
+- Handles the three tiers with clear semantics:
+  - `prohibited` — block conversion, block AI outreach
+  - `low_probability` — warn, allow with acknowledgment
+  - `bluefield` — show conditions, include in deal notes
 
-3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
+### 3. Hook — `src/hooks/useKnockoutRules.ts`
 
-4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
+Create a React Query hook:
+- `useKnockoutRules(tier?)` — fetches all rules, optionally filtered by tier
+- `useCheckKnockout(industry)` — checks a single industry against rules, returns tier info
 
-### Data flow
+### Files Created/Modified
 
-```text
-User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
-Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
-Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
-```
+| File | Action |
+|------|--------|
+| `supabase/migrations/...knockout_rules.sql` | Create table via migration tool |
+| `src/lib/knockoutCheck.ts` | New — utility function |
+| `src/hooks/useKnockoutRules.ts` | New — React Query hooks |
 
-No new hooks file needed — keep the logic inline in the widget since it's self-contained.
+No UI changes in this step — integration into LeadsPage, AI Discovery, and AI Chat will follow in subsequent prompts.
 

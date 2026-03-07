@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserSettings, useUpdateUserSettings } from "@/hooks/useUserSettings";
+import { useKnockoutRules, type KnockoutRule } from "@/hooks/useKnockoutRules";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,10 +11,12 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import {
   Search, Clock, Play, Loader2, CheckCircle, AlertCircle, Sparkles,
+  ShieldCheck, ShieldAlert, ShieldX, ShieldQuestion, Save,
 } from "lucide-react";
 
 const US_STATES = [
@@ -40,14 +43,87 @@ function getIntervalMs(freq: string) {
   }
 }
 
+// --- Client-side knockout check ---
 
+interface LocalKnockoutResult {
+  tier: 'prohibited' | 'low_probability' | 'bluefield' | 'clear';
+  matchedRules: KnockoutRule[];
+  message: string;
+}
 
+function checkKnockoutLocal(industry: string | null | undefined, rules: KnockoutRule[]): LocalKnockoutResult {
+  if (!industry?.trim() || rules.length === 0) {
+    return { tier: 'clear', matchedRules: [], message: '' };
+  }
+
+  const searchText = industry.toLowerCase();
+
+  const matched = rules.filter(rule => {
+    const keywords = rule.industry_name.toLowerCase().split(/[\s\/,()]+/).filter(w => w.length > 3);
+    return keywords.some(keyword => searchText.includes(keyword));
+  });
+
+  if (matched.length === 0) {
+    return { tier: 'clear', matchedRules: [], message: '' };
+  }
+
+  const severity: Record<string, number> = { prohibited: 3, low_probability: 2, bluefield: 1 };
+  matched.sort((a, b) => (severity[b.tier] || 0) - (severity[a.tier] || 0));
+  const worstTier = matched[0].tier as LocalKnockoutResult['tier'];
+
+  const messages: Record<string, string> = {
+    prohibited: `This industry is prohibited by ADP TotalSource.`,
+    low_probability: `Low probability of approval (95-99% prohibited).`,
+    bluefield: `Conditional approval — ${matched.filter(r => r.conditions).map(r => r.conditions).join('; ') || 'review required'}.`,
+  };
+
+  return { tier: worstTier, matchedRules: matched, message: messages[worstTier] || '' };
+}
+
+// --- Discovery Knockout Badge ---
+
+function DiscoveryKnockoutBadge({ tier, message }: { tier: LocalKnockoutResult['tier']; message: string }) {
+  const config = {
+    clear: { label: 'Eligible', className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-300', icon: ShieldCheck },
+    bluefield: { label: 'Conditional', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border-blue-300', icon: ShieldQuestion },
+    low_probability: { label: 'Low Probability', className: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 border-orange-300', icon: ShieldAlert },
+    prohibited: { label: 'Prohibited', className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-300', icon: ShieldX },
+  };
+  const c = config[tier];
+  const Icon = c.icon;
+
+  if (tier === 'clear') {
+    return (
+      <Badge variant="outline" className={c.className}>
+        <Icon className="h-3 w-3 mr-1" />
+        {c.label}
+      </Badge>
+    );
+  }
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Badge variant="outline" className={`${c.className} cursor-help`}>
+            <Icon className="h-3 w-3 mr-1" />
+            {c.label}
+          </Badge>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs text-xs">
+          <p>{message}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 export default function AIDiscoveryPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data: settings } = useUserSettings();
   const updateSettings = useUpdateUserSettings();
+  const { data: knockoutRules = [] } = useKnockoutRules();
 
   // Manual discovery form state
   const [industry, setIndustry] = useState("");
@@ -59,6 +135,9 @@ export default function AIDiscoveryPage() {
   const [schedulerEnabled, setSchedulerEnabled] = useState(false);
   const [frequency, setFrequency] = useState("daily");
   const schedulerTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Discovery results for knockout checking
+  const [discoveryResults, setDiscoveryResults] = useState<any[] | null>(null);
 
   // Load defaults from settings
   useEffect(() => {
@@ -73,6 +152,16 @@ export default function AIDiscoveryPage() {
       if (s.scheduler_frequency) setFrequency(s.scheduler_frequency);
     }
   }, [settings]);
+
+  // Compute knockout results for discovery results
+  const discoveryKnockoutMap = useMemo(() => {
+    if (!discoveryResults || knockoutRules.length === 0) return new Map<number, LocalKnockoutResult>();
+    const map = new Map<number, LocalKnockoutResult>();
+    discoveryResults.forEach((result, idx) => {
+      map.set(idx, checkKnockoutLocal(result.industry, knockoutRules));
+    });
+    return map;
+  }, [discoveryResults, knockoutRules]);
 
   // Manual discovery mutation
   const manualDiscover = useMutation({

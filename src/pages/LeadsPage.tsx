@@ -1,13 +1,14 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Search, MoreHorizontal, Phone, Mail, UserCheck, ArrowRightLeft, XCircle, Pencil, Trash2, Download, Loader2, Users, FileText } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Phone, Mail, UserCheck, ArrowRightLeft, XCircle, Pencil, Trash2, Download, Loader2, Users, FileText, ShieldCheck, ShieldAlert, ShieldX, ShieldQuestion } from "lucide-react";
 import { useLeads, useCreateLead, useUpdateLead, useDeleteLead } from "@/hooks/useLeads";
 import { useCreateCompany } from "@/hooks/useCompanies";
 import { useCreateContact } from "@/hooks/useContacts";
 import { useCreateDeal } from "@/hooks/useDeals";
 import { useCreateActivity } from "@/hooks/useActivities";
+import { useKnockoutRules, type KnockoutRule } from "@/hooks/useKnockoutRules";
 import { exportToCSV } from "@/lib/exportCSV";
 import { supabase } from "@/integrations/supabase/client";
 import type { Lead } from "@/types/database";
@@ -22,6 +23,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import DraftEmailDialog from "@/components/DraftEmailDialog";
 
@@ -49,19 +51,100 @@ const statusColors: Record<string, string> = {
   dismissed: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
 };
 
+// --- Client-side knockout checking (avoids N+1 queries) ---
+
+interface LocalKnockoutResult {
+  tier: 'prohibited' | 'low_probability' | 'bluefield' | 'clear';
+  matchedRules: KnockoutRule[];
+  message: string;
+}
+
+function checkKnockoutLocal(industry: string | null | undefined, rules: KnockoutRule[]): LocalKnockoutResult {
+  if (!industry?.trim() || rules.length === 0) {
+    return { tier: 'clear', matchedRules: [], message: '' };
+  }
+
+  const searchText = industry.toLowerCase();
+
+  const matched = rules.filter(rule => {
+    const keywords = rule.industry_name.toLowerCase().split(/[\s\/,()]+/).filter(w => w.length > 3);
+    return keywords.some(keyword => searchText.includes(keyword));
+  });
+
+  if (matched.length === 0) {
+    return { tier: 'clear', matchedRules: [], message: 'Industry appears eligible.' };
+  }
+
+  const severity: Record<string, number> = { prohibited: 3, low_probability: 2, bluefield: 1 };
+  matched.sort((a, b) => (severity[b.tier] || 0) - (severity[a.tier] || 0));
+  const worstTier = matched[0].tier as LocalKnockoutResult['tier'];
+
+  const messages: Record<string, string> = {
+    prohibited: `⛔ PROHIBITED: ${matched.map(r => r.industry_name).join(', ')}`,
+    low_probability: `⚠️ LOW PROBABILITY: ${matched.map(r => r.industry_name).join(', ')}`,
+    bluefield: `🔵 BLUEFIELD: ${matched.map(r => `${r.industry_name}${r.conditions ? ` — ${r.conditions}` : ''}`).join(', ')}`,
+  };
+
+  return { tier: worstTier, matchedRules: matched, message: messages[worstTier] || '' };
+}
+
+// --- Eligibility Badge Component ---
+
+function EligibilityBadge({ tier, message }: { tier: LocalKnockoutResult['tier']; message: string }) {
+  const config = {
+    clear: { label: 'Eligible', className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-300', icon: ShieldCheck },
+    bluefield: { label: 'Conditional', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border-blue-300', icon: ShieldQuestion },
+    low_probability: { label: 'Low Probability', className: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 border-orange-300', icon: ShieldAlert },
+    prohibited: { label: 'Prohibited', className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-300', icon: ShieldX },
+  };
+  const c = config[tier];
+  const Icon = c.icon;
+
+  if (tier === 'clear') {
+    return (
+      <Badge variant="outline" className={c.className}>
+        <Icon className="h-3 w-3 mr-1" />
+        {c.label}
+      </Badge>
+    );
+  }
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Badge variant="outline" className={`${c.className} cursor-help`}>
+            <Icon className="h-3 w-3 mr-1" />
+            {c.label}
+          </Badge>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs text-xs">
+          <p>{message}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+// --- Lead Form Dialog with industry onBlur knockout warning ---
+
 function LeadFormDialog({
   open,
   onOpenChange,
   editingLead,
   onSubmit,
   isSubmitting,
+  knockoutRules,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   editingLead: Lead | null;
   onSubmit: (values: LeadFormValues) => void;
   isSubmitting: boolean;
+  knockoutRules: KnockoutRule[];
 }) {
+  const [industryWarning, setIndustryWarning] = useState<LocalKnockoutResult | null>(null);
+
   const form = useForm<LeadFormValues>({
     resolver: zodResolver(leadSchema),
     defaultValues: editingLead
@@ -93,10 +176,22 @@ function LeadFormDialog({
         },
   });
 
-  // Reset form when dialog opens with different lead
   const handleOpenChange = (v: boolean) => {
-    if (!v) form.reset();
+    if (!v) {
+      form.reset();
+      setIndustryWarning(null);
+    }
     onOpenChange(v);
+  };
+
+  const handleIndustryBlur = () => {
+    const val = form.getValues("industry");
+    if (val && knockoutRules.length > 0) {
+      const result = checkKnockoutLocal(val, knockoutRules);
+      setIndustryWarning(result.tier !== 'clear' ? result : null);
+    } else {
+      setIndustryWarning(null);
+    }
   };
 
   return (
@@ -143,7 +238,20 @@ function LeadFormDialog({
             </div>
             <div className="grid gap-2">
               <Label htmlFor="industry">Industry</Label>
-              <Input id="industry" {...form.register("industry")} />
+              <Input
+                id="industry"
+                {...form.register("industry")}
+                onBlur={handleIndustryBlur}
+              />
+              {industryWarning && (
+                <p className={`text-xs mt-1 ${
+                  industryWarning.tier === 'prohibited' ? 'text-red-600 dark:text-red-400' :
+                  industryWarning.tier === 'low_probability' ? 'text-orange-600 dark:text-orange-400' :
+                  'text-blue-600 dark:text-blue-400'
+                }`}>
+                  {industryWarning.message}
+                </p>
+              )}
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -199,6 +307,10 @@ export default function LeadsPage() {
   const [converting, setConverting] = useState(false);
   const [emailLead, setEmailLead] = useState<Lead | null>(null);
 
+  // Knockout dialog state
+  const [knockoutDialogType, setKnockoutDialogType] = useState<'prohibited' | 'low_probability' | 'bluefield' | null>(null);
+  const [knockoutDialogResult, setKnockoutDialogResult] = useState<LocalKnockoutResult | null>(null);
+
   const { data, isLoading } = useLeads({ page, limit: 25 });
   const createLead = useCreateLead();
   const updateLead = useUpdateLead();
@@ -207,6 +319,7 @@ export default function LeadsPage() {
   const createContact = useCreateContact();
   const createDeal = useCreateDeal();
   const createActivity = useCreateActivity();
+  const { data: knockoutRules = [] } = useKnockoutRules();
 
   const filteredLeads = useMemo(() => {
     if (!data?.data) return [];
@@ -218,6 +331,16 @@ export default function LeadsPage() {
         (l.decision_maker_name ?? "").toLowerCase().includes(q)
     );
   }, [data?.data, search]);
+
+  // Pre-compute knockout results for all visible leads
+  const knockoutMap = useMemo(() => {
+    const map = new Map<string, LocalKnockoutResult>();
+    if (knockoutRules.length === 0) return map;
+    for (const lead of filteredLeads) {
+      map.set(lead.id, checkKnockoutLocal(lead.industry, knockoutRules));
+    }
+    return map;
+  }, [filteredLeads, knockoutRules]);
 
   const handleFormSubmit = async (values: LeadFormValues) => {
     try {
@@ -258,7 +381,21 @@ export default function LeadsPage() {
     }
   };
 
-  const handleConvert = async () => {
+  // Initiate conversion — check knockout first
+  const initiateConvert = useCallback((lead: Lead) => {
+    const result = checkKnockoutLocal(lead.industry, knockoutRules);
+    if (result.tier === 'clear') {
+      setConvertLead(lead);
+      setKnockoutDialogType(null);
+      setKnockoutDialogResult(null);
+    } else {
+      setConvertLead(lead);
+      setKnockoutDialogType(result.tier);
+      setKnockoutDialogResult(result);
+    }
+  }, [knockoutRules]);
+
+  const handleConvert = async (addConditionsToNotes = false) => {
     if (!convertLead) return;
     setConverting(true);
     try {
@@ -279,12 +416,22 @@ export default function LeadsPage() {
         company: convertLead.company_name,
       });
 
+      let dealNotes: string | undefined;
+      if (addConditionsToNotes && knockoutDialogResult) {
+        const conditionNotes = knockoutDialogResult.matchedRules
+          .filter(r => r.conditions)
+          .map(r => `${r.industry_name}: ${r.conditions}`)
+          .join('\n');
+        dealNotes = conditionNotes ? `BLUEFIELD CONDITIONS:\n${conditionNotes}` : undefined;
+      }
+
       await createDeal.mutateAsync({
         title: `${convertLead.company_name} - ADP TotalSource`,
         value: 0,
         stage: "qualified",
         contact_id: contact.id,
         company_id: company.id,
+        notes: dealNotes,
       });
 
       await updateLead.mutateAsync({ id: convertLead.id, status: "converted" });
@@ -299,6 +446,8 @@ export default function LeadsPage() {
     } finally {
       setConverting(false);
       setConvertLead(null);
+      setKnockoutDialogType(null);
+      setKnockoutDialogResult(null);
     }
   };
 
@@ -387,6 +536,7 @@ export default function LeadsPage() {
               <TableHead className="hidden lg:table-cell">State</TableHead>
               <TableHead className="hidden xl:table-cell">Trigger Event</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Eligibility</TableHead>
               <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
@@ -394,7 +544,7 @@ export default function LeadsPage() {
             {isLoading
               ? Array.from({ length: 8 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 8 }).map((_, j) => (
+                    {Array.from({ length: 9 }).map((_, j) => (
                       <TableCell key={j}>
                         <Skeleton className="h-4 w-full" />
                       </TableCell>
@@ -403,68 +553,74 @@ export default function LeadsPage() {
                 ))
               : filteredLeads.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground py-12">
+                    <TableCell colSpan={9} className="text-center text-muted-foreground py-12">
                       <Users className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
                       <p className="font-medium">No leads yet</p>
                       <p className="text-sm mt-1">Start discovering leads to fill your pipeline!</p>
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredLeads.map((lead) => (
-                    <TableRow key={lead.id}>
-                      <TableCell className="font-medium">{lead.company_name}</TableCell>
-                      <TableCell>
-                        <div>{lead.decision_maker_name ?? "—"}</div>
-                        {lead.decision_maker_title && (
-                          <div className="text-xs text-muted-foreground">{lead.decision_maker_title}</div>
-                        )}
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">{lead.headcount ?? "—"}</TableCell>
-                      <TableCell className="hidden lg:table-cell">{lead.industry ?? "—"}</TableCell>
-                      <TableCell className="hidden lg:table-cell">{lead.state ?? "—"}</TableCell>
-                      <TableCell className="hidden xl:table-cell max-w-[200px] truncate">
-                        {lead.trigger_event ? (lead.trigger_event.length > 50 ? lead.trigger_event.slice(0, 50) + "…" : lead.trigger_event) : "—"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={statusColors[lead.status ?? "new"] ?? statusColors.new} variant="outline">
-                          {lead.status ?? "new"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleStatusAction(lead, "contacted", "status_change", `Lead "${lead.company_name}" marked as contacted`)}>
-                              <Phone className="h-4 w-4 mr-2" /> Mark Contacted
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleStatusAction(lead, "qualified", "status_change", `Lead "${lead.company_name}" qualified`)}>
-                              <UserCheck className="h-4 w-4 mr-2" /> Qualify
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setConvertLead(lead)}>
-                              <ArrowRightLeft className="h-4 w-4 mr-2" /> Convert to Deal
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setEmailLead(lead)}>
-                              <FileText className="h-4 w-4 mr-2" /> Draft Email
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleStatusAction(lead, "dismissed", "status_change", `Lead "${lead.company_name}" dismissed`)}>
-                              <XCircle className="h-4 w-4 mr-2" /> Dismiss
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => openEdit(lead)}>
-                              <Pencil className="h-4 w-4 mr-2" /> Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(lead.id)}>
-                              <Trash2 className="h-4 w-4 mr-2" /> Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  filteredLeads.map((lead) => {
+                    const ko = knockoutMap.get(lead.id) ?? { tier: 'clear' as const, matchedRules: [], message: '' };
+                    return (
+                      <TableRow key={lead.id}>
+                        <TableCell className="font-medium">{lead.company_name}</TableCell>
+                        <TableCell>
+                          <div>{lead.decision_maker_name ?? "—"}</div>
+                          {lead.decision_maker_title && (
+                            <div className="text-xs text-muted-foreground">{lead.decision_maker_title}</div>
+                          )}
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">{lead.headcount ?? "—"}</TableCell>
+                        <TableCell className="hidden lg:table-cell">{lead.industry ?? "—"}</TableCell>
+                        <TableCell className="hidden lg:table-cell">{lead.state ?? "—"}</TableCell>
+                        <TableCell className="hidden xl:table-cell max-w-[200px] truncate">
+                          {lead.trigger_event ? (lead.trigger_event.length > 50 ? lead.trigger_event.slice(0, 50) + "…" : lead.trigger_event) : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={statusColors[lead.status ?? "new"] ?? statusColors.new} variant="outline">
+                            {lead.status ?? "new"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <EligibilityBadge tier={ko.tier} message={ko.message} />
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleStatusAction(lead, "contacted", "status_change", `Lead "${lead.company_name}" marked as contacted`)}>
+                                <Phone className="h-4 w-4 mr-2" /> Mark Contacted
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleStatusAction(lead, "qualified", "status_change", `Lead "${lead.company_name}" qualified`)}>
+                                <UserCheck className="h-4 w-4 mr-2" /> Qualify
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => initiateConvert(lead)}>
+                                <ArrowRightLeft className="h-4 w-4 mr-2" /> Convert to Deal
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setEmailLead(lead)}>
+                                <FileText className="h-4 w-4 mr-2" /> Draft Email
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleStatusAction(lead, "dismissed", "status_change", `Lead "${lead.company_name}" dismissed`)}>
+                                <XCircle className="h-4 w-4 mr-2" /> Dismiss
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => openEdit(lead)}>
+                                <Pencil className="h-4 w-4 mr-2" /> Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(lead.id)}>
+                                <Trash2 className="h-4 w-4 mr-2" /> Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
           </TableBody>
         </Table>
@@ -497,10 +653,95 @@ export default function LeadsPage() {
         editingLead={editingLead}
         onSubmit={handleFormSubmit}
         isSubmitting={createLead.isPending || updateLead.isPending}
+        knockoutRules={knockoutRules}
       />
 
-      {/* Convert Confirmation */}
-      <AlertDialog open={!!convertLead} onOpenChange={(v) => !v && setConvertLead(null)}>
+      {/* Convert Confirmation — Prohibited */}
+      <AlertDialog
+        open={!!convertLead && knockoutDialogType === 'prohibited'}
+        onOpenChange={(v) => { if (!v) { setConvertLead(null); setKnockoutDialogType(null); setKnockoutDialogResult(null); } }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>⛔ Industry Prohibited</AlertDialogTitle>
+            <AlertDialogDescription>
+              This industry is PROHIBITED by ADP TotalSource WC underwriting guidelines. This lead cannot be converted to a deal.
+              {knockoutDialogResult && (
+                <span className="block mt-2 text-xs text-muted-foreground">
+                  Matched: {knockoutDialogResult.matchedRules.map(r => r.industry_name).join(', ')}
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => { setConvertLead(null); setKnockoutDialogType(null); setKnockoutDialogResult(null); }}>
+              Dismiss
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Convert Confirmation — Low Probability */}
+      <AlertDialog
+        open={!!convertLead && knockoutDialogType === 'low_probability'}
+        onOpenChange={(v) => { if (!v) { setConvertLead(null); setKnockoutDialogType(null); setKnockoutDialogResult(null); } }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>⚠️ Low Probability Industry</AlertDialogTitle>
+            <AlertDialogDescription>
+              This industry has a LOW PROBABILITY of approval (95-99% prohibited). Only best-in-class prospects are considered. Are you sure you want to convert?
+              {knockoutDialogResult && (
+                <span className="block mt-2 text-xs text-muted-foreground">
+                  Matched: {knockoutDialogResult.matchedRules.map(r => r.industry_name).join(', ')}
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={converting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleConvert()} disabled={converting}>
+              {converting ? "Converting…" : "Convert Anyway"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Convert Confirmation — Bluefield */}
+      <AlertDialog
+        open={!!convertLead && knockoutDialogType === 'bluefield'}
+        onOpenChange={(v) => { if (!v) { setConvertLead(null); setKnockoutDialogType(null); setKnockoutDialogResult(null); } }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>🔵 Bluefield Review Required</AlertDialogTitle>
+            <AlertDialogDescription>
+              This industry requires BLUEFIELD review with specific conditions:
+              {knockoutDialogResult && (
+                <span className="block mt-2 font-medium">
+                  {knockoutDialogResult.matchedRules
+                    .filter(r => r.conditions)
+                    .map(r => `${r.industry_name}: ${r.conditions}`)
+                    .join('\n') || 'No specific conditions listed.'}
+                </span>
+              )}
+              <span className="block mt-2">Proceed with conversion?</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={converting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleConvert(true)} disabled={converting}>
+              {converting ? "Converting…" : "Convert with Conditions"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Convert Confirmation — Clear (normal) */}
+      <AlertDialog
+        open={!!convertLead && knockoutDialogType === null}
+        onOpenChange={(v) => !v && setConvertLead(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Convert Lead to Deal</AlertDialogTitle>
@@ -510,7 +751,7 @@ export default function LeadsPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={converting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConvert} disabled={converting}>
+            <AlertDialogAction onClick={() => handleConvert()} disabled={converting}>
               {converting ? "Converting…" : "Convert"}
             </AlertDialogAction>
           </AlertDialogFooter>

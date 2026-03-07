@@ -1,48 +1,28 @@
 
 
-## Plan: Persist AI Chat History Between Sessions
+## Update `scheduled-discovery` Edge Function
 
-Save chat conversations to the database so they survive page refreshes and sessions.
+### Changes to `supabase/functions/scheduled-discovery/index.ts`
 
-### Database Change
+Full rewrite of the edge function with these enhancements:
 
-Create a `chat_messages` table:
+**1. Enhanced System Prompt** — Replace `DISCOVERY_PROMPT` with comprehensive product-aware prompt including:
+- Ideal prospect criteria (5-150 employees sweet spot, eligible industries, target decision makers)
+- 8 trigger event types with corresponding ADP capabilities to reference in pitches
+- Industry-specific pitch guidance (compliance → EPLI/Compliance Compass, benefits → 742K buying power, safety → Nurse Navigator, growth → multi-state/G-P, talent → 500+ courses)
+- Full prohibited and low-probability industry lists from knockout rules
+- Instruction to generate `ai_pitch_summary` (2-3 sentences referencing specific capabilities) and `trigger_type` for each lead
 
-```sql
-CREATE TABLE public.chat_messages (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  role text NOT NULL CHECK (role IN ('user', 'assistant')),
-  content text NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
+**2. JWT Authentication** — Add `supabase.auth.getUser()` validation before processing (same pattern as ai-chat). Create authenticated client from Authorization header, fall back to service role client for DB writes.
 
-ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+**3. Duplicate Detection** — After AI generates leads, query the `leads` table with case-insensitive `ilike` on `company_name` for each lead. Skip duplicates; track skipped count in response.
 
-CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
-CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
-CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
+**4. AI Pitch Storage** — Save the AI-generated `ai_pitch_summary` field into the leads table (already a column on the table).
 
-CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
-```
+**5. Response** — Return `{ found, saved, skipped, errors }`.
 
-### Code Changes — `src/components/AIChatWidget.tsx`
-
-1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
-
-2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
-
-3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
-
-4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
-
-### Data flow
-
-```text
-User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
-Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
-Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
-```
-
-No new hooks file needed — keep the logic inline in the widget since it's self-contained.
+### No other file changes needed
+- `supabase/config.toml` already has `[functions.scheduled-discovery] verify_jwt = false`
+- `AIDiscoveryPage.tsx` already passes auth header via `supabase.functions.invoke`
+- Model stays `google/gemini-2.5-flash` (stable)
 

@@ -63,6 +63,7 @@ export interface Activity {
   description: string;
   contact_id: string | null;
   deal_id: string | null;
+  lead_id: string | null;
   created_at: string | null;
 }
 

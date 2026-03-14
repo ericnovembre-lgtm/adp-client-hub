@@ -1,7 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
-import { format } from "date-fns";
-import type { Lead } from "@/types/database";
+import { format, formatDistanceToNow } from "date-fns";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import type { Lead, Activity } from "@/types/database";
 import { useUpdateLead } from "@/hooks/useLeads";
+import { useCreateActivity } from "@/hooks/useActivities";
 import { useKnockoutRules } from "@/hooks/useKnockoutRules";
 import { checkKnockoutLocal } from "@/lib/knockoutLocal";
 import EligibilityBadge from "@/components/EligibilityBadge";
@@ -10,6 +13,7 @@ import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,8 +21,33 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Building2, User, Mail, Phone, Globe, MapPin, Users, Briefcase,
-  Zap, Clock, Sparkles, Tag, Pencil, X, Save, Loader2, FileText, ArrowRightLeft,
+  Zap, Clock, Sparkles, Tag, Pencil, X, Save, Loader2, FileText, ArrowRightLeft, Send,
 } from "lucide-react";
+
+function useLeadActivities(leadId: string | undefined) {
+  return useQuery({
+    queryKey: ["activities", "lead", leadId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("activities")
+        .select("*")
+        .eq("lead_id", leadId!)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data as Activity[];
+    },
+    enabled: !!leadId,
+  });
+}
+
+const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
+  note: <FileText className="h-3.5 w-3.5" />,
+  call: <Phone className="h-3.5 w-3.5" />,
+  email: <Mail className="h-3.5 w-3.5" />,
+};
+
+const ACTIVITY_TYPES = ["note", "call", "email"] as const;
 
 const statusColors: Record<string, string> = {
   new: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",

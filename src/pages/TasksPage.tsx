@@ -84,47 +84,7 @@ function relativeDue(dateStr: string): string {
   return `In ${diff} days`;
 }
 
-// ── Searchable Combobox ──
-function SearchableSelect({
-  items, value, onChange, placeholder, searchPlaceholder,
-}: {
-  items: { value: string; label: string }[];
-  value: string;
-  onChange: (v: string) => void;
-  placeholder: string;
-  searchPlaceholder: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const selected = items.find((i) => i.value === value);
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
-          {selected ? selected.label : <span className="text-muted-foreground">{placeholder}</span>}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0 pointer-events-auto" align="start">
-        <Command>
-          <CommandInput placeholder={searchPlaceholder} />
-          <CommandList>
-            <CommandEmpty>No results.</CommandEmpty>
-            <CommandGroup>
-              <CommandItem value="__none__" onSelect={() => { onChange(""); setOpen(false); }}>
-                <Check className={cn("mr-2 h-4 w-4", !value ? "opacity-100" : "opacity-0")} />None
-              </CommandItem>
-              {items.map((item) => (
-                <CommandItem key={item.value} value={item.label} onSelect={() => { onChange(item.value); setOpen(false); }}>
-                  <Check className={cn("mr-2 h-4 w-4", value === item.value ? "opacity-100" : "opacity-0")} />{item.label}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
-}
+
 
 // ── Schema ──
 const taskSchema = z.object({

@@ -52,6 +52,7 @@ function LinkedContactsList({ companyId }: { companyId: string }) {
   );
 }
 
+const companySchema = z.object({
   name: z.string().trim().min(1, "Company name is required").max(200, "Max 200 characters"),
   industry: z.string().max(200).optional().or(z.literal("")),
   website: z.string().max(500).optional().or(z.literal("")),

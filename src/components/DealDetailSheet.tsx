@@ -82,7 +82,7 @@ export default function DealDetailSheet({
             {deal.value != null && (
               <div className="flex items-center gap-2 text-muted-foreground">
                 <DollarSign className="h-4 w-4" />
-                <span className="font-semibold text-foreground">${deal.value.toLocaleString()}</span>
+                <span className="font-semibold text-foreground">${deal.value.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
               </div>
             )}
             {companyName && (

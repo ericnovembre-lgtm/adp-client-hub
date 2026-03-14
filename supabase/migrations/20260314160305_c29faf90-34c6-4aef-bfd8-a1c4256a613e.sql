@@ -1,0 +1,1 @@
+ALTER TABLE public.deals ALTER COLUMN value TYPE numeric(12,2);

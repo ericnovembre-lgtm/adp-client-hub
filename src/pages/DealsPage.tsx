@@ -373,7 +373,7 @@ function KanbanView({
                       </div>
                       {deal.value != null && (
                         <div className="flex items-center gap-1 text-sm font-semibold text-primary">
-                          <DollarSign className="h-3.5 w-3.5" />{deal.value.toLocaleString()}
+                          <DollarSign className="h-3.5 w-3.5" />{deal.value.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                         </div>
                       )}
                       <div className="space-y-1 text-xs text-muted-foreground">

@@ -167,7 +167,7 @@ export default function ReportsPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="stage" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
                   <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-                  <Tooltip formatter={(value: number) => [`$${value.toLocaleString()}`, "Value"]} />
+                  <Tooltip formatter={(value: number) => [`$${value.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`, "Value"]} />
                   <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                     {(pipeline.data ?? []).map((entry) => (
                       <Cell key={entry.key} fill={STAGE_COLORS[entry.key] ?? "hsl(var(--primary))"} />

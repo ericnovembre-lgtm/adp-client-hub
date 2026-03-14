@@ -65,6 +65,8 @@ export default function LeadDetailSheet({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onLeadUpdated?: () => void;
+  onDraftEmail?: (lead: Lead) => void;
+  onConvertToDeal?: (lead: Lead) => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<Partial<Lead>>({});

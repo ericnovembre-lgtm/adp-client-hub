@@ -25,14 +25,14 @@ const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
 };
 
 function useEntityActivities(entityType: "lead" | "contact" | "deal", entityId: string | undefined) {
-  const filterCol = `${entityType}_id`;
   return useQuery({
     queryKey: ["activities", entityType, entityId],
     queryFn: async () => {
+      const col = `${entityType}_id` as "lead_id" | "contact_id" | "deal_id";
       const { data, error } = await supabase
         .from("activities")
         .select("*")
-        .eq(filterCol, entityId!)
+        .eq(col, entityId!)
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;

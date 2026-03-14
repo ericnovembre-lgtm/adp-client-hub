@@ -1,7 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { format } from "date-fns";
 import type { Lead } from "@/types/database";
 import { useUpdateLead } from "@/hooks/useLeads";
+import { useKnockoutRules } from "@/hooks/useKnockoutRules";
+import { checkKnockoutLocal } from "@/lib/knockoutLocal";
+import EligibilityBadge from "@/components/EligibilityBadge";
 import { toast } from "sonner";
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -71,6 +74,12 @@ export default function LeadDetailSheet({
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<Partial<Lead>>({});
   const updateLead = useUpdateLead();
+  const { data: knockoutRules = [] } = useKnockoutRules();
+
+  const knockoutResult = useMemo(() => {
+    if (!lead) return null;
+    return checkKnockoutLocal(lead.industry, knockoutRules);
+  }, [lead?.industry, knockoutRules]);
 
   useEffect(() => {
     if (!open) setIsEditing(false);
@@ -173,6 +182,18 @@ export default function LeadDetailSheet({
                 {lead.status ?? "new"}
               </Badge>
               {lead.source && <Badge variant="secondary">{lead.source}</Badge>}
+              {knockoutResult && <EligibilityBadge tier={knockoutResult.tier} message={knockoutResult.message} />}
+            </div>
+          )}
+
+          {/* Knockout Warning */}
+          {!isEditing && knockoutResult && knockoutResult.tier !== 'clear' && (
+            <div className={`rounded-md border p-3 text-xs ${
+              knockoutResult.tier === 'prohibited' ? 'border-red-300 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-300' :
+              knockoutResult.tier === 'low_probability' ? 'border-orange-300 bg-orange-50 text-orange-800 dark:border-orange-800 dark:bg-orange-950 dark:text-orange-300' :
+              'border-blue-300 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300'
+            }`}>
+              {knockoutResult.message}
             </div>
           )}
 

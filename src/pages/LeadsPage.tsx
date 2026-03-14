@@ -310,6 +310,7 @@ export default function LeadsPage() {
   const [emailLead, setEmailLead] = useState<Lead | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [detailLead, setDetailLead] = useState<Lead | null>(null);
   const [bulkActionPending, setBulkActionPending] = useState(false);
 
   // Knockout dialog state

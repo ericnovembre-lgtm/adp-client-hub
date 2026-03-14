@@ -12,6 +12,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Deal, Contact, Company } from "@/types/database";
+import { DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors, useDraggable, useDroppable } from "@dnd-kit/core";
+import type { DragStartEvent, DragEndEvent } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +33,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, Pencil, Trash2, MoreHorizontal, CalendarIcon, DollarSign, ArrowRight, Download, Loader2 } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, MoreHorizontal, CalendarIcon, DollarSign, ArrowRight, Download, Loader2, GripVertical } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import DealDetailSheet from "@/components/DealDetailSheet";
 
@@ -216,6 +220,27 @@ function DealFormDialog({
   );
 }
 
+// ── Droppable Column ──
+function DroppableColumn({ stage, children }: { stage: string; children: React.ReactNode }) {
+  const { setNodeRef, isOver } = useDroppable({ id: stage });
+  return (
+    <div ref={setNodeRef} className={cn("transition-all duration-150", isOver && "ring-2 ring-primary/40 bg-primary/5 rounded-lg")}>
+      {children}
+    </div>
+  );
+}
+
+// ── Draggable Card ──
+function DraggableCard({ deal, children }: { deal: Deal; children: (dragHandleProps: { listeners: any; attributes: any }) => React.ReactNode }) {
+  const { setNodeRef, attributes, listeners, transform, isDragging } = useDraggable({ id: deal.id });
+  const style = transform ? { transform: CSS.Transform.toString(transform) } : undefined;
+  return (
+    <div ref={setNodeRef} style={style} className={cn(isDragging && "opacity-50")}>
+      {children({ listeners, attributes })}
+    </div>
+  );
+}
+
 // ── Kanban View ──
 function KanbanView({
   deals,
@@ -234,6 +259,12 @@ function KanbanView({
 }) {
   const updateDeal = useUpdateDeal();
   const createActivity = useCreateActivity();
+  const isMobile = useIsMobile();
+  const [activeDealId, setActiveDealId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
 
   const grouped = useMemo(() => {
     const map: Record<Stage, Deal[]> = { lead: [], qualified: [], proposal: [], negotiation: [], closed_won: [], closed_lost: [] };
@@ -247,6 +278,9 @@ function KanbanView({
 
   const contactMap = useMemo(() => new Map(contacts.map((c) => [c.id, `${c.first_name} ${c.last_name}`])), [contacts]);
   const companyMap = useMemo(() => new Map(companies.map((c) => [c.id, c.name])), [companies]);
+  const dealMap = useMemo(() => new Map(deals.map((d) => [d.id, d])), [deals]);
+
+  const activeDeal = activeDealId ? dealMap.get(activeDealId) ?? null : null;
 
   const moveDeal = async (deal: Deal, newStage: Stage) => {
     const oldStage = deal.stage ?? "lead";
@@ -264,66 +298,128 @@ function KanbanView({
     }
   };
 
-  return (
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveDealId(String(event.active.id));
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveDealId(null);
+    const { active, over } = event;
+    if (!over) return;
+    const deal = dealMap.get(String(active.id));
+    const targetStage = String(over.id) as Stage;
+    if (deal && STAGES.includes(targetStage)) {
+      moveDeal(deal, targetStage);
+    }
+  };
+
+  const renderDealCard = (deal: Deal, stage: Stage, dragHandleProps?: { listeners: any; attributes: any }) => (
+    <Card className="transition-shadow hover:shadow-md">
+      <CardContent className="p-3 space-y-2">
+        <div className="flex items-start justify-between">
+          <div className="flex items-start gap-1.5 min-w-0 flex-1">
+            {!isMobile && dragHandleProps && (
+              <button
+                {...dragHandleProps.listeners}
+                {...dragHandleProps.attributes}
+                className="mt-0.5 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none"
+              >
+                <GripVertical className="h-3.5 w-3.5" />
+              </button>
+            )}
+            <button onClick={() => onClickDeal(deal)} className="font-medium text-sm leading-tight text-primary hover:underline text-left">{deal.title}</button>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0"><MoreHorizontal className="h-3.5 w-3.5" /></Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger><ArrowRight className="h-4 w-4 mr-2" />Move to</DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  {STAGES.filter((s) => s !== stage).map((s) => (
+                    <DropdownMenuItem key={s} onClick={() => moveDeal(deal, s)}>{STAGE_LABELS[s]}</DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => onEdit(deal)}><Pencil className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onDelete(deal.id)} className="text-destructive"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        {deal.value != null && (
+          <div className="flex items-center gap-1 text-sm font-semibold text-primary">
+            <DollarSign className="h-3.5 w-3.5" />{deal.value.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+          </div>
+        )}
+        <div className="space-y-1 text-xs text-muted-foreground">
+          {deal.company_id && companyMap.has(deal.company_id) && <p>{companyMap.get(deal.company_id)}</p>}
+          {deal.contact_id && contactMap.has(deal.contact_id) && <p>{contactMap.get(deal.contact_id)}</p>}
+          {deal.expected_close_date && <p>Close: {format(new Date(deal.expected_close_date), "MMM d, yyyy")}</p>}
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderColumns = () => (
     <div className="flex gap-4 overflow-x-auto pb-4">
       {STAGES.map((stage) => {
         const stageDeals = grouped[stage];
         const totalValue = stageDeals.reduce((sum, d) => sum + (d.value ?? 0), 0);
         return (
-          <div key={stage} className={cn("flex-shrink-0 w-72 rounded-lg border bg-muted/30 border-t-4", STAGE_HEADER_COLORS[stage] ?? "border-t-border")}>
-            <div className="p-3 border-b">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-sm">{STAGE_LABELS[stage]}</h3>
-                <Badge variant="secondary" className="text-xs">{stageDeals.length}</Badge>
+          <DroppableColumn key={stage} stage={stage}>
+            <div className={cn("flex-shrink-0 w-72 rounded-lg border bg-muted/30 border-t-4", STAGE_HEADER_COLORS[stage] ?? "border-t-border")}>
+              <div className="p-3 border-b">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-sm">{STAGE_LABELS[stage]}</h3>
+                  <Badge variant="secondary" className="text-xs">{stageDeals.length}</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">{fmtCurrency(totalValue)} total</p>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">{fmtCurrency(totalValue)} total</p>
+              <ScrollArea className="h-[calc(100vh-320px)]">
+                <div className="p-2 space-y-2">
+                  {stageDeals.map((deal) =>
+                    isMobile ? (
+                      <div key={deal.id}>{renderDealCard(deal, stage)}</div>
+                    ) : (
+                      <DraggableCard key={deal.id} deal={deal}>
+                        {(dragHandleProps) => renderDealCard(deal, stage, dragHandleProps)}
+                      </DraggableCard>
+                    )
+                  )}
+                  {stageDeals.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">No deals</p>}
+                </div>
+              </ScrollArea>
             </div>
-            <ScrollArea className="h-[calc(100vh-320px)]">
-              <div className="p-2 space-y-2">
-                {stageDeals.map((deal) => (
-                  <Card key={deal.id} className="transition-shadow hover:shadow-md">
-                    <CardContent className="p-3 space-y-2">
-                      <div className="flex items-start justify-between">
-                        <button onClick={() => onClickDeal(deal)} className="font-medium text-sm leading-tight text-primary hover:underline text-left">{deal.title}</button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0"><MoreHorizontal className="h-3.5 w-3.5" /></Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuSub>
-                              <DropdownMenuSubTrigger><ArrowRight className="h-4 w-4 mr-2" />Move to</DropdownMenuSubTrigger>
-                              <DropdownMenuSubContent>
-                                {STAGES.filter((s) => s !== stage).map((s) => (
-                                  <DropdownMenuItem key={s} onClick={() => moveDeal(deal, s)}>{STAGE_LABELS[s]}</DropdownMenuItem>
-                                ))}
-                              </DropdownMenuSubContent>
-                            </DropdownMenuSub>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => onEdit(deal)}><Pencil className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onDelete(deal.id)} className="text-destructive"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                      {deal.value != null && (
-                        <div className="flex items-center gap-1 text-sm font-semibold text-primary">
-                          <DollarSign className="h-3.5 w-3.5" />{deal.value.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
-                        </div>
-                      )}
-                      <div className="space-y-1 text-xs text-muted-foreground">
-                        {deal.company_id && companyMap.has(deal.company_id) && <p>{companyMap.get(deal.company_id)}</p>}
-                        {deal.contact_id && contactMap.has(deal.contact_id) && <p>{contactMap.get(deal.contact_id)}</p>}
-                        {deal.expected_close_date && <p>Close: {format(new Date(deal.expected_close_date), "MMM d, yyyy")}</p>}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-                {stageDeals.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">No deals</p>}
-              </div>
-            </ScrollArea>
-          </div>
+          </DroppableColumn>
         );
       })}
     </div>
+  );
+
+  if (isMobile) {
+    return renderColumns();
+  }
+
+  return (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      {renderColumns()}
+      <DragOverlay>
+        {activeDeal ? (
+          <Card className="w-72 shadow-lg border-primary/50">
+            <CardContent className="p-3 space-y-1">
+              <p className="font-medium text-sm">{activeDeal.title}</p>
+              {activeDeal.value != null && (
+                <div className="flex items-center gap-1 text-sm font-semibold text-primary">
+                  <DollarSign className="h-3.5 w-3.5" />{activeDeal.value.toLocaleString("en-US")}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }
 

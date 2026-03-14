@@ -1,44 +1,48 @@
 
 
-## Plan: Add Drag-and-Drop to Deal Pipeline Kanban
+## Plan: Persist AI Chat History Between Sessions
 
-### Dependencies
+Save chat conversations to the database so they survive page refreshes and sessions.
 
-Add `@dnd-kit/core` and `@dnd-kit/sortable` to `package.json`.
+### Database Change
 
-### Changes to `src/pages/DealsPage.tsx` — KanbanView only
+Create a `chat_messages` table:
 
-**1. Import dnd-kit + GripVertical + useIsMobile**
-- `DndContext`, `DragOverlay`, `closestCenter`, `PointerSensor`, `useSensor`, `useSensors` from `@dnd-kit/core`
-- `useDraggable`, `useDroppable` from `@dnd-kit/core`
-- `GripVertical` from `lucide-react`
-- `useIsMobile` from `@/hooks/use-mobile`
+```sql
+CREATE TABLE public.chat_messages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  role text NOT NULL CHECK (role IN ('user', 'assistant')),
+  content text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
 
-**2. Wrap stage columns in `DndContext`**
-- Add `PointerSensor` with activation constraint (`distance: 8`) to avoid accidental drags
-- `onDragStart` → set `activeDealId` state (for overlay)
-- `onDragEnd` → extract deal id from `active.id`, target stage from `over.id`, call existing `moveDeal()`
+ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
 
-**3. Make each stage column droppable**
-- Extract a `DroppableColumn` wrapper that calls `useDroppable({ id: stage })`
-- When `isOver` is true, add a highlight border/bg class (e.g. `ring-2 ring-primary/40 bg-primary/5`)
+CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
+CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
 
-**4. Make each deal card draggable**
-- Extract a `DraggableCard` wrapper that calls `useDraggable({ id: deal.id })`
-- Apply transform style from `useDraggable`
-- Add `GripVertical` icon as drag handle (left side of card title) — pass `listeners` and `attributes` to the grip icon only
-- While dragging, reduce opacity on the original card (`isDragging → opacity-50`)
+CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
+```
 
-**5. DragOverlay**
-- Render a simplified card clone (title + value) inside `DragOverlay` for smooth visual feedback
+### Code Changes — `src/components/AIChatWidget.tsx`
 
-**6. Mobile guard**
-- Check `useIsMobile()` in KanbanView
-- If mobile: skip DndContext wrapper, hide GripVertical icons — dropdown-only fallback
+1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
 
-### Files changed
-- `package.json` — add 2 dependencies
-- `src/pages/DealsPage.tsx` — modify KanbanView component (~80 lines added)
+2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
 
-No changes to ListView, DealDetailSheet, or any other file.
+3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
+
+4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
+
+### Data flow
+
+```text
+User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
+Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
+Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
+```
+
+No new hooks file needed — keep the logic inline in the widget since it's self-contained.
 

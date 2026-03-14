@@ -197,7 +197,7 @@ function DealFormDialog({
             </div>
             <FormField control={form.control} name="contact_id" render={({ field }) => (
               <FormItem><FormLabel>Contact</FormLabel><FormControl>
-                <SearchableSelect items={contactItems} value={field.value ?? ""} onChange={field.onChange} placeholder="Select contact" searchPlaceholder="Search contacts…" />
+                <SearchableSelect options={contactItems} value={field.value ?? ""} onValueChange={field.onChange} placeholder="Select contact" searchPlaceholder="Search contacts…" />
               </FormControl><FormMessage /></FormItem>
             )} />
             <FormField control={form.control} name="company_id" render={({ field }) => (

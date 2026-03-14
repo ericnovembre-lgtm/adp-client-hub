@@ -131,7 +131,7 @@ export default function AIDiscoveryPage() {
         ...settings,
         scheduler_enabled: enabled,
         scheduler_frequency: frequency,
-      } as any);
+      });
     }
   }, [settings, frequency, user, updateSettings]);
 

@@ -80,12 +80,12 @@ export function useActivityOverTime(filters: ReportsFilters) {
         .order("created_at");
       if (error) throw error;
 
-      const dayMap = new Map<string, { date: string; call: number; email: number; meeting: number; note: number }>();
+      const dayMap = new Map<string, { date: string; [key: string]: string | number }>();
       for (const a of data) {
         const day = format(new Date(a.created_at!), "MMM dd");
         if (!dayMap.has(day)) dayMap.set(day, { date: day, call: 0, email: 0, meeting: 0, note: 0 });
         const entry = dayMap.get(day)!;
-        if (a.type in entry) (entry as any)[a.type]++;
+        if (a.type in entry) (entry[a.type] as number)++;
       }
       return Array.from(dayMap.values());
     },

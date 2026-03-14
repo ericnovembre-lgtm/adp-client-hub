@@ -67,9 +67,8 @@ export default function AIDiscoveryPage() {
       if (settings.defaultHeadcountMin && !headcountMin) setHeadcountMin(String(settings.defaultHeadcountMin));
       if (settings.defaultHeadcountMax && !headcountMax) setHeadcountMax(String(settings.defaultHeadcountMax));
 
-      const s = settings as any;
-      if (s.scheduler_enabled !== undefined) setSchedulerEnabled(s.scheduler_enabled);
-      if (s.scheduler_frequency) setFrequency(s.scheduler_frequency);
+      if (settings.scheduler_enabled !== undefined) setSchedulerEnabled(settings.scheduler_enabled);
+      if (settings.scheduler_frequency) setFrequency(settings.scheduler_frequency);
     }
   }, [settings]);
 
@@ -119,7 +118,7 @@ export default function AIDiscoveryPage() {
     onError: () => {
       // Update status to error
       if (settings && user) {
-        updateSettings.mutate({ ...settings, scheduler_status: "error" } as any);
+        updateSettings.mutate({ ...settings, scheduler_status: "error" });
       }
     },
   });
@@ -132,7 +131,7 @@ export default function AIDiscoveryPage() {
         ...settings,
         scheduler_enabled: enabled,
         scheduler_frequency: frequency,
-      } as any);
+      });
     }
   }, [settings, frequency, user, updateSettings]);
 
@@ -143,7 +142,7 @@ export default function AIDiscoveryPage() {
       await updateSettings.mutateAsync({
         ...settings,
         scheduler_frequency: freq,
-      } as any);
+      });
     }
   }, [settings, user, updateSettings]);
 
@@ -157,7 +156,7 @@ export default function AIDiscoveryPage() {
     if (schedulerEnabled && user) {
       const intervalMs = getIntervalMs(frequency);
       // Check if we should run now based on last run
-      const lastRun = (settings as any)?.scheduler_last_run;
+      const lastRun = settings?.scheduler_last_run;
       if (lastRun) {
         const elapsed = Date.now() - new Date(lastRun).getTime();
         if (elapsed >= intervalMs) {
@@ -175,9 +174,9 @@ export default function AIDiscoveryPage() {
     };
   }, [schedulerEnabled, frequency, user]);
 
-  const lastRun = (settings as any)?.scheduler_last_run;
-  const lastCount = (settings as any)?.scheduler_last_count;
-  const schedulerStatus = (settings as any)?.scheduler_status;
+  const lastRun = settings?.scheduler_last_run;
+  const lastCount = settings?.scheduler_last_count;
+  const schedulerStatus = settings?.scheduler_status;
   const isRunning = manualDiscover.isPending || schedulerRun.isPending;
 
   const nextRunEstimate = lastRun

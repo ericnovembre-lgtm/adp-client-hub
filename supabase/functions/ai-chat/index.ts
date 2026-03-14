@@ -7,6 +7,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const KNOWLEDGE_VERSION = "2026-03-14-v1";
+
 // NOTE: Product knowledge below mirrors src/lib/adpProductKnowledge.ts — keep in sync when updating.
 const SYSTEM_PROMPT = `You are an expert ADP TotalSource sales consultant AI assistant embedded in the SavePlus24 CRM. You help the sales rep craft outreach, answer product questions, and strategize deals.
 

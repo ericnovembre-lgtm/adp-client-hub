@@ -244,7 +244,15 @@ export default function LeadsPage() {
   const [knockoutDialogType, setKnockoutDialogType] = useState<'prohibited' | 'low_probability' | 'bluefield' | null>(null);
   const [knockoutDialogResult, setKnockoutDialogResult] = useState<LocalKnockoutResult | null>(null);
 
-  const { data, isLoading } = useLeads({ page, limit: 25 });
+  // Debounce search
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+  useEffect(() => { setPage(1); }, [debouncedSearch]);
+
+  const { data, isLoading } = useLeads({ page, limit: 25, search: debouncedSearch });
   const createLead = useCreateLead();
   const updateLead = useUpdateLead();
   const deleteLead = useDeleteLead();
@@ -254,26 +262,17 @@ export default function LeadsPage() {
   const createActivity = useCreateActivity();
   const { data: knockoutRules = [] } = useKnockoutRules();
 
-  const filteredLeads = useMemo(() => {
-    if (!data?.data) return [];
-    if (!search.trim()) return data.data;
-    const q = search.toLowerCase();
-    return data.data.filter(
-      (l) =>
-        l.company_name.toLowerCase().includes(q) ||
-        (l.decision_maker_name ?? "").toLowerCase().includes(q)
-    );
-  }, [data?.data, search]);
+  const leads = data?.data ?? [];
 
   // Pre-compute knockout results for all visible leads
   const knockoutMap = useMemo(() => {
     const map = new Map<string, LocalKnockoutResult>();
     if (knockoutRules.length === 0) return map;
-    for (const lead of filteredLeads) {
+    for (const lead of leads) {
       map.set(lead.id, checkKnockoutLocal(lead.industry, knockoutRules));
     }
     return map;
-  }, [filteredLeads, knockoutRules]);
+  }, [leads, knockoutRules]);
 
   // Clear selection on page change
   useEffect(() => { setSelectedIds(new Set()); }, [page]);

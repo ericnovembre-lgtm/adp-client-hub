@@ -180,21 +180,19 @@ export default function ContactsPage() {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkActionPending, setBulkActionPending] = useState(false);
 
-  const { data, isLoading } = useContacts({ page, limit: 25 });
+  // Debounce search
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+  useEffect(() => { setPage(1); }, [debouncedSearch]);
+
+  const { data, isLoading } = useContacts({ page, limit: 25, search: debouncedSearch });
   const deleteContact = useDeleteContact();
   const updateContact = useUpdateContact();
 
-  const filtered = useMemo(() => {
-    if (!data?.data) return [];
-    if (!search.trim()) return data.data;
-    const q = search.toLowerCase();
-    return data.data.filter(c =>
-      c.first_name.toLowerCase().includes(q) ||
-      c.last_name.toLowerCase().includes(q) ||
-      (c.email?.toLowerCase().includes(q)) ||
-      (c.company?.toLowerCase().includes(q))
-    );
-  }, [data?.data, search]);
+  const filtered = data?.data ?? [];
 
   // Clear selection on page change
   useEffect(() => { setSelectedIds(new Set()); }, [page]);

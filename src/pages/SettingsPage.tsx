@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserSettings, useUpdateUserSettings, type UserSettings } from "@/hooks/useUserSettings";
 import { useKnockoutRules, useCreateKnockoutRule, useUpdateKnockoutRule, useDeleteKnockoutRule, type KnockoutRule } from "@/hooks/useKnockoutRules";
 import { exportToCSV } from "@/lib/exportCSV";
+import { KNOWLEDGE_VERSION } from "@/lib/adpProductKnowledge";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

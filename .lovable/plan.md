@@ -1,48 +1,36 @@
 
 
-## Plan: Persist AI Chat History Between Sessions
+## Plan: Add Product Knowledge Version Tracking
 
-Save chat conversations to the database so they survive page refreshes and sessions.
+### Approach
 
-### Database Change
+Add a `KNOWLEDGE_VERSION` constant to `src/lib/adpProductKnowledge.ts` and mirror it in both edge functions. Display the version on the Settings page so users can verify all three sources are in sync.
 
-Create a `chat_messages` table:
+### Changes
 
-```sql
-CREATE TABLE public.chat_messages (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  role text NOT NULL CHECK (role IN ('user', 'assistant')),
-  content text NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
-
-ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
-CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
-CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
-
-CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
+**1. `src/lib/adpProductKnowledge.ts`** — Add at the top:
+```ts
+export const KNOWLEDGE_VERSION = "2026-03-14-v1";
 ```
 
-### Code Changes — `src/components/AIChatWidget.tsx`
-
-1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
-
-2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
-
-3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
-
-4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
-
-### Data flow
-
-```text
-User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
-Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
-Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
+**2. `supabase/functions/ai-chat/index.ts`** — Add after imports:
+```ts
+const KNOWLEDGE_VERSION = "2026-03-14-v1";
 ```
+Append to SYSTEM_PROMPT: `\n\n[Knowledge Version: ${KNOWLEDGE_VERSION}]`
 
-No new hooks file needed — keep the logic inline in the widget since it's self-contained.
+**3. `supabase/functions/scheduled-discovery/index.ts`** — Same pattern:
+```ts
+const KNOWLEDGE_VERSION = "2026-03-14-v1";
+```
+Append to DISCOVERY_PROMPT: `\n\n[Knowledge Version: ${KNOWLEDGE_VERSION}]`
+
+**4. `src/pages/SettingsPage.tsx`** — Add a small "Product Knowledge" info card in the settings that shows:
+- Current frontend knowledge version (imported from `adpProductKnowledge.ts`)
+- A note that edge functions should match this version
+- A badge showing the version string
+
+### How it works
+
+All three files share the same version string. When product knowledge is updated, the developer bumps the version in all three places. The Settings page displays the frontend version so users can cross-reference. The version is also embedded in AI responses (appended to system prompts) for debugging.
 

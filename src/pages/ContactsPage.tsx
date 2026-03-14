@@ -25,6 +25,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Plus, Search, Pencil, Trash2, Download, Loader2, UserPlus, Mail, CheckSquare, X } from "lucide-react";
 import ContactDetailSheet from "@/components/ContactDetailSheet";
 import DraftEmailDialog from "@/components/DraftEmailDialog";
+import CompanyCombobox from "@/components/CompanyCombobox";
 
 const contactSchema = z.object({
   first_name: z.string().trim().min(1, "First name is required").max(100, "Max 100 characters"),

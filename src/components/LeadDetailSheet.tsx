@@ -182,6 +182,18 @@ export default function LeadDetailSheet({
                 {lead.status ?? "new"}
               </Badge>
               {lead.source && <Badge variant="secondary">{lead.source}</Badge>}
+              {knockoutResult && <EligibilityBadge tier={knockoutResult.tier} message={knockoutResult.message} />}
+            </div>
+          )}
+
+          {/* Knockout Warning */}
+          {!isEditing && knockoutResult && knockoutResult.tier !== 'clear' && (
+            <div className={`rounded-md border p-3 text-xs ${
+              knockoutResult.tier === 'prohibited' ? 'border-red-300 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-300' :
+              knockoutResult.tier === 'low_probability' ? 'border-orange-300 bg-orange-50 text-orange-800 dark:border-orange-800 dark:bg-orange-950 dark:text-orange-300' :
+              'border-blue-300 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300'
+            }`}>
+              {knockoutResult.message}
             </div>
           )}
 

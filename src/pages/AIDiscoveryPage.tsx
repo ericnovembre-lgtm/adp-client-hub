@@ -67,9 +67,8 @@ export default function AIDiscoveryPage() {
       if (settings.defaultHeadcountMin && !headcountMin) setHeadcountMin(String(settings.defaultHeadcountMin));
       if (settings.defaultHeadcountMax && !headcountMax) setHeadcountMax(String(settings.defaultHeadcountMax));
 
-      const s = settings as any;
-      if (s.scheduler_enabled !== undefined) setSchedulerEnabled(s.scheduler_enabled);
-      if (s.scheduler_frequency) setFrequency(s.scheduler_frequency);
+      if (settings.scheduler_enabled !== undefined) setSchedulerEnabled(settings.scheduler_enabled);
+      if (settings.scheduler_frequency) setFrequency(settings.scheduler_frequency);
     }
   }, [settings]);
 

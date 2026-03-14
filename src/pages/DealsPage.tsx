@@ -202,7 +202,7 @@ function DealFormDialog({
             )} />
             <FormField control={form.control} name="company_id" render={({ field }) => (
               <FormItem><FormLabel>Company</FormLabel><FormControl>
-                <SearchableSelect items={companyItems} value={field.value ?? ""} onChange={field.onChange} placeholder="Select company" searchPlaceholder="Search companies…" />
+                <SearchableSelect options={companyItems} value={field.value ?? ""} onValueChange={field.onChange} placeholder="Select company" searchPlaceholder="Search companies…" />
               </FormControl><FormMessage /></FormItem>
             )} />
             <FormField control={form.control} name="expected_close_date" render={({ field }) => (

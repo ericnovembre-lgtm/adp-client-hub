@@ -209,7 +209,7 @@ function TaskFormDialog({ open, onOpenChange, task }: { open: boolean; onOpenCha
             )} />
             <FormField control={form.control} name="deal_id" render={({ field }) => (
               <FormItem><FormLabel>Deal</FormLabel><FormControl>
-                <SearchableSelect items={dealItems} value={field.value ?? ""} onChange={field.onChange} placeholder="Select deal" searchPlaceholder="Search deals…" />
+                <SearchableSelect options={dealItems} value={field.value ?? ""} onValueChange={field.onChange} placeholder="Select deal" searchPlaceholder="Search deals…" />
               </FormControl><FormMessage /></FormItem>
             )} />
             <DialogFooter>

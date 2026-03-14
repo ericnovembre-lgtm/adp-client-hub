@@ -60,7 +60,7 @@ const STAGE_HEADER_COLORS: Record<string, string> = {
   closed_lost: "border-t-red-500",
 };
 
-const fmtCurrency = (v: number | null) => (v != null ? `$${v.toLocaleString()}` : "—");
+const fmtCurrency = (v: number | null) => (v != null ? `$${v.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}` : "—");
 
 // ── Hooks for lookups ──
 function useAllContacts() {

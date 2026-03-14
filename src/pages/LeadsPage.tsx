@@ -962,6 +962,7 @@ export default function LeadsPage() {
         lead={detailLead}
         open={!!detailLead}
         onOpenChange={(v) => { if (!v) setDetailLead(null); }}
+        onLeadUpdated={() => setDetailLead(null)}
       />
     </div>
   );

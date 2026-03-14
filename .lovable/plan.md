@@ -1,38 +1,48 @@
 
 
-## Plan: Add Inline Editing to Lead Detail Sheet
+## Plan: Persist AI Chat History Between Sessions
 
-### Approach
-Follow the existing pattern from Contact/Deal detail sheets: add a read/edit mode toggle with state management, input fields for editable properties, and save/cancel buttons using the existing `useUpdateLead` mutation.
+Save chat conversations to the database so they survive page refreshes and sessions.
 
-### Changes
+### Database Change
 
-**`src/components/LeadDetailSheet.tsx`** — Major rewrite:
+Create a `chat_messages` table:
 
-1. **Add imports**: `useState`, `Button`, `Input`, `Select`, `Textarea`, `Pencil`, `X`, `Save` icons, `useUpdateLead` hook, `toast`
+```sql
+CREATE TABLE public.chat_messages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  role text NOT NULL CHECK (role IN ('user', 'assistant')),
+  content text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
 
-2. **Add edit state**: `isEditing` boolean + `editData` object initialized from lead fields when entering edit mode
+ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
 
-3. **Header**: Add Edit/Cancel toggle button next to the title. When editing, show Save and Cancel buttons.
+CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
+CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
 
-4. **Editable fields** (when `isEditing=true`, swap `InfoRow` display for input fields):
-   - Company name (Input)
-   - Status (Select dropdown: new, contacted, qualified, converted, dismissed)
-   - Source (Input)
-   - Industry (Input)
-   - Headcount (Input type=number)
-   - State (Input)
-   - Website (Input)
-   - Decision maker: name, title, email, phone (Inputs)
-   - Trigger type (Select: latent_need, active_trigger)
-   - Trigger event (Textarea)
-   - AI Pitch Summary (Textarea) — editable so users can refine AI output
+CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
+```
 
-5. **Save handler**: Call `useUpdateLead().mutateAsync()` with the edited fields, show success toast, exit edit mode, and call `onLeadUpdated` callback so the parent can refresh data.
+### Code Changes — `src/components/AIChatWidget.tsx`
 
-6. **Props change**: Add optional `onLeadUpdated?: () => void` callback prop.
+1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
 
-**`src/pages/LeadsPage.tsx`** — Minor update:
-- Pass `onLeadUpdated` callback to `LeadDetailSheet` that invalidates the leads query (or simply refetch)
-- Update `detailLead` state after successful save to reflect new values
+2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
+
+3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
+
+4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
+
+### Data flow
+
+```text
+User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
+Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
+Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
+```
+
+No new hooks file needed — keep the logic inline in the widget since it's self-contained.
 

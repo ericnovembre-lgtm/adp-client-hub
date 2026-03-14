@@ -85,9 +85,9 @@ export default function DashboardPage() {
   const { data: userSettings } = useUserSettings();
   const [, navigate] = useLocation();
 
-  const schedulerEnabled = (userSettings as any)?.scheduler_enabled;
-  const lastRun = (userSettings as any)?.scheduler_last_run;
-  const lastCount = (userSettings as any)?.scheduler_last_count;
+  const schedulerEnabled = userSettings?.scheduler_enabled;
+  const lastRun = userSettings?.scheduler_last_run;
+  const lastCount = userSettings?.scheduler_last_count;
 
   const { data: activities, isLoading: activitiesLoading } = useQuery({
     queryKey: ["dashboard-activities"],

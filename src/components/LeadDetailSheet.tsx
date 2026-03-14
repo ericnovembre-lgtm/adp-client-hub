@@ -128,7 +128,7 @@ export default function LeadDetailSheet({
         type: activityType,
         description: activityText.trim(),
         lead_id: lead.id,
-      } as any);
+      });
       setActivityText("");
       queryClient.invalidateQueries({ queryKey: ["activities", "lead", lead.id] });
       toast.success("Activity added");

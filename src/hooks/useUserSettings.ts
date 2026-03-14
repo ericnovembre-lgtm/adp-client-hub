@@ -9,6 +9,18 @@ export interface UserSettings {
   defaultState?: string;
   defaultHeadcountMin?: number;
   defaultHeadcountMax?: number;
+  scheduler_enabled?: boolean;
+  scheduler_frequency?: string;
+  scheduler_industries?: string;
+  scheduler_states?: string;
+  scheduler_headcount_min?: number;
+  scheduler_headcount_max?: number;
+  scheduler_last_run?: string;
+  scheduler_last_count?: number;
+  scheduler_status?: string;
+  last_run_at?: string;
+  last_found_count?: number;
+  next_run_at?: string;
 }
 
 export function useUserSettings() {

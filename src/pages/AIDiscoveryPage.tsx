@@ -174,9 +174,9 @@ export default function AIDiscoveryPage() {
     };
   }, [schedulerEnabled, frequency, user]);
 
-  const lastRun = (settings as any)?.scheduler_last_run;
-  const lastCount = (settings as any)?.scheduler_last_count;
-  const schedulerStatus = (settings as any)?.scheduler_status;
+  const lastRun = settings?.scheduler_last_run;
+  const lastCount = settings?.scheduler_last_count;
+  const schedulerStatus = settings?.scheduler_status;
   const isRunning = manualDiscover.isPending || schedulerRun.isPending;
 
   const nextRunEstimate = lastRun

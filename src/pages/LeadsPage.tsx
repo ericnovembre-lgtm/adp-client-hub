@@ -664,6 +664,7 @@ export default function LeadsPage() {
               <TableHead className="hidden lg:table-cell">Industry</TableHead>
               <TableHead className="hidden lg:table-cell">State</TableHead>
               <TableHead className="hidden xl:table-cell">Trigger Event</TableHead>
+              <TableHead className="hidden xl:table-cell">AI Pitch</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Eligibility</TableHead>
               <TableHead className="w-10" />

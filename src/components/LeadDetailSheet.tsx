@@ -1,7 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { format } from "date-fns";
 import type { Lead } from "@/types/database";
 import { useUpdateLead } from "@/hooks/useLeads";
+import { useKnockoutRules } from "@/hooks/useKnockoutRules";
+import { checkKnockoutLocal } from "@/lib/knockoutLocal";
+import EligibilityBadge from "@/components/EligibilityBadge";
 import { toast } from "sonner";
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";

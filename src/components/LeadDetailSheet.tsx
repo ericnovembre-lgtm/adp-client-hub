@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Building2, User, Mail, Phone, Globe, MapPin, Users, Briefcase,
-  Zap, Clock, Sparkles, Tag, Pencil, X, Save, Loader2,
+  Zap, Clock, Sparkles, Tag, Pencil, X, Save, Loader2, FileText, ArrowRightLeft,
 } from "lucide-react";
 
 const statusColors: Record<string, string> = {

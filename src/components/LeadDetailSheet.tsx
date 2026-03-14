@@ -102,8 +102,13 @@ export default function LeadDetailSheet({
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<Partial<Lead>>({});
+  const [activityType, setActivityType] = useState<string>("note");
+  const [activityText, setActivityText] = useState("");
   const updateLead = useUpdateLead();
+  const createActivity = useCreateActivity();
+  const queryClient = useQueryClient();
   const { data: knockoutRules = [] } = useKnockoutRules();
+  const { data: activities, isLoading: activitiesLoading } = useLeadActivities(lead?.id);
 
   const knockoutResult = useMemo(() => {
     if (!lead) return null;
@@ -115,6 +120,22 @@ export default function LeadDetailSheet({
   }, [open]);
 
   if (!lead) return null;
+
+  const handleAddActivity = async () => {
+    if (!activityText.trim()) return;
+    try {
+      await createActivity.mutateAsync({
+        type: activityType,
+        description: activityText.trim(),
+        lead_id: lead.id,
+      } as any);
+      setActivityText("");
+      queryClient.invalidateQueries({ queryKey: ["activities", "lead", lead.id] });
+      toast.success("Activity added");
+    } catch {
+      toast.error("Failed to add activity");
+    }
+  };
 
   const startEditing = () => {
     setEditData({ ...lead });

@@ -683,7 +683,7 @@ export default function LeadsPage() {
                 ))
               : filteredLeads.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center text-muted-foreground py-12">
+                    <TableCell colSpan={11} className="text-center text-muted-foreground py-12">
                       <Users className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
                       <p className="font-medium">No leads yet</p>
                       <p className="text-sm mt-1">Start discovering leads to fill your pipeline!</p>

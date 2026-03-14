@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useContacts, useCreateContact, useUpdateContact, useDeleteContact } from "@/hooks/useContacts";
 import { logActivity } from "@/lib/logActivity";
 import { exportToCSV } from "@/lib/exportCSV";

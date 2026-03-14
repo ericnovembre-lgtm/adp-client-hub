@@ -86,6 +86,7 @@ function ContactFormDialog({
         email: values.email || null,
         phone: values.phone || null,
         company: values.company || null,
+        company_id: values.company_id || null,
         job_title: values.job_title || null,
         status: values.status || null,
         source: values.source || null,

@@ -118,7 +118,7 @@ export default function AIDiscoveryPage() {
     onError: () => {
       // Update status to error
       if (settings && user) {
-        updateSettings.mutate({ ...settings, scheduler_status: "error" } as any);
+        updateSettings.mutate({ ...settings, scheduler_status: "error" });
       }
     },
   });

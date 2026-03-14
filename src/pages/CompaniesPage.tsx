@@ -37,7 +37,21 @@ function useLinkedContacts(companyId: string | undefined) {
   });
 }
 
-const companySchema = z.object({
+function LinkedContactsList({ companyId }: { companyId: string }) {
+  const { data: contacts } = useLinkedContacts(companyId);
+  if (!contacts?.length) return null;
+  return (
+    <div className="flex items-start gap-2 pt-1 border-t border-border mt-2">
+      <UserCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+      <div className="text-xs space-y-0.5">
+        {contacts.map((c) => (
+          <span key={c.id} className="block">{c.first_name} {c.last_name}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
   name: z.string().trim().min(1, "Company name is required").max(200, "Max 200 characters"),
   industry: z.string().max(200).optional().or(z.literal("")),
   website: z.string().max(500).optional().or(z.literal("")),

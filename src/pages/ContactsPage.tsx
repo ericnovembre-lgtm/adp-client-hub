@@ -70,6 +70,7 @@ function ContactFormDialog({
       email: contact?.email ?? "",
       phone: contact?.phone ?? "",
       company: contact?.company ?? "",
+      company_id: contact?.company_id ?? null,
       job_title: contact?.job_title ?? "",
       status: contact?.status ?? "lead",
       source: contact?.source ?? "",

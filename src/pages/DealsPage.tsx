@@ -12,6 +12,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Deal, Contact, Company } from "@/types/database";
+import { DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors, useDraggable, useDroppable } from "@dnd-kit/core";
+import type { DragStartEvent, DragEndEvent } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +33,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, Pencil, Trash2, MoreHorizontal, CalendarIcon, DollarSign, ArrowRight, Download, Loader2 } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, MoreHorizontal, CalendarIcon, DollarSign, ArrowRight, Download, Loader2, GripVertical } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import DealDetailSheet from "@/components/DealDetailSheet";
 

@@ -25,7 +25,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Plus, Search, Pencil, Trash2, CalendarIcon, Check, ChevronsUpDown, ChevronDown, ChevronRight, CheckSquare } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, CalendarIcon, Check, ChevronDown, ChevronRight, CheckSquare } from "lucide-react";
 
 // ── Constants ──
 const PRIORITY_COLORS: Record<string, string> = {

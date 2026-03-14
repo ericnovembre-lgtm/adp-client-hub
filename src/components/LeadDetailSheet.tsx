@@ -309,6 +309,35 @@ export default function LeadDetailSheet({
             </>
           )}
 
+          {/* Action Buttons */}
+          {!isEditing && (onDraftEmail || onConvertToDeal) && (
+            <>
+              <Separator />
+              <div className="flex gap-2">
+                {onDraftEmail && (
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => { onDraftEmail(lead); onOpenChange(false); }}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Draft Email
+                  </Button>
+                )}
+                {onConvertToDeal && lead.status !== "converted" && (
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => { onConvertToDeal(lead); onOpenChange(false); }}
+                  >
+                    <ArrowRightLeft className="h-4 w-4 mr-2" />
+                    Convert to Deal
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
+
           {/* Created date */}
           {lead.created_at && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2">

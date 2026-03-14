@@ -72,7 +72,17 @@ export default function ContactDetailSheet({
             )}
             {contact.company && (
               <div className="flex items-center gap-2 text-muted-foreground">
-                <Building2 className="h-4 w-4" />{contact.company}
+                <Building2 className="h-4 w-4" />
+                {contact.company_id ? (
+                  <button
+                    onClick={() => { onOpenChange(false); navigate("/companies"); }}
+                    className="text-primary hover:underline"
+                  >
+                    {contact.company}
+                  </button>
+                ) : (
+                  contact.company
+                )}
               </div>
             )}
             {contact.job_title && (

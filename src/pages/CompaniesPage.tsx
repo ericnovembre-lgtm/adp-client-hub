@@ -264,6 +264,7 @@ export default function CompaniesPage() {
                 {c.phone && (
                   <div className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" />{c.phone}</div>
                 )}
+                <LinkedContactsList companyId={c.id} />
               </CardContent>
             </Card>
           ))}

@@ -129,9 +129,18 @@ function ContactFormDialog({
               <FormItem><FormLabel>Phone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
             )} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField control={form.control} name="company" render={({ field }) => (
-                <FormItem><FormLabel>Company</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
+              <FormItem className="col-span-1">
+                <FormLabel>Company</FormLabel>
+                <CompanyCombobox
+                  value={form.watch("company") ?? ""}
+                  companyId={form.watch("company_id") ?? null}
+                  onChange={(name, id) => {
+                    form.setValue("company", name);
+                    form.setValue("company_id", id);
+                  }}
+                />
+                <FormMessage />
+              </FormItem>
               <FormField control={form.control} name="job_title" render={({ field }) => (
                 <FormItem><FormLabel>Job Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
               )} />

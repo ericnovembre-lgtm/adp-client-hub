@@ -1,51 +1,48 @@
 
 
-## Plan: Link Contacts to Companies via Foreign Key
+## Plan: Persist AI Chat History Between Sessions
 
-### 1. Database Migration
-Add `company_id` column to contacts table. Keep existing `company` text column.
+Save chat conversations to the database so they survive page refreshes and sessions.
+
+### Database Change
+
+Create a `chat_messages` table:
 
 ```sql
-ALTER TABLE public.contacts ADD COLUMN company_id uuid REFERENCES public.companies(id) ON DELETE SET NULL;
-CREATE INDEX idx_contacts_company_id ON public.contacts(company_id);
+CREATE TABLE public.chat_messages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  role text NOT NULL CHECK (role IN ('user', 'assistant')),
+  content text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+
+ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
+CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
+
+CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
 ```
 
-### 2. Type Updates
+### Code Changes — `src/components/AIChatWidget.tsx`
 
-**`src/types/database.ts`** — Add `company_id?: string | null` to Contact interface.
+1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
 
-### 3. New Component: `CompanyCombobox`
+2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
 
-Create `src/components/CompanyCombobox.tsx` — a combobox that:
-- Queries companies table with debounced search (using `useCompanies` hook)
-- Shows matching companies in a dropdown (Popover + Command pattern from shadcn)
-- When a company is selected: returns `{ company_id, company_name }`
-- Allows free-text entry for companies not in the database (sets `company_id = null`, `company = typed text`)
-- Accepts initial value props for edit mode
+3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
 
-### 4. Update ContactFormDialog (in `ContactsPage.tsx`)
+4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
 
-- Add `company_id` to form schema (optional string)
-- Replace the plain `company` text `<Input>` with `<CompanyCombobox>`
-- On company selection: set both `company` (display name) and `company_id` (UUID or null)
-- Include `company_id` in the create/update payload
+### Data flow
 
-### 5. Update ContactDetailSheet
+```text
+User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
+Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
+Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
+```
 
-- If `contact.company_id` exists, render company name as a link (`<a>` or `useNavigate`) to `/companies`
-- If only `contact.company` text exists (no `company_id`), show plain text as before
-
-### 6. Update CompaniesPage — Linked Contacts Section
-
-- Add a detail view (or expandable section on the company card) that queries `contacts` where `company_id = company.id`
-- Show a simple list of linked contact names in the company card's content area
-- Create a small `useLinkedContacts(companyId)` hook or inline query
-
-### Files Changed
-- Migration SQL (new)
-- `src/types/database.ts` (1 line added)
-- `src/components/CompanyCombobox.tsx` (new file)
-- `src/pages/ContactsPage.tsx` (form dialog updated)
-- `src/components/ContactDetailSheet.tsx` (company link)
-- `src/pages/CompaniesPage.tsx` (linked contacts count/list on cards)
+No new hooks file needed — keep the logic inline in the widget since it's self-contained.
 

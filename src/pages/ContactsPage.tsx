@@ -25,6 +25,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Plus, Search, Pencil, Trash2, Download, Loader2, UserPlus, Mail, CheckSquare, X } from "lucide-react";
 import ContactDetailSheet from "@/components/ContactDetailSheet";
 import DraftEmailDialog from "@/components/DraftEmailDialog";
+import CompanyCombobox from "@/components/CompanyCombobox";
 
 const contactSchema = z.object({
   first_name: z.string().trim().min(1, "First name is required").max(100, "Max 100 characters"),
@@ -32,6 +33,7 @@ const contactSchema = z.object({
   email: z.string().trim().email("Invalid email format").max(255).optional().or(z.literal("")),
   phone: z.string().max(30, "Max 30 characters").optional().or(z.literal("")),
   company: z.string().max(200).optional().or(z.literal("")),
+  company_id: z.string().uuid().nullable().optional(),
   job_title: z.string().max(200).optional().or(z.literal("")),
   status: z.string().optional().or(z.literal("")),
   source: z.string().max(200).optional().or(z.literal("")),
@@ -68,6 +70,7 @@ function ContactFormDialog({
       email: contact?.email ?? "",
       phone: contact?.phone ?? "",
       company: contact?.company ?? "",
+      company_id: contact?.company_id ?? null,
       job_title: contact?.job_title ?? "",
       status: contact?.status ?? "lead",
       source: contact?.source ?? "",
@@ -83,6 +86,7 @@ function ContactFormDialog({
         email: values.email || null,
         phone: values.phone || null,
         company: values.company || null,
+        company_id: values.company_id || null,
         job_title: values.job_title || null,
         status: values.status || null,
         source: values.source || null,
@@ -125,9 +129,18 @@ function ContactFormDialog({
               <FormItem><FormLabel>Phone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
             )} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField control={form.control} name="company" render={({ field }) => (
-                <FormItem><FormLabel>Company</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
+              <FormItem className="col-span-1">
+                <FormLabel>Company</FormLabel>
+                <CompanyCombobox
+                  value={form.watch("company") ?? ""}
+                  companyId={form.watch("company_id") ?? null}
+                  onChange={(name, id) => {
+                    form.setValue("company", name);
+                    form.setValue("company_id", id);
+                  }}
+                />
+                <FormMessage />
+              </FormItem>
               <FormField control={form.control} name="job_title" render={({ field }) => (
                 <FormItem><FormLabel>Job Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
               )} />

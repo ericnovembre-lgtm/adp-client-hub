@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
+import { useLocation } from "wouter";
 import type { Contact, Activity } from "@/types/database";
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -43,6 +44,7 @@ export default function ContactDetailSheet({
   onOpenChange: (open: boolean) => void;
 }) {
   const { data: activities, isLoading } = useContactActivities(contact?.id);
+  const [, navigate] = useLocation();
 
   if (!contact) return null;
 
@@ -70,7 +72,17 @@ export default function ContactDetailSheet({
             )}
             {contact.company && (
               <div className="flex items-center gap-2 text-muted-foreground">
-                <Building2 className="h-4 w-4" />{contact.company}
+                <Building2 className="h-4 w-4" />
+                {contact.company_id ? (
+                  <button
+                    onClick={() => { onOpenChange(false); navigate("/companies"); }}
+                    className="text-primary hover:underline"
+                  >
+                    {contact.company}
+                  </button>
+                ) : (
+                  contact.company
+                )}
               </div>
             )}
             {contact.job_title && (

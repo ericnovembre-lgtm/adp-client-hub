@@ -14,6 +14,7 @@ export interface Contact {
   email: string | null;
   phone: string | null;
   company: string | null;
+  company_id: string | null;
   job_title: string | null;
   status: string | null;
   source: string | null;

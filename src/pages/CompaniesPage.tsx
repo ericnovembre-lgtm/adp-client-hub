@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useCompanies, useCreateCompany, useUpdateCompany, useDeleteCompany } from "@/hooks/useCompanies";
+import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import type { Company } from "@/types/database";
+import type { Company, Contact } from "@/types/database";
 import { exportToCSV } from "@/lib/exportCSV";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -17,7 +18,39 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Building2, Users, Globe, Phone, DollarSign, Download, Loader2 } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, Building2, Users, Globe, Phone, DollarSign, Download, Loader2, UserCircle } from "lucide-react";
+
+function useLinkedContacts(companyId: string | undefined) {
+  return useQuery({
+    queryKey: ["linked-contacts", companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contacts")
+        .select("id, first_name, last_name")
+        .eq("company_id", companyId!)
+        .order("first_name")
+        .limit(10);
+      if (error) throw error;
+      return data as Pick<Contact, "id" | "first_name" | "last_name">[];
+    },
+    enabled: !!companyId,
+  });
+}
+
+function LinkedContactsList({ companyId }: { companyId: string }) {
+  const { data: contacts } = useLinkedContacts(companyId);
+  if (!contacts?.length) return null;
+  return (
+    <div className="flex items-start gap-2 pt-1 border-t border-border mt-2">
+      <UserCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+      <div className="text-xs space-y-0.5">
+        {contacts.map((c) => (
+          <span key={c.id} className="block">{c.first_name} {c.last_name}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 const companySchema = z.object({
   name: z.string().trim().min(1, "Company name is required").max(200, "Max 200 characters"),
@@ -246,6 +279,7 @@ export default function CompaniesPage() {
                 {c.phone && (
                   <div className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" />{c.phone}</div>
                 )}
+                <LinkedContactsList companyId={c.id} />
               </CardContent>
             </Card>
           ))}

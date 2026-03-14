@@ -378,7 +378,7 @@ export default function SettingsPage() {
   // Load settings
   useEffect(() => {
     if (!settings) return;
-    setAiModel(settings.aiModel ?? "gpt-4o-mini");
+    
     setAiChatEnabled(settings.aiChatEnabled !== false);
     setDefaultIndustry(settings.defaultIndustry ?? "");
     setDefaultState(settings.defaultState ?? "");

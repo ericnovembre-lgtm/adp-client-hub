@@ -244,7 +244,15 @@ export default function LeadsPage() {
   const [knockoutDialogType, setKnockoutDialogType] = useState<'prohibited' | 'low_probability' | 'bluefield' | null>(null);
   const [knockoutDialogResult, setKnockoutDialogResult] = useState<LocalKnockoutResult | null>(null);
 
-  const { data, isLoading } = useLeads({ page, limit: 25 });
+  // Debounce search
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+  useEffect(() => { setPage(1); }, [debouncedSearch]);
+
+  const { data, isLoading } = useLeads({ page, limit: 25, search: debouncedSearch });
   const createLead = useCreateLead();
   const updateLead = useUpdateLead();
   const deleteLead = useDeleteLead();
@@ -254,39 +262,30 @@ export default function LeadsPage() {
   const createActivity = useCreateActivity();
   const { data: knockoutRules = [] } = useKnockoutRules();
 
-  const filteredLeads = useMemo(() => {
-    if (!data?.data) return [];
-    if (!search.trim()) return data.data;
-    const q = search.toLowerCase();
-    return data.data.filter(
-      (l) =>
-        l.company_name.toLowerCase().includes(q) ||
-        (l.decision_maker_name ?? "").toLowerCase().includes(q)
-    );
-  }, [data?.data, search]);
+  const leads = data?.data ?? [];
 
   // Pre-compute knockout results for all visible leads
   const knockoutMap = useMemo(() => {
     const map = new Map<string, LocalKnockoutResult>();
     if (knockoutRules.length === 0) return map;
-    for (const lead of filteredLeads) {
+    for (const lead of leads) {
       map.set(lead.id, checkKnockoutLocal(lead.industry, knockoutRules));
     }
     return map;
-  }, [filteredLeads, knockoutRules]);
+  }, [leads, knockoutRules]);
 
   // Clear selection on page change
   useEffect(() => { setSelectedIds(new Set()); }, [page]);
 
   // Bulk selection helpers
-  const allVisibleSelected = filteredLeads.length > 0 && filteredLeads.every(l => selectedIds.has(l.id));
+  const allVisibleSelected = leads.length > 0 && leads.every(l => selectedIds.has(l.id));
   const someSelected = selectedIds.size > 0;
 
   const toggleSelectAll = () => {
     if (allVisibleSelected) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(filteredLeads.map(l => l.id)));
+      setSelectedIds(new Set(leads.map(l => l.id)));
     }
   };
 
@@ -309,7 +308,7 @@ export default function LeadsPage() {
       );
       await Promise.all(
         Array.from(selectedIds).map(id => {
-          const lead = filteredLeads.find(l => l.id === id);
+          const lead = leads.find(l => l.id === id);
           return createActivity.mutateAsync({
             type: "status_change",
             description: `Lead "${lead?.company_name ?? 'Unknown'}" bulk-updated to ${newStatus}`,
@@ -342,7 +341,7 @@ export default function LeadsPage() {
 
   // Bulk export selected
   const handleBulkExport = () => {
-    const selected = filteredLeads.filter(l => selectedIds.has(l.id));
+    const selected = leads.filter(l => selectedIds.has(l.id));
     exportToCSV(selected, "leads-selected", [
       { header: "Company Name", accessor: (r) => r.company_name },
       { header: "Decision Maker", accessor: (r) => r.decision_maker_name },
@@ -610,7 +609,7 @@ export default function LeadsPage() {
                     ))}
                   </TableRow>
                 ))
-              : filteredLeads.length === 0 ? (
+              : leads.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={11} className="text-center text-muted-foreground py-12">
                       <Users className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
@@ -619,7 +618,7 @@ export default function LeadsPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredLeads.map((lead) => {
+                  leads.map((lead) => {
                     const ko = knockoutMap.get(lead.id) ?? { tier: 'clear' as const, matchedRules: [], message: '' };
                     return (
                       <TableRow key={lead.id} data-state={selectedIds.has(lead.id) ? "selected" : undefined} className="cursor-pointer" onClick={() => setDetailLead(lead)}>

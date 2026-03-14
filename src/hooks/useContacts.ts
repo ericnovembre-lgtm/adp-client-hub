@@ -3,18 +3,21 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Contact } from "@/types/database";
 import type { TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
-export function useContacts({ page = 1, limit = 50 } = {}) {
+export function useContacts({ page = 1, limit = 50, search = "" } = {}) {
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 
   return useQuery({
-    queryKey: ["contacts", page, limit],
+    queryKey: ["contacts", page, limit, search],
     queryFn: async () => {
-      const { data, error, count } = await supabase
+      let query = supabase
         .from("contacts")
         .select("*", { count: "exact" })
-        .order("created_at", { ascending: false })
-        .range(from, to);
+        .order("created_at", { ascending: false });
+      if (search.trim()) {
+        query = query.or(`first_name.ilike.%${search.trim()}%,last_name.ilike.%${search.trim()}%,email.ilike.%${search.trim()}%,company.ilike.%${search.trim()}%`);
+      }
+      const { data, error, count } = await query.range(from, to);
       if (error) throw error;
       const total = count ?? 0;
       return { data: data as Contact[], total, page, limit, totalPages: Math.ceil(total / limit) };

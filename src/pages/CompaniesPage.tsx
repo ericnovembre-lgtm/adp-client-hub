@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useCompanies, useCreateCompany, useUpdateCompany, useDeleteCompany } from "@/hooks/useCompanies";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -134,18 +134,18 @@ export default function CompaniesPage() {
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const { data, isLoading } = useCompanies({ page, limit: 24 });
+  // Debounce search
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+  useEffect(() => { setPage(1); }, [debouncedSearch]);
+
+  const { data, isLoading } = useCompanies({ page, limit: 24, search: debouncedSearch });
   const deleteCompany = useDeleteCompany();
 
-  const filtered = useMemo(() => {
-    if (!data?.data) return [];
-    if (!search.trim()) return data.data;
-    const q = search.toLowerCase();
-    return data.data.filter(c =>
-      c.name.toLowerCase().includes(q) ||
-      (c.industry?.toLowerCase().includes(q))
-    );
-  }, [data?.data, search]);
+  const filtered = data?.data ?? [];
 
   const handleDelete = async () => {
     if (!deleteId) return;

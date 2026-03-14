@@ -3,18 +3,21 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Lead } from "@/types/database";
 import type { TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 
-export function useLeads({ page = 1, limit = 50 } = {}) {
+export function useLeads({ page = 1, limit = 50, search = "" } = {}) {
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 
   return useQuery({
-    queryKey: ["leads", page, limit],
+    queryKey: ["leads", page, limit, search],
     queryFn: async () => {
-      const { data, error, count } = await supabase
+      let query = supabase
         .from("leads")
         .select("*", { count: "exact" })
-        .order("created_at", { ascending: false })
-        .range(from, to);
+        .order("created_at", { ascending: false });
+      if (search.trim()) {
+        query = query.or(`company_name.ilike.%${search.trim()}%,decision_maker_name.ilike.%${search.trim()}%`);
+      }
+      const { data, error, count } = await query.range(from, to);
       if (error) throw error;
       const total = count ?? 0;
       return { data: data as Lead[], total, page, limit, totalPages: Math.ceil(total / limit) };

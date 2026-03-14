@@ -1,29 +1,48 @@
 
 
-## Plan: Server-side Search with Debouncing for Leads, Contacts, and Companies
+## Plan: Persist AI Chat History Between Sessions
 
-### Changes
+Save chat conversations to the database so they survive page refreshes and sessions.
 
-**1. Hooks — add `search` parameter to queries**
+### Database Change
 
-- **`src/hooks/useLeads.ts`**: Accept `search` string. When non-empty, add `.or('company_name.ilike.%${search}%,decision_maker_name.ilike.%${search}%')` before `.range()`. Include `search` in `queryKey`.
+Create a `chat_messages` table:
 
-- **`src/hooks/useContacts.ts`**: Same pattern with `.or('first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%,company.ilike.%${search}%')`.
+```sql
+CREATE TABLE public.chat_messages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  role text NOT NULL CHECK (role IN ('user', 'assistant')),
+  content text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
 
-- **`src/hooks/useCompanies.ts`**: Same pattern with `.or('name.ilike.%${search}%,industry.ilike.%${search}%')`.
+ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
 
-**2. Pages — debounce search, remove client-side filtering**
+CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
+CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
 
-All three pages get the same pattern:
-- Add `debouncedSearch` state + `useEffect` with 300ms `setTimeout`/`clearTimeout`.
-- Pass `search: debouncedSearch` to the hook.
-- Reset `page` to 1 when `debouncedSearch` changes.
-- Remove `useMemo` client-side filter; use `data?.data ?? []` directly.
+CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
+```
 
-**Specific files:**
-- **`src/pages/LeadsPage.tsx`**: Remove `filteredLeads` useMemo (lines 257-266). Replace all `filteredLeads` references with `data?.data ?? []`. Add debounce + page reset effects.
-- **`src/pages/ContactsPage.tsx`**: Remove `filtered` useMemo (lines 187-197). Replace references with `data?.data ?? []`. Add debounce + page reset.
-- **`src/pages/CompaniesPage.tsx`**: Remove `filtered` useMemo (lines 140-148). Replace references with `data?.data ?? []`. Add debounce + page reset.
+### Code Changes — `src/components/AIChatWidget.tsx`
 
-No UI layout or other functionality changes.
+1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
+
+2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
+
+3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
+
+4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
+
+### Data flow
+
+```text
+User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
+Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
+Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
+```
+
+No new hooks file needed — keep the logic inline in the widget since it's self-contained.
 

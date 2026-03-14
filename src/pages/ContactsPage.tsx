@@ -33,6 +33,7 @@ const contactSchema = z.object({
   email: z.string().trim().email("Invalid email format").max(255).optional().or(z.literal("")),
   phone: z.string().max(30, "Max 30 characters").optional().or(z.literal("")),
   company: z.string().max(200).optional().or(z.literal("")),
+  company_id: z.string().uuid().nullable().optional(),
   job_title: z.string().max(200).optional().or(z.literal("")),
   status: z.string().optional().or(z.literal("")),
   source: z.string().max(200).optional().or(z.literal("")),

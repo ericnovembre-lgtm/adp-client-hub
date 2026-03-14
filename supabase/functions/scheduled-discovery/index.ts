@@ -108,7 +108,9 @@ Return a JSON array of exactly 5 lead objects. Each must have:
 - trigger_type (string, one of: funding_raised, hiring_surge, multi_state_expansion, compliance_change, competitor_peo_renewal, retirement_mandate, safety_incident, international_growth, latent_need)
 - ai_pitch_summary (string, 2-3 sentences referencing specific ADP TotalSource capabilities relevant to this lead's trigger and industry)
 
-Return ONLY the JSON array, no markdown or extra text.`;
+Return ONLY the JSON array, no markdown or extra text.
+
+[Knowledge Version: ${KNOWLEDGE_VERSION}]`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {

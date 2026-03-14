@@ -609,6 +609,26 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Product Knowledge Version */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Info className="h-5 w-5" />
+            Product Knowledge
+          </CardTitle>
+          <CardDescription>ADP TotalSource knowledge base version used by AI features</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground">Frontend version:</span>
+            <Badge variant="secondary" className="font-mono">{KNOWLEDGE_VERSION}</Badge>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Backend functions (AI Chat &amp; Scheduled Discovery) should display the same version. If they differ, update the <code className="bg-muted px-1 rounded">KNOWLEDGE_VERSION</code> constant in all three locations.
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Knockout Rules Admin */}
       <KnockoutRulesSection />
 

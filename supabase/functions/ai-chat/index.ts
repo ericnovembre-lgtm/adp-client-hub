@@ -94,7 +94,9 @@ When writing emails or outreach:
 - Include one specific statistic that relates to their situation
 - End with a soft CTA (coffee chat, quick call, not 'buy now')
 - Never use more than 3 paragraphs for cold outreach
-- Personalize based on trigger events (hiring, funding, expansion, compliance issues)`;
+- Personalize based on trigger events (hiring, funding, expansion, compliance issues)
+
+[Knowledge Version: ${KNOWLEDGE_VERSION}]`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {

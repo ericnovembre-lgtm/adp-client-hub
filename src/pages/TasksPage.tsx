@@ -23,9 +23,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Plus, Search, Pencil, Trash2, CalendarIcon, Check, ChevronDown, ChevronRight, CheckSquare } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, CalendarIcon, ChevronDown, ChevronRight, CheckSquare } from "lucide-react";
 
 // ── Constants ──
 const PRIORITY_COLORS: Record<string, string> = {

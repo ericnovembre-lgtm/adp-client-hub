@@ -142,7 +142,7 @@ export default function AIDiscoveryPage() {
       await updateSettings.mutateAsync({
         ...settings,
         scheduler_frequency: freq,
-      } as any);
+      });
     }
   }, [settings, user, updateSettings]);
 

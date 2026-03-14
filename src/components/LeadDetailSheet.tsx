@@ -411,6 +411,65 @@ export default function LeadDetailSheet({
             </>
           )}
 
+          {/* Activity Timeline */}
+          <Separator />
+          <div>
+            <h3 className="font-semibold text-sm mb-3">Activity</h3>
+            {/* Add activity form */}
+            <div className="flex gap-2 mb-4">
+              <Select value={activityType} onValueChange={setActivityType}>
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ACTIVITY_TYPES.map((t) => (
+                    <SelectItem key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                placeholder="Add a note, call, or email..."
+                value={activityText}
+                onChange={(e) => setActivityText(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddActivity()}
+                className="flex-1"
+              />
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={handleAddActivity}
+                disabled={!activityText.trim() || createActivity.isPending}
+              >
+                {createActivity.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              </Button>
+            </div>
+            {/* Timeline */}
+            {activitiesLoading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+              </div>
+            ) : !activities?.length ? (
+              <p className="text-sm text-muted-foreground">No activity recorded yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {activities.map((a) => (
+                  <div key={a.id} className="flex gap-3 text-sm">
+                    <div className="mt-0.5 text-muted-foreground">
+                      {ACTIVITY_ICONS[a.type] ?? <FileText className="h-3.5 w-3.5" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-foreground">{a.description}</p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <Clock className="h-3 w-3" />
+                        {a.created_at ? formatDistanceToNow(new Date(a.created_at), { addSuffix: true }) : ""}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Created date */}
           {lead.created_at && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2">

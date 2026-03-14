@@ -30,8 +30,10 @@ export function useDashboardStats() {
       const _thisMonthStart = startOfMonth(now).toISOString();
       const _thisMonthEnd = endOfMonth(now).toISOString();
       const lastMonth = subMonths(now, 1);
-      const lastMonthStart = startOfMonth(lastMonth).toISOString();
       const lastMonthEnd = endOfMonth(lastMonth).toISOString();
+      const sameDayLastMonth = subMonths(now, 1);
+      const sameDayLastMonthStart = startOfDay(sameDayLastMonth).toISOString();
+      const sameDayLastMonthEnd = endOfDay(sameDayLastMonth).toISOString();
       const todayStart = startOfDay(now).toISOString();
       const todayEnd = endOfDay(now).toISOString();
 

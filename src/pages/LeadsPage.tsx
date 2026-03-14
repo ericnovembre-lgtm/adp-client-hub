@@ -308,7 +308,7 @@ export default function LeadsPage() {
       );
       await Promise.all(
         Array.from(selectedIds).map(id => {
-          const lead = filteredLeads.find(l => l.id === id);
+          const lead = leads.find(l => l.id === id);
           return createActivity.mutateAsync({
             type: "status_change",
             description: `Lead "${lead?.company_name ?? 'Unknown'}" bulk-updated to ${newStatus}`,

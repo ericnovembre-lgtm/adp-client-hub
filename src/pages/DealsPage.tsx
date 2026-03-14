@@ -227,7 +227,7 @@ function DealFormDialog({
             )} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField control={form.control} name="value" render={({ field }) => (
-                <FormItem><FormLabel>Value ($)</FormLabel><FormControl><Input type="number" min={0} {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Value ($)</FormLabel><FormControl><Input type="number" min={0} step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="stage" render={({ field }) => (
                 <FormItem><FormLabel>Stage</FormLabel>

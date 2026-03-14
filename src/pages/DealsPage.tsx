@@ -33,32 +33,12 @@ import { Plus, Search, Pencil, Trash2, MoreHorizontal, CalendarIcon, DollarSign,
 import { ScrollArea } from "@/components/ui/scroll-area";
 import DealDetailSheet from "@/components/DealDetailSheet";
 
-// ── Constants ──
-const STAGES = ["lead", "qualified", "proposal", "negotiation", "closed_won", "closed_lost"] as const;
-type Stage = (typeof STAGES)[number];
+import { DEAL_STAGES, DEAL_STAGE_LABELS, DEAL_STAGE_COLORS, STAGE_HEADER_COLORS, type DealStage } from "@/lib/constants";
 
-const STAGE_LABELS: Record<Stage, string> = {
-  lead: "Lead",
-  qualified: "Qualified",
-  proposal: "Proposal",
-  negotiation: "Negotiation",
-  closed_won: "Closed Won",
-  closed_lost: "Closed Lost",
-};
-
-const STAGE_BADGE_COLORS: Record<Stage, string> = {
-  lead: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-  qualified: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  proposal: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
-  negotiation: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-  closed_won: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300",
-  closed_lost: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-};
-
-const STAGE_HEADER_COLORS: Record<string, string> = {
-  closed_won: "border-t-emerald-500",
-  closed_lost: "border-t-red-500",
-};
+const STAGES = DEAL_STAGES;
+type Stage = DealStage;
+const STAGE_LABELS = DEAL_STAGE_LABELS as Record<Stage, string>;
+const STAGE_BADGE_COLORS = DEAL_STAGE_COLORS as Record<Stage, string>;
 
 const fmtCurrency = (v: number | null) => (v != null ? `$${v.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}` : "—");
 

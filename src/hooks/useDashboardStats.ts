@@ -57,8 +57,8 @@ export function useDashboardStats() {
 
         // Tasks due today
         supabase.from("tasks").select("id", { count: "exact", head: true }).gte("due_date", todayStart).lte("due_date", todayEnd).neq("status", "completed"),
-        // Tasks that were due "today" last month — approximate by counting tasks due in last month
-        supabase.from("tasks").select("id", { count: "exact", head: true }).gte("due_date", lastMonthStart).lte("due_date", lastMonthEnd).neq("status", "completed"),
+        // Tasks due on the same calendar day last month
+        supabase.from("tasks").select("id", { count: "exact", head: true }).gte("due_date", sameDayLastMonthStart).lte("due_date", sameDayLastMonthEnd).neq("status", "completed"),
       ]);
 
       const revNowTotal = (revenueNow.data ?? []).reduce((s, d) => s + (d.value ?? 0), 0);

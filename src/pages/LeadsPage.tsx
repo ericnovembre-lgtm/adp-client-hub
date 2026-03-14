@@ -47,13 +47,9 @@ const leadSchema = z.object({
 
 type LeadFormValues = z.infer<typeof leadSchema>;
 
-const statusColors: Record<string, string> = {
-  new: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  contacted: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-  qualified: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  converted: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-  dismissed: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
-};
+import { LEAD_STATUS_COLORS } from "@/lib/constants";
+
+const statusColors = LEAD_STATUS_COLORS;
 
 // --- Lead Form Dialog with industry onBlur knockout warning ---
 

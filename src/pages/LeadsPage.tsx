@@ -28,6 +28,8 @@ import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import DraftEmailDialog from "@/components/DraftEmailDialog";
 import LeadDetailSheet from "@/components/LeadDetailSheet";
+import { checkKnockoutLocal, type LocalKnockoutResult } from "@/lib/knockoutLocal";
+import EligibilityBadge from "@/components/EligibilityBadge";
 
 const leadSchema = z.object({
   company_name: z.string().trim().min(1, "Company name is required").max(200, "Max 200 characters"),

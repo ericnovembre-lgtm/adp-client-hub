@@ -285,7 +285,7 @@ export default function LeadsPage() {
     if (allVisibleSelected) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(filteredLeads.map(l => l.id)));
+      setSelectedIds(new Set(leads.map(l => l.id)));
     }
   };
 

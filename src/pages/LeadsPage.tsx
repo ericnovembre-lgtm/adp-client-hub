@@ -27,6 +27,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import DraftEmailDialog from "@/components/DraftEmailDialog";
+import LeadDetailSheet from "@/components/LeadDetailSheet";
 
 const leadSchema = z.object({
   company_name: z.string().trim().min(1, "Company name is required").max(200, "Max 200 characters"),
@@ -309,6 +310,7 @@ export default function LeadsPage() {
   const [emailLead, setEmailLead] = useState<Lead | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [detailLead, setDetailLead] = useState<Lead | null>(null);
   const [bulkActionPending, setBulkActionPending] = useState(false);
 
   // Knockout dialog state
@@ -693,8 +695,8 @@ export default function LeadsPage() {
                   filteredLeads.map((lead) => {
                     const ko = knockoutMap.get(lead.id) ?? { tier: 'clear' as const, matchedRules: [], message: '' };
                     return (
-                      <TableRow key={lead.id} data-state={selectedIds.has(lead.id) ? "selected" : undefined}>
-                        <TableCell>
+                      <TableRow key={lead.id} data-state={selectedIds.has(lead.id) ? "selected" : undefined} className="cursor-pointer" onClick={() => setDetailLead(lead)}>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
                           <Checkbox
                             checked={selectedIds.has(lead.id)}
                             onCheckedChange={() => toggleSelect(lead.id)}
@@ -736,8 +738,8 @@ export default function LeadsPage() {
                         <TableCell>
                           <EligibilityBadge tier={ko.tier} message={ko.message} />
                         </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenu modal={false}>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8">
                                 <MoreHorizontal className="h-4 w-4" />
@@ -955,6 +957,12 @@ export default function LeadsPage() {
           }}
         />
       )}
+
+      <LeadDetailSheet
+        lead={detailLead}
+        open={!!detailLead}
+        onOpenChange={(v) => { if (!v) setDetailLead(null); }}
+      />
     </div>
   );
 }

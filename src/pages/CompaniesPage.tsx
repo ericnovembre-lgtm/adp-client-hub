@@ -18,7 +18,24 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Building2, Users, Globe, Phone, DollarSign, Download, Loader2 } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, Building2, Users, Globe, Phone, DollarSign, Download, Loader2, UserCircle } from "lucide-react";
+
+function useLinkedContacts(companyId: string | undefined) {
+  return useQuery({
+    queryKey: ["linked-contacts", companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contacts")
+        .select("id, first_name, last_name")
+        .eq("company_id", companyId!)
+        .order("first_name")
+        .limit(10);
+      if (error) throw error;
+      return data as Pick<Contact, "id" | "first_name" | "last_name">[];
+    },
+    enabled: !!companyId,
+  });
+}
 
 const companySchema = z.object({
   name: z.string().trim().min(1, "Company name is required").max(200, "Max 200 characters"),

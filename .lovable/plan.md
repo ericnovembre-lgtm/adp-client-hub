@@ -1,38 +1,48 @@
 
 
-## Fix: Tasks Due Today Trend Calculation
+## Plan: Persist AI Chat History Between Sessions
 
-The bug is on line 59: the previous-period task query uses `lastMonthStart` to `lastMonthEnd` (the entire previous month), making the comparison meaningless against a single day.
+Save chat conversations to the database so they survive page refreshes and sessions.
 
-### Change
+### Database Change
 
-**`src/hooks/useDashboardStats.ts`** — Lines 32-36 and 58-59:
+Create a `chat_messages` table:
 
-1. Add a `sameDayLastMonth` date using `subMonths(now, 1)`, then compute its `startOfDay` and `endOfDay`.
-2. Replace the tasks previous-period query (line 59) to filter `due_date` between `startOfDay(sameDayLastMonth)` and `endOfDay(sameDayLastMonth)` instead of the full previous month range.
-3. Remove the now-unused `lastMonthStart` variable (it's not used by any other query).
+```sql
+CREATE TABLE public.chat_messages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  role text NOT NULL CHECK (role IN ('user', 'assistant')),
+  content text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
 
-The other 3 stat cards (leads, deals, revenue) already use correct comparable periods (all-time now vs all-time as of last month end), so no changes needed there.
+ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
 
-### Specific code diff
+CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
+CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
 
-**Date setup** — add after line 32:
-```ts
-const sameDayLastMonth = subMonths(now, 1);
-const sameDayLastMonthStart = startOfDay(sameDayLastMonth).toISOString();
-const sameDayLastMonthEnd = endOfDay(sameDayLastMonth).toISOString();
+CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
 ```
 
-**Task previous query** (line 58-59) — replace with:
-```ts
-// Tasks due on the same calendar day last month
-supabase.from("tasks").select("id", { count: "exact", head: true })
-  .gte("due_date", sameDayLastMonthStart)
-  .lte("due_date", sameDayLastMonthEnd)
-  .neq("status", "completed"),
+### Code Changes — `src/components/AIChatWidget.tsx`
+
+1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
+
+2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
+
+3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
+
+4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
+
+### Data flow
+
+```text
+User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
+Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
+Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
 ```
 
-Remove the unused `lastMonthStart` variable (line 33). `lastMonthEnd` is still used by leads/deals/revenue queries.
-
-No visual changes — only the trend percentage on the "Tasks Due Today" card will now show a meaningful comparison.
+No new hooks file needed — keep the logic inline in the widget since it's self-contained.
 

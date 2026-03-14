@@ -738,7 +738,7 @@ export default function LeadsPage() {
                         <TableCell>
                           <EligibilityBadge tier={ko.tier} message={ko.message} />
                         </TableCell>
-                        <TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu modal={false}>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8">

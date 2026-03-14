@@ -957,6 +957,12 @@ export default function LeadsPage() {
           }}
         />
       )}
+
+      <LeadDetailSheet
+        lead={detailLead}
+        open={!!detailLead}
+        onOpenChange={(v) => { if (!v) setDetailLead(null); }}
+      />
     </div>
   );
 }

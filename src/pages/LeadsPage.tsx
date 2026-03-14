@@ -341,7 +341,7 @@ export default function LeadsPage() {
 
   // Bulk export selected
   const handleBulkExport = () => {
-    const selected = filteredLeads.filter(l => selectedIds.has(l.id));
+    const selected = leads.filter(l => selectedIds.has(l.id));
     exportToCSV(selected, "leads-selected", [
       { header: "Company Name", accessor: (r) => r.company_name },
       { header: "Decision Maker", accessor: (r) => r.decision_maker_name },

@@ -714,6 +714,20 @@ export default function LeadsPage() {
                         <TableCell className="hidden xl:table-cell max-w-[200px] truncate">
                           {lead.trigger_event ? (lead.trigger_event.length > 50 ? lead.trigger_event.slice(0, 50) + "…" : lead.trigger_event) : "—"}
                         </TableCell>
+                        <TableCell className="hidden xl:table-cell max-w-[200px]">
+                          {lead.ai_pitch_summary ? (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="block truncate cursor-help">{lead.ai_pitch_summary.length > 80 ? lead.ai_pitch_summary.slice(0, 80) + "…" : lead.ai_pitch_summary}</span>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-sm text-xs whitespace-pre-wrap">
+                                  <p>{lead.ai_pitch_summary}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ) : "—"}
+                        </TableCell>
                         <TableCell>
                           <Badge className={statusColors[lead.status ?? "new"] ?? statusColors.new} variant="outline">
                             {lead.status ?? "new"}

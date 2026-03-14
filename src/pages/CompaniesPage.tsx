@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { useCompanies, useCreateCompany, useUpdateCompany, useDeleteCompany } from "@/hooks/useCompanies";
+import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import type { Company } from "@/types/database";
+import type { Company, Contact } from "@/types/database";
 import { exportToCSV } from "@/lib/exportCSV";
 import { supabase } from "@/integrations/supabase/client";
 

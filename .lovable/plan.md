@@ -1,48 +1,61 @@
 
 
-## Plan: Persist AI Chat History Between Sessions
+## Plan: Consolidate Constants and Create Shared ActivityTimeline
 
-Save chat conversations to the database so they survive page refreshes and sessions.
+### 1. Create `src/lib/constants.ts`
 
-### Database Change
+Export these shared constants:
+- `LEAD_STATUS_COLORS` — from LeadsPage (used in LeadsPage + LeadDetailSheet)
+- `DEAL_STAGE_COLORS` — the stage badge color map (used in DealsPage + DealDetailSheet)
+- `DEAL_STAGE_LABELS` — stage label map (used in DealsPage + DealDetailSheet)
+- `ACTIVITY_TYPES` — `["note", "call", "email"] as const`
 
-Create a `chat_messages` table:
+Note: `ACTIVITY_ICONS` contains JSX (React nodes), so it will live in the ActivityTimeline component instead of a pure constants file. The Deal/Contact sheets use a different icon set (stage_change, conversion) than the Lead sheet (call, email) — the ActivityTimeline will merge both sets.
 
-```sql
-CREATE TABLE public.chat_messages (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  role text NOT NULL CHECK (role IN ('user', 'assistant')),
-  content text NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
+Also export `DEAL_STAGES` array and `STAGE_HEADER_COLORS` from DealsPage since they're related.
 
-ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+### 2. Create `src/components/ActivityTimeline.tsx`
 
-CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
-CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
-CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
+Shared component with props:
+- `entityType: "lead" | "contact" | "deal"`
+- `entityId: string`
+- `showAddForm?: boolean` (default true for leads, false for deals/contacts which currently don't have add forms)
 
-CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
-```
+Internally:
+- Query activities by `${entityType}_id = entityId`
+- Merged `ACTIVITY_ICONS` map covering all types (note, call, email, stage_change, status_change, conversion)
+- When `showAddForm` is true: render the type selector + input + send button (using `useCreateActivity`)
+- Render the timeline list (loading skeletons, empty state, activity items)
 
-### Code Changes — `src/components/AIChatWidget.tsx`
+### 3. Update files to import from constants
 
-1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
+**LeadsPage.tsx**: Replace local `statusColors` with import of `LEAD_STATUS_COLORS`
 
-2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
+**LeadDetailSheet.tsx**: 
+- Import `LEAD_STATUS_COLORS` (replacing local `statusColors`)
+- Remove local `ACTIVITY_ICONS`, `ACTIVITY_TYPES`, `useLeadActivities`
+- Remove activity timeline JSX block + related state (`activityType`, `activityText`)
+- Add `<ActivityTimeline entityType="lead" entityId={lead.id} showAddForm />`
 
-3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
+**DealsPage.tsx**: Import `DEAL_STAGE_LABELS`, `DEAL_STAGE_COLORS` (replacing local `STAGE_LABELS`, `STAGE_BADGE_COLORS`)
 
-4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
+**DealDetailSheet.tsx**:
+- Import `DEAL_STAGE_LABELS`, `DEAL_STAGE_COLORS` (replacing local constants)
+- Remove local `ACTIVITY_ICONS`, `useDealActivities`, timeline JSX
+- Add `<ActivityTimeline entityType="deal" entityId={deal.id} showAddForm={false} />`
 
-### Data flow
+**ContactDetailSheet.tsx**:
+- Remove local `ACTIVITY_ICONS`, `useContactActivities`, timeline JSX
+- Add `<ActivityTimeline entityType="contact" entityId={contact.id} showAddForm={false} />`
 
-```text
-User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
-Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
-Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
-```
+### Files changed
+- `src/lib/constants.ts` (new)
+- `src/components/ActivityTimeline.tsx` (new)
+- `src/pages/LeadsPage.tsx` (import constant)
+- `src/pages/DealsPage.tsx` (import constants)
+- `src/components/LeadDetailSheet.tsx` (import constants + use ActivityTimeline)
+- `src/components/DealDetailSheet.tsx` (import constants + use ActivityTimeline)
+- `src/components/ContactDetailSheet.tsx` (import constant + use ActivityTimeline)
 
-No new hooks file needed — keep the logic inline in the widget since it's self-contained.
+No visual changes.
 

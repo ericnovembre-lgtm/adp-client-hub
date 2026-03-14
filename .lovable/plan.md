@@ -1,48 +1,26 @@
 
 
-## Plan: Persist AI Chat History Between Sessions
+## Plan: Fix TypeScript Type Safety — Remove All `as any` Casts
 
-Save chat conversations to the database so they survive page refreshes and sessions.
+### Changes
 
-### Database Change
+**1. `src/hooks/useUserSettings.ts`** — Extend `UserSettings` interface with all stored fields:
+- Add: `scheduler_enabled`, `scheduler_frequency`, `scheduler_industries`, `scheduler_states`, `scheduler_headcount_min`, `scheduler_headcount_max`, `scheduler_last_run`, `scheduler_last_count`, `scheduler_status`, `last_run_at`, `last_found_count`, `next_run_at` (all optional)
 
-Create a `chat_messages` table:
+**2. `src/pages/DashboardPage.tsx`** (lines 88-90) — Replace `(userSettings as any)?.scheduler_enabled` etc. with direct `userSettings?.scheduler_enabled`, `userSettings?.scheduler_last_run`, `userSettings?.scheduler_last_count`
 
-```sql
-CREATE TABLE public.chat_messages (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  role text NOT NULL CHECK (role IN ('user', 'assistant')),
-  content text NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
+**3. `src/pages/AIDiscoveryPage.tsx`** (7 casts to remove):
+- Line 70-72: Replace `const s = settings as any` block with direct `settings.scheduler_enabled` / `settings.scheduler_frequency`
+- Lines 122, 135, 146: Remove `as any` from `updateSettings.mutate()` calls — the extended interface now covers these fields
+- Lines 160, 178-180: Replace `(settings as any)?.scheduler_last_run` etc. with `settings?.scheduler_last_run`, `settings?.scheduler_last_count`, `settings?.scheduler_status`
 
-ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+**4. `src/types/database.ts`** — Activity interface already has `lead_id` field. Confirmed present.
 
-CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
-CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
-CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
+**5. `src/hooks/useActivities.ts`** — The `TablesInsert<"activities">` type from Supabase types should already include `lead_id`. Verify the generated types include it; if so, no hook changes needed.
 
-CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
-```
+**6. `src/components/LeadDetailSheet.tsx`** (line 131) — Remove `as any` cast from `createActivity.mutateAsync()` call since `lead_id` is part of the insert type.
 
-### Code Changes — `src/components/AIChatWidget.tsx`
+**7. `src/hooks/useReportsData.ts`** (line ~88) — Change dayMap value type to `{ date: string; [key: string]: string | number }` and remove `(entry as any)` cast.
 
-1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
-
-2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
-
-3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
-
-4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
-
-### Data flow
-
-```text
-User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
-Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
-Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
-```
-
-No new hooks file needed — keep the logic inline in the widget since it's self-contained.
+No functionality changes — types only.
 

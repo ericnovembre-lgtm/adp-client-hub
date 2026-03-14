@@ -44,6 +44,7 @@ export default function ContactDetailSheet({
   onOpenChange: (open: boolean) => void;
 }) {
   const { data: activities, isLoading } = useContactActivities(contact?.id);
+  const [, navigate] = useLocation();
 
   if (!contact) return null;
 

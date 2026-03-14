@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Building2, User, Mail, Phone, Globe, MapPin, Users, Briefcase,
-  Zap, Clock, Sparkles, Tag, Pencil, X, Save, Loader2,
+  Zap, Clock, Sparkles, Tag, Pencil, X, Save, Loader2, FileText, ArrowRightLeft,
 } from "lucide-react";
 
 const statusColors: Record<string, string> = {
@@ -58,11 +58,15 @@ export default function LeadDetailSheet({
   open,
   onOpenChange,
   onLeadUpdated,
+  onDraftEmail,
+  onConvertToDeal,
 }: {
   lead: Lead | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onLeadUpdated?: () => void;
+  onDraftEmail?: (lead: Lead) => void;
+  onConvertToDeal?: (lead: Lead) => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<Partial<Lead>>({});
@@ -302,6 +306,35 @@ export default function LeadDetailSheet({
                       {lead.ai_pitch_summary}
                     </CardContent>
                   </Card>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Action Buttons */}
+          {!isEditing && (onDraftEmail || onConvertToDeal) && (
+            <>
+              <Separator />
+              <div className="flex gap-2">
+                {onDraftEmail && (
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => { onDraftEmail(lead); onOpenChange(false); }}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Draft Email
+                  </Button>
+                )}
+                {onConvertToDeal && lead.status !== "converted" && (
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => { onConvertToDeal(lead); onOpenChange(false); }}
+                  >
+                    <ArrowRightLeft className="h-4 w-4 mr-2" />
+                    Convert to Deal
+                  </Button>
                 )}
               </div>
             </>

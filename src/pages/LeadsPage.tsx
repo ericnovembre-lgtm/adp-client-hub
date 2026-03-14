@@ -963,6 +963,8 @@ export default function LeadsPage() {
         open={!!detailLead}
         onOpenChange={(v) => { if (!v) setDetailLead(null); }}
         onLeadUpdated={() => setDetailLead(null)}
+        onDraftEmail={(lead) => { setDetailLead(null); setEmailLead(lead); }}
+        onConvertToDeal={(lead) => { setDetailLead(null); initiateConvert(lead); }}
       />
     </div>
   );

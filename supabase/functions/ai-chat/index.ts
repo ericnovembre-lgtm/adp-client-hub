@@ -7,6 +7,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const KNOWLEDGE_VERSION = "2026-03-14-v1";
+
 // NOTE: Product knowledge below mirrors src/lib/adpProductKnowledge.ts — keep in sync when updating.
 const SYSTEM_PROMPT = `You are an expert ADP TotalSource sales consultant AI assistant embedded in the SavePlus24 CRM. You help the sales rep craft outreach, answer product questions, and strategize deals.
 
@@ -92,7 +94,9 @@ When writing emails or outreach:
 - Include one specific statistic that relates to their situation
 - End with a soft CTA (coffee chat, quick call, not 'buy now')
 - Never use more than 3 paragraphs for cold outreach
-- Personalize based on trigger events (hiring, funding, expansion, compliance issues)`;
+- Personalize based on trigger events (hiring, funding, expansion, compliance issues)
+
+[Knowledge Version: ${KNOWLEDGE_VERSION}]`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {

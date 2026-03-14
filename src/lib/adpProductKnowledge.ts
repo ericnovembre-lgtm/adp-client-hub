@@ -1,3 +1,5 @@
+export const KNOWLEDGE_VERSION = "2026-03-14-v1";
+
 export const ADP_PRODUCT_KNOWLEDGE = {
   // === COMPANY OVERVIEW ===
   companyOverview: {

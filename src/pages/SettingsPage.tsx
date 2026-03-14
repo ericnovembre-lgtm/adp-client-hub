@@ -407,7 +407,6 @@ export default function SettingsPage() {
 
   const saveSettings = async () => {
     const s: UserSettings = {
-      aiModel,
       aiChatEnabled,
       defaultIndustry: defaultIndustry || undefined,
       defaultState: defaultState || undefined,

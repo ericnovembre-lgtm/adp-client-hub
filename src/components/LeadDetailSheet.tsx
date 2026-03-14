@@ -58,6 +58,8 @@ export default function LeadDetailSheet({
   open,
   onOpenChange,
   onLeadUpdated,
+  onDraftEmail,
+  onConvertToDeal,
 }: {
   lead: Lead | null;
   open: boolean;

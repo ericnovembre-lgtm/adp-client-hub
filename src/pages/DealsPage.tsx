@@ -60,7 +60,7 @@ const STAGE_HEADER_COLORS: Record<string, string> = {
   closed_lost: "border-t-red-500",
 };
 
-const fmtCurrency = (v: number | null) => (v != null ? `$${v.toLocaleString()}` : "—");
+const fmtCurrency = (v: number | null) => (v != null ? `$${v.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}` : "—");
 
 // ── Hooks for lookups ──
 function useAllContacts() {
@@ -227,7 +227,7 @@ function DealFormDialog({
             )} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField control={form.control} name="value" render={({ field }) => (
-                <FormItem><FormLabel>Value ($)</FormLabel><FormControl><Input type="number" min={0} {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Value ($)</FormLabel><FormControl><Input type="number" min={0} step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="stage" render={({ field }) => (
                 <FormItem><FormLabel>Stage</FormLabel>
@@ -373,7 +373,7 @@ function KanbanView({
                       </div>
                       {deal.value != null && (
                         <div className="flex items-center gap-1 text-sm font-semibold text-primary">
-                          <DollarSign className="h-3.5 w-3.5" />{deal.value.toLocaleString()}
+                          <DollarSign className="h-3.5 w-3.5" />{deal.value.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                         </div>
                       )}
                       <div className="space-y-1 text-xs text-muted-foreground">

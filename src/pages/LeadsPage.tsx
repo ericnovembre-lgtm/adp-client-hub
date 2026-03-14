@@ -278,7 +278,7 @@ export default function LeadsPage() {
   useEffect(() => { setSelectedIds(new Set()); }, [page]);
 
   // Bulk selection helpers
-  const allVisibleSelected = filteredLeads.length > 0 && filteredLeads.every(l => selectedIds.has(l.id));
+  const allVisibleSelected = leads.length > 0 && leads.every(l => selectedIds.has(l.id));
   const someSelected = selectedIds.size > 0;
 
   const toggleSelectAll = () => {

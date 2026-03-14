@@ -426,6 +426,7 @@ export default function LeadsPage() {
       { header: "Trigger Event", accessor: (r) => r.trigger_event },
       { header: "Status", accessor: (r) => r.status },
       { header: "Source", accessor: (r) => r.source },
+      { header: "AI Pitch Summary", accessor: (r) => r.ai_pitch_summary },
       { header: "Created Date", accessor: (r) => r.created_at ? new Date(r.created_at).toLocaleDateString() : "" },
     ]);
     toast.success(`Exported ${selected.length} lead(s)`);
@@ -663,6 +664,7 @@ export default function LeadsPage() {
               <TableHead className="hidden lg:table-cell">Industry</TableHead>
               <TableHead className="hidden lg:table-cell">State</TableHead>
               <TableHead className="hidden xl:table-cell">Trigger Event</TableHead>
+              <TableHead className="hidden xl:table-cell">AI Pitch</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Eligibility</TableHead>
               <TableHead className="w-10" />
@@ -672,7 +674,7 @@ export default function LeadsPage() {
             {isLoading
               ? Array.from({ length: 8 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 10 }).map((_, j) => (
+                    {Array.from({ length: 11 }).map((_, j) => (
                       <TableCell key={j}>
                         <Skeleton className="h-4 w-full" />
                       </TableCell>
@@ -681,7 +683,7 @@ export default function LeadsPage() {
                 ))
               : filteredLeads.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center text-muted-foreground py-12">
+                    <TableCell colSpan={11} className="text-center text-muted-foreground py-12">
                       <Users className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
                       <p className="font-medium">No leads yet</p>
                       <p className="text-sm mt-1">Start discovering leads to fill your pipeline!</p>
@@ -711,6 +713,20 @@ export default function LeadsPage() {
                         <TableCell className="hidden lg:table-cell">{lead.state ?? "—"}</TableCell>
                         <TableCell className="hidden xl:table-cell max-w-[200px] truncate">
                           {lead.trigger_event ? (lead.trigger_event.length > 50 ? lead.trigger_event.slice(0, 50) + "…" : lead.trigger_event) : "—"}
+                        </TableCell>
+                        <TableCell className="hidden xl:table-cell max-w-[200px]">
+                          {lead.ai_pitch_summary ? (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="block truncate cursor-help">{lead.ai_pitch_summary.length > 80 ? lead.ai_pitch_summary.slice(0, 80) + "…" : lead.ai_pitch_summary}</span>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-sm text-xs whitespace-pre-wrap">
+                                  <p>{lead.ai_pitch_summary}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ) : "—"}
                         </TableCell>
                         <TableCell>
                           <Badge className={statusColors[lead.status ?? "new"] ?? statusColors.new} variant="outline">

@@ -29,7 +29,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, Pencil, Trash2, MoreHorizontal, CalendarIcon, Check, ChevronsUpDown, DollarSign, ArrowRight, Download, Loader2 } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, MoreHorizontal, CalendarIcon, DollarSign, ArrowRight, Download, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import DealDetailSheet from "@/components/DealDetailSheet";
 

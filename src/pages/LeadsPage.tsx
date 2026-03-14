@@ -739,7 +739,7 @@ export default function LeadsPage() {
                           <EligibilityBadge tier={ko.tier} message={ko.message} />
                         </TableCell>
                         <TableCell>
-                          <DropdownMenu>
+                          <DropdownMenu modal={false}>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8">
                                 <MoreHorizontal className="h-4 w-4" />

@@ -352,7 +352,7 @@ export default function SettingsPage() {
   const [profileSaving, setProfileSaving] = useState(false);
 
   // AI
-  const [aiModel, setAiModel] = useState("gpt-4o-mini");
+  
   const [aiChatEnabled, setAiChatEnabled] = useState(true);
 
   // Discovery
@@ -378,7 +378,7 @@ export default function SettingsPage() {
   // Load settings
   useEffect(() => {
     if (!settings) return;
-    setAiModel(settings.aiModel ?? "gpt-4o-mini");
+    
     setAiChatEnabled(settings.aiChatEnabled !== false);
     setDefaultIndustry(settings.defaultIndustry ?? "");
     setDefaultState(settings.defaultState ?? "");
@@ -407,7 +407,6 @@ export default function SettingsPage() {
 
   const saveSettings = async () => {
     const s: UserSettings = {
-      aiModel,
       aiChatEnabled,
       defaultIndustry: defaultIndustry || undefined,
       defaultState: defaultState || undefined,
@@ -544,17 +543,10 @@ export default function SettingsPage() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label>AI Model</Label>
-            <Select value={aiModel} onValueChange={setAiModel}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="gpt-4o-mini">gpt-4o-mini</SelectItem>
-                <SelectItem value="gpt-4o">gpt-4o</SelectItem>
-                <SelectItem value="gpt-4-turbo">gpt-4-turbo</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <Info className="h-3 w-3" /> API keys are configured as backend function secrets
-            </p>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">Gemini 2.5 Flash</Badge>
+              <span className="text-xs text-muted-foreground">via Lovable AI Gateway</span>
+            </div>
           </div>
           <div className="flex items-center justify-between">
             <div>

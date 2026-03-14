@@ -26,10 +26,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, Pencil, Trash2, MoreHorizontal, CalendarIcon, Check, ChevronsUpDown, DollarSign, ArrowRight, Download, Loader2 } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, MoreHorizontal, CalendarIcon, DollarSign, ArrowRight, Download, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import DealDetailSheet from "@/components/DealDetailSheet";
 
@@ -108,54 +108,7 @@ const dealSchema = z.object({
 });
 type DealFormValues = z.infer<typeof dealSchema>;
 
-// ── Searchable Combobox ──
-function SearchableSelect({
-  items,
-  value,
-  onChange,
-  placeholder,
-  searchPlaceholder,
-}: {
-  items: { value: string; label: string }[];
-  value: string;
-  onChange: (v: string) => void;
-  placeholder: string;
-  searchPlaceholder: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const selected = items.find((i) => i.value === value);
 
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
-          {selected ? selected.label : <span className="text-muted-foreground">{placeholder}</span>}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0 pointer-events-auto" align="start">
-        <Command>
-          <CommandInput placeholder={searchPlaceholder} />
-          <CommandList>
-            <CommandEmpty>No results.</CommandEmpty>
-            <CommandGroup>
-              <CommandItem value="__none__" onSelect={() => { onChange(""); setOpen(false); }}>
-                <Check className={cn("mr-2 h-4 w-4", !value ? "opacity-100" : "opacity-0")} />
-                None
-              </CommandItem>
-              {items.map((item) => (
-                <CommandItem key={item.value} value={item.label} onSelect={() => { onChange(item.value); setOpen(false); }}>
-                  <Check className={cn("mr-2 h-4 w-4", value === item.value ? "opacity-100" : "opacity-0")} />
-                  {item.label}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
-}
 
 // ── Deal Form Dialog ──
 function DealFormDialog({
@@ -244,12 +197,12 @@ function DealFormDialog({
             </div>
             <FormField control={form.control} name="contact_id" render={({ field }) => (
               <FormItem><FormLabel>Contact</FormLabel><FormControl>
-                <SearchableSelect items={contactItems} value={field.value ?? ""} onChange={field.onChange} placeholder="Select contact" searchPlaceholder="Search contacts…" />
+                <SearchableSelect options={contactItems} value={field.value ?? ""} onValueChange={field.onChange} placeholder="Select contact" searchPlaceholder="Search contacts…" />
               </FormControl><FormMessage /></FormItem>
             )} />
             <FormField control={form.control} name="company_id" render={({ field }) => (
               <FormItem><FormLabel>Company</FormLabel><FormControl>
-                <SearchableSelect items={companyItems} value={field.value ?? ""} onChange={field.onChange} placeholder="Select company" searchPlaceholder="Search companies…" />
+                <SearchableSelect options={companyItems} value={field.value ?? ""} onValueChange={field.onChange} placeholder="Select company" searchPlaceholder="Search companies…" />
               </FormControl><FormMessage /></FormItem>
             )} />
             <FormField control={form.control} name="expected_close_date" render={({ field }) => (

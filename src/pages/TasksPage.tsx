@@ -23,9 +23,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Plus, Search, Pencil, Trash2, CalendarIcon, Check, ChevronsUpDown, ChevronDown, ChevronRight, CheckSquare } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, CalendarIcon, ChevronDown, ChevronRight, CheckSquare } from "lucide-react";
 
 // ── Constants ──
 const PRIORITY_COLORS: Record<string, string> = {
@@ -84,47 +84,7 @@ function relativeDue(dateStr: string): string {
   return `In ${diff} days`;
 }
 
-// ── Searchable Combobox ──
-function SearchableSelect({
-  items, value, onChange, placeholder, searchPlaceholder,
-}: {
-  items: { value: string; label: string }[];
-  value: string;
-  onChange: (v: string) => void;
-  placeholder: string;
-  searchPlaceholder: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const selected = items.find((i) => i.value === value);
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
-          {selected ? selected.label : <span className="text-muted-foreground">{placeholder}</span>}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0 pointer-events-auto" align="start">
-        <Command>
-          <CommandInput placeholder={searchPlaceholder} />
-          <CommandList>
-            <CommandEmpty>No results.</CommandEmpty>
-            <CommandGroup>
-              <CommandItem value="__none__" onSelect={() => { onChange(""); setOpen(false); }}>
-                <Check className={cn("mr-2 h-4 w-4", !value ? "opacity-100" : "opacity-0")} />None
-              </CommandItem>
-              {items.map((item) => (
-                <CommandItem key={item.value} value={item.label} onSelect={() => { onChange(item.value); setOpen(false); }}>
-                  <Check className={cn("mr-2 h-4 w-4", value === item.value ? "opacity-100" : "opacity-0")} />{item.label}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
-}
+
 
 // ── Schema ──
 const taskSchema = z.object({
@@ -244,12 +204,12 @@ function TaskFormDialog({ open, onOpenChange, task }: { open: boolean; onOpenCha
             )} />
             <FormField control={form.control} name="contact_id" render={({ field }) => (
               <FormItem><FormLabel>Contact</FormLabel><FormControl>
-                <SearchableSelect items={contactItems} value={field.value ?? ""} onChange={field.onChange} placeholder="Select contact" searchPlaceholder="Search contacts…" />
+                <SearchableSelect options={contactItems} value={field.value ?? ""} onValueChange={field.onChange} placeholder="Select contact" searchPlaceholder="Search contacts…" />
               </FormControl><FormMessage /></FormItem>
             )} />
             <FormField control={form.control} name="deal_id" render={({ field }) => (
               <FormItem><FormLabel>Deal</FormLabel><FormControl>
-                <SearchableSelect items={dealItems} value={field.value ?? ""} onChange={field.onChange} placeholder="Select deal" searchPlaceholder="Search deals…" />
+                <SearchableSelect options={dealItems} value={field.value ?? ""} onValueChange={field.onChange} placeholder="Select deal" searchPlaceholder="Search deals…" />
               </FormControl><FormMessage /></FormItem>
             )} />
             <DialogFooter>

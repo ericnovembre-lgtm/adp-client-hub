@@ -74,6 +74,12 @@ export default function LeadDetailSheet({
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<Partial<Lead>>({});
   const updateLead = useUpdateLead();
+  const { data: knockoutRules = [] } = useKnockoutRules();
+
+  const knockoutResult = useMemo(() => {
+    if (!lead) return null;
+    return checkKnockoutLocal(lead.industry, knockoutRules);
+  }, [lead?.industry, knockoutRules]);
 
   useEffect(() => {
     if (!open) setIsEditing(false);

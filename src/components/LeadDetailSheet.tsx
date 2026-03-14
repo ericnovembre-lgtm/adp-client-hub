@@ -1,7 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
-import { format } from "date-fns";
-import type { Lead } from "@/types/database";
+import { format, formatDistanceToNow } from "date-fns";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import type { Lead, Activity } from "@/types/database";
 import { useUpdateLead } from "@/hooks/useLeads";
+import { useCreateActivity } from "@/hooks/useActivities";
 import { useKnockoutRules } from "@/hooks/useKnockoutRules";
 import { checkKnockoutLocal } from "@/lib/knockoutLocal";
 import EligibilityBadge from "@/components/EligibilityBadge";
@@ -10,6 +13,7 @@ import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,8 +21,33 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Building2, User, Mail, Phone, Globe, MapPin, Users, Briefcase,
-  Zap, Clock, Sparkles, Tag, Pencil, X, Save, Loader2, FileText, ArrowRightLeft,
+  Zap, Clock, Sparkles, Tag, Pencil, X, Save, Loader2, FileText, ArrowRightLeft, Send,
 } from "lucide-react";
+
+function useLeadActivities(leadId: string | undefined) {
+  return useQuery({
+    queryKey: ["activities", "lead", leadId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("activities")
+        .select("*")
+        .eq("lead_id", leadId!)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data as Activity[];
+    },
+    enabled: !!leadId,
+  });
+}
+
+const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
+  note: <FileText className="h-3.5 w-3.5" />,
+  call: <Phone className="h-3.5 w-3.5" />,
+  email: <Mail className="h-3.5 w-3.5" />,
+};
+
+const ACTIVITY_TYPES = ["note", "call", "email"] as const;
 
 const statusColors: Record<string, string> = {
   new: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
@@ -73,8 +102,13 @@ export default function LeadDetailSheet({
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<Partial<Lead>>({});
+  const [activityType, setActivityType] = useState<string>("note");
+  const [activityText, setActivityText] = useState("");
   const updateLead = useUpdateLead();
+  const createActivity = useCreateActivity();
+  const queryClient = useQueryClient();
   const { data: knockoutRules = [] } = useKnockoutRules();
+  const { data: activities, isLoading: activitiesLoading } = useLeadActivities(lead?.id);
 
   const knockoutResult = useMemo(() => {
     if (!lead) return null;
@@ -86,6 +120,22 @@ export default function LeadDetailSheet({
   }, [open]);
 
   if (!lead) return null;
+
+  const handleAddActivity = async () => {
+    if (!activityText.trim()) return;
+    try {
+      await createActivity.mutateAsync({
+        type: activityType,
+        description: activityText.trim(),
+        lead_id: lead.id,
+      } as any);
+      setActivityText("");
+      queryClient.invalidateQueries({ queryKey: ["activities", "lead", lead.id] });
+      toast.success("Activity added");
+    } catch {
+      toast.error("Failed to add activity");
+    }
+  };
 
   const startEditing = () => {
     setEditData({ ...lead });
@@ -360,6 +410,65 @@ export default function LeadDetailSheet({
               </div>
             </>
           )}
+
+          {/* Activity Timeline */}
+          <Separator />
+          <div>
+            <h3 className="font-semibold text-sm mb-3">Activity</h3>
+            {/* Add activity form */}
+            <div className="flex gap-2 mb-4">
+              <Select value={activityType} onValueChange={setActivityType}>
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ACTIVITY_TYPES.map((t) => (
+                    <SelectItem key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                placeholder="Add a note, call, or email..."
+                value={activityText}
+                onChange={(e) => setActivityText(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddActivity()}
+                className="flex-1"
+              />
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={handleAddActivity}
+                disabled={!activityText.trim() || createActivity.isPending}
+              >
+                {createActivity.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              </Button>
+            </div>
+            {/* Timeline */}
+            {activitiesLoading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+              </div>
+            ) : !activities?.length ? (
+              <p className="text-sm text-muted-foreground">No activity recorded yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {activities.map((a) => (
+                  <div key={a.id} className="flex gap-3 text-sm">
+                    <div className="mt-0.5 text-muted-foreground">
+                      {ACTIVITY_ICONS[a.type] ?? <FileText className="h-3.5 w-3.5" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-foreground">{a.description}</p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <Clock className="h-3 w-3" />
+                        {a.created_at ? formatDistanceToNow(new Date(a.created_at), { addSuffix: true }) : ""}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Created date */}
           {lead.created_at && (

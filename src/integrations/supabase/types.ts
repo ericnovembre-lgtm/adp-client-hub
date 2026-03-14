@@ -21,6 +21,7 @@ export type Database = {
           deal_id: string | null
           description: string
           id: string
+          lead_id: string | null
           type: string
         }
         Insert: {
@@ -29,6 +30,7 @@ export type Database = {
           deal_id?: string | null
           description: string
           id?: string
+          lead_id?: string | null
           type: string
         }
         Update: {
@@ -37,6 +39,7 @@ export type Database = {
           deal_id?: string | null
           description?: string
           id?: string
+          lead_id?: string | null
           type?: string
         }
         Relationships: [

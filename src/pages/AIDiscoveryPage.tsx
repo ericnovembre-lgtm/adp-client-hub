@@ -156,7 +156,7 @@ export default function AIDiscoveryPage() {
     if (schedulerEnabled && user) {
       const intervalMs = getIntervalMs(frequency);
       // Check if we should run now based on last run
-      const lastRun = (settings as any)?.scheduler_last_run;
+      const lastRun = settings?.scheduler_last_run;
       if (lastRun) {
         const elapsed = Date.now() - new Date(lastRun).getTime();
         if (elapsed >= intervalMs) {

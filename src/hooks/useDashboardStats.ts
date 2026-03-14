@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { startOfMonth, endOfMonth, subMonths, startOfDay, endOfDay } from "date-fns";
+import { endOfMonth, subMonths, startOfDay, endOfDay } from "date-fns";
 
 export interface StatItem {
   value: number;

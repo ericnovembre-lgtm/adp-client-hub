@@ -695,7 +695,7 @@ export default function LeadsPage() {
                   filteredLeads.map((lead) => {
                     const ko = knockoutMap.get(lead.id) ?? { tier: 'clear' as const, matchedRules: [], message: '' };
                     return (
-                      <TableRow key={lead.id} data-state={selectedIds.has(lead.id) ? "selected" : undefined}>
+                      <TableRow key={lead.id} data-state={selectedIds.has(lead.id) ? "selected" : undefined} className="cursor-pointer" onClick={() => setDetailLead(lead)}>
                         <TableCell>
                           <Checkbox
                             checked={selectedIds.has(lead.id)}

@@ -426,6 +426,7 @@ export default function LeadsPage() {
       { header: "Trigger Event", accessor: (r) => r.trigger_event },
       { header: "Status", accessor: (r) => r.status },
       { header: "Source", accessor: (r) => r.source },
+      { header: "AI Pitch Summary", accessor: (r) => r.ai_pitch_summary },
       { header: "Created Date", accessor: (r) => r.created_at ? new Date(r.created_at).toLocaleDateString() : "" },
     ]);
     toast.success(`Exported ${selected.length} lead(s)`);

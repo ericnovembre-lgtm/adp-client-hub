@@ -352,7 +352,7 @@ export default function SettingsPage() {
   const [profileSaving, setProfileSaving] = useState(false);
 
   // AI
-  const [aiModel, setAiModel] = useState("gpt-4o-mini");
+  
   const [aiChatEnabled, setAiChatEnabled] = useState(true);
 
   // Discovery

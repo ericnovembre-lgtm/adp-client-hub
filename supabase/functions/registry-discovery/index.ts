@@ -118,9 +118,6 @@ serve(async (req) => {
         const skipPatterns = /registered agent|holding|llc series|statutory trust|blank check/i;
         if (skipPatterns.test(companyName)) continue;
 
-        const nameLC = companyName.toLowerCase();
-        const matchedIndustry = industry_keywords.find((kw: string) => nameLC.includes(kw.toLowerCase()));
-
         const { data: existing } = await supabase
           .from("leads")
           .select("id")

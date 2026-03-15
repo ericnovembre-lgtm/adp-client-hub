@@ -131,6 +131,57 @@ export default function DashboardPage() {
         <StatCard label="Tasks Due Today" value={String(stats?.tasksDueToday.value ?? 0)} stat={stats?.tasksDueToday} icon={CheckSquare} isLoading={statsLoading} />
       </div>
 
+      {/* Territory Coverage */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
+              <MapPin className="h-4 w-4 text-primary" />
+            </div>
+            <CardTitle className="text-base">Territory Coverage</CardTitle>
+            {!territoryLoading && territory && (
+              <span className="text-xs text-muted-foreground ml-auto">{territory.total} total leads</span>
+            )}
+          </div>
+          {territoryLoading ? (
+            <Skeleton className="h-4 w-full rounded-full" />
+          ) : territory && territory.total > 0 ? (
+            <>
+              <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted mb-3">
+                {territory.inPct > 0 && (
+                  <div className="bg-emerald-500 transition-all" style={{ width: `${territory.inPct}%` }} />
+                )}
+                {territory.outPct > 0 && (
+                  <div className="bg-destructive transition-all" style={{ width: `${territory.outPct}%` }} />
+                )}
+                {territory.unknownPct > 0 && (
+                  <div className="bg-yellow-500 transition-all" style={{ width: `${territory.unknownPct}%` }} />
+                )}
+              </div>
+              <div className="flex items-center gap-6 text-xs">
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                  <span className="text-muted-foreground">In-Territory</span>
+                  <span className="font-semibold text-foreground">{territory.inTerritory} ({territory.inPct}%)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-destructive" />
+                  <span className="text-muted-foreground">Out</span>
+                  <span className="font-semibold text-foreground">{territory.outOfTerritory} ({territory.outPct}%)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-yellow-500" />
+                  <span className="text-muted-foreground">Unknown</span>
+                  <span className="font-semibold text-foreground">{territory.unknown} ({territory.unknownPct}%)</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">No leads yet</p>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Two columns */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Activity */}

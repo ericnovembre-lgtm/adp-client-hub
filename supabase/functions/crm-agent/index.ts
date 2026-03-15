@@ -247,3 +247,336 @@ After answering the user's question, if you notice relevant patterns, briefly me
 - Leads outside territory
 - Overdue tasks
 Keep proactive suggestions to one sentence. Don't be pushy.`;
+
+// ─── TOOL EXECUTION ─────────────────────────────────────────────────────────
+
+async function executeTool(toolName: string, input: Record<string, any>, supabase: SupabaseClient, userId: string): Promise<any> {
+  const startTime = Date.now();
+  let result: any;
+  let previousState: any = null;
+
+  try {
+    switch (toolName) {
+      case "search_leads": result = await toolSearchLeads(supabase, input); break;
+      case "search_deals": result = await toolSearchDeals(supabase, input); break;
+      case "search_contacts": result = await toolSearchContacts(supabase, input); break;
+      case "search_companies": result = await toolSearchCompanies(supabase, input); break;
+      case "get_pipeline_stats": result = await toolGetPipelineStats(supabase, input); break;
+      case "get_activity_history": result = await toolGetActivityHistory(supabase, input); break;
+      case "check_knockout_rules": result = await toolCheckKnockoutRules(supabase, input); break;
+      case "update_lead":
+        previousState = await getRecordState(supabase, "leads", input.lead_id);
+        result = await toolUpdateLead(supabase, input);
+        break;
+      case "update_deal":
+        previousState = await getRecordState(supabase, "deals", input.deal_id);
+        result = await toolUpdateDeal(supabase, input);
+        break;
+      case "create_task": result = await toolCreateTask(supabase, input); break;
+      case "log_activity": result = await toolLogActivity(supabase, input); break;
+      case "draft_email": result = await toolDraftEmail(input); break;
+      default: throw new Error(`Unknown tool: ${toolName}`);
+    }
+
+    await logAgentAction(supabase, { user_id: userId, tool_name: toolName, risk_level: TOOL_RISK[toolName] ?? "low", input_params: input, output_result: result, previous_state: previousState, approval_status: "auto", model: "claude-sonnet-4-20250514", latency_ms: Date.now() - startTime });
+    return result;
+  } catch (error) {
+    await logAgentAction(supabase, { user_id: userId, tool_name: toolName, risk_level: TOOL_RISK[toolName] ?? "low", input_params: input, output_result: null, previous_state: previousState, approval_status: "auto", model: "claude-sonnet-4-20250514", latency_ms: Date.now() - startTime, error: error instanceof Error ? error.message : String(error) });
+    throw error;
+  }
+}
+
+async function toolSearchLeads(supabase: SupabaseClient, input: Record<string, any>) {
+  let q = supabase.from("leads").select("*");
+  if (input.query) q = q.or(`company_name.ilike.%${input.query}%,decision_maker_name.ilike.%${input.query}%,industry.ilike.%${input.query}%`);
+  if (input.status) q = q.eq("status", input.status);
+  if (input.industry) q = q.ilike("industry", `%${input.industry}%`);
+  if (input.state) q = q.eq("state", input.state);
+  if (!input.include_out_of_territory) {
+    q = q.gte("headcount", input.headcount_min ?? TERRITORY.MIN).lte("headcount", input.headcount_max ?? TERRITORY.MAX);
+  }
+  const { data, error } = await q.order("created_at", { ascending: false }).limit(Math.min(input.limit ?? 10, 50));
+  if (error) throw new Error(`Search failed: ${error.message}`);
+  return { leads: data ?? [], count: (data ?? []).length, territory_filtered: !input.include_out_of_territory };
+}
+
+async function toolSearchDeals(supabase: SupabaseClient, input: Record<string, any>) {
+  let q = supabase.from("deals").select("*, contacts(first_name, last_name, email), companies(name, industry)");
+  if (input.query) q = q.ilike("title", `%${input.query}%`);
+  if (input.stage) q = q.eq("stage", input.stage);
+  if (input.min_value) q = q.gte("value", input.min_value);
+  if (input.max_value) q = q.lte("value", input.max_value);
+  let { data, error } = await q.order("created_at", { ascending: false }).limit(input.limit ?? 10);
+  if (error) throw new Error(`Search failed: ${error.message}`);
+  if (input.stalled_days && data && data.length > 0) {
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - input.stalled_days);
+    const dealIds = data.map((d: any) => d.id);
+    const { data: activities } = await supabase.from("activities").select("deal_id, created_at").in("deal_id", dealIds).order("created_at", { ascending: false });
+    const lastActivityMap = new Map<string, Date>();
+    for (const a of activities ?? []) { if (!lastActivityMap.has(a.deal_id)) lastActivityMap.set(a.deal_id, new Date(a.created_at)); }
+    data = data.filter((d: any) => { const la = lastActivityMap.get(d.id); return !la || la < cutoff; });
+  }
+  return { deals: data ?? [], count: (data ?? []).length };
+}
+
+async function toolSearchContacts(supabase: SupabaseClient, input: Record<string, any>) {
+  let q = supabase.from("contacts").select("*");
+  if (input.query) q = q.or(`first_name.ilike.%${input.query}%,last_name.ilike.%${input.query}%,email.ilike.%${input.query}%,company.ilike.%${input.query}%`);
+  if (input.status) q = q.eq("status", input.status);
+  if (input.company) q = q.ilike("company", `%${input.company}%`);
+  const { data, error } = await q.order("created_at", { ascending: false }).limit(input.limit ?? 10);
+  if (error) throw new Error(`Search failed: ${error.message}`);
+  return { contacts: data ?? [], count: (data ?? []).length };
+}
+
+async function toolSearchCompanies(supabase: SupabaseClient, input: Record<string, any>) {
+  let q = supabase.from("companies").select("*");
+  if (input.query) q = q.or(`name.ilike.%${input.query}%,industry.ilike.%${input.query}%`);
+  if (input.industry) q = q.ilike("industry", `%${input.industry}%`);
+  if (input.min_employees) q = q.gte("employees", input.min_employees);
+  if (input.max_employees) q = q.lte("employees", input.max_employees);
+  const { data, error } = await q.order("created_at", { ascending: false }).limit(input.limit ?? 10);
+  if (error) throw new Error(`Search failed: ${error.message}`);
+  return { companies: data ?? [], count: (data ?? []).length };
+}
+
+async function toolGetPipelineStats(supabase: SupabaseClient, input: Record<string, any>) {
+  const dateFrom = getDateFilter(input.period ?? "this_month");
+  const [dealsRes, leadsRes, tasksRes, activitiesRes] = await Promise.all([
+    supabase.from("deals").select("stage, value, created_at"),
+    supabase.from("leads").select("status, headcount, created_at").gte("created_at", dateFrom),
+    supabase.from("tasks").select("status, due_date, priority"),
+    supabase.from("activities").select("type, created_at").gte("created_at", dateFrom),
+  ]);
+  const deals = dealsRes.data ?? []; const leads = leadsRes.data ?? []; const tasks = tasksRes.data ?? [];
+  const dealsByStage: Record<string, { count: number; value: number }> = {};
+  let totalPipelineValue = 0, closedWonValue = 0, closedWonCount = 0;
+  for (const d of deals) {
+    const stage = d.stage ?? "unknown";
+    if (!dealsByStage[stage]) dealsByStage[stage] = { count: 0, value: 0 };
+    dealsByStage[stage].count++; dealsByStage[stage].value += d.value ?? 0;
+    totalPipelineValue += d.value ?? 0;
+    if (stage === "closed_won") { closedWonValue += d.value ?? 0; closedWonCount++; }
+  }
+  const leadsByStatus: Record<string, number> = {};
+  let inTerritory = 0, outOfTerritory = 0;
+  for (const l of leads) {
+    const st = l.status ?? "new"; leadsByStatus[st] = (leadsByStatus[st] ?? 0) + 1;
+    if (l.headcount >= TERRITORY.MIN && l.headcount <= TERRITORY.MAX) inTerritory++; else outOfTerritory++;
+  }
+  const now = new Date();
+  const overdue = tasks.filter((t: any) => t.status !== "completed" && t.due_date && new Date(t.due_date) < now).length;
+  const dueSoon = tasks.filter((t: any) => {
+    if (t.status === "completed" || !t.due_date) return false;
+    const d = new Date(t.due_date); const inThreeDays = new Date(); inThreeDays.setDate(inThreeDays.getDate() + 3);
+    return d >= now && d <= inThreeDays;
+  }).length;
+  return {
+    period: input.period ?? "this_month", territory: `${TERRITORY.LABEL} (${TERRITORY.MIN}-${TERRITORY.MAX} employees)`,
+    deals: { by_stage: dealsByStage, total_active: deals.filter((d: any) => !["closed_won", "closed_lost"].includes(d.stage)).length, total_pipeline_value: totalPipelineValue },
+    revenue: { closed_won_value: closedWonValue, closed_won_count: closedWonCount, avg_deal_size: closedWonCount > 0 ? Math.round(closedWonValue / closedWonCount) : 0 },
+    leads: { by_status: leadsByStatus, total: leads.length, in_territory: inTerritory, out_of_territory: outOfTerritory },
+    tasks: { overdue, due_within_3_days: dueSoon, total_pending: tasks.filter((t: any) => t.status !== "completed").length },
+    activities: { total_this_period: (activitiesRes.data ?? []).length },
+  };
+}
+
+async function toolGetActivityHistory(supabase: SupabaseClient, input: Record<string, any>) {
+  const column = `${input.entity_type}_id`;
+  const { data, error } = await supabase.from("activities").select("*").eq(column, input.entity_id).order("created_at", { ascending: false }).limit(input.limit ?? 20);
+  if (error) throw new Error(`Activity fetch failed: ${error.message}`);
+  return { activities: data ?? [], count: (data ?? []).length, entity_type: input.entity_type, entity_id: input.entity_id };
+}
+
+async function toolCheckKnockoutRules(supabase: SupabaseClient, input: Record<string, any>) {
+  const { data: rules, error } = await supabase.from("knockout_rules").select("*");
+  if (error) return { tier: "clear", message: "Unable to check knockout rules", matched: [] };
+  const searchText = [input.industry, input.company_name].filter(Boolean).join(" ").toLowerCase();
+  const matched = (rules ?? []).filter((rule: any) => {
+    const keywords = rule.industry_name.toLowerCase().split(/[\s\/,()]+/).filter((w: string) => w.length > 3);
+    return keywords.some((kw: string) => searchText.includes(kw));
+  });
+  if (matched.length === 0) return { tier: "clear", message: "Industry appears eligible for ADP TotalSource.", matched: [] };
+  const severity: Record<string, number> = { prohibited: 3, low_probability: 2, bluefield: 1 };
+  matched.sort((a: any, b: any) => (severity[b.tier] ?? 0) - (severity[a.tier] ?? 0));
+  const worstTier = matched[0].tier;
+  const messages: Record<string, string> = {
+    prohibited: `PROHIBITED: This industry (${matched.map((r: any) => r.industry_name).join(", ")}) is NOT eligible for ADP TotalSource.`,
+    low_probability: `LOW PROBABILITY (95-99% rejected): ${matched.map((r: any) => r.industry_name).join(", ")}. Best-in-class consideration only.`,
+    bluefield: `CONDITIONAL: May be eligible with conditions. ${matched.map((r: any) => `${r.industry_name}${r.conditions ? ` — ${r.conditions}` : ""}`).join(", ")}`,
+  };
+  return { tier: worstTier, message: messages[worstTier] ?? "Unknown tier", matched: matched.map((r: any) => ({ industry: r.industry_name, tier: r.tier, conditions: r.conditions, wc_codes: r.wc_codes })) };
+}
+
+async function toolUpdateLead(supabase: SupabaseClient, input: Record<string, any>) {
+  const { lead_id, ...updates } = input;
+  const cleanUpdates = Object.fromEntries(Object.entries(updates).filter(([_, v]) => v !== undefined));
+  if (Object.keys(cleanUpdates).length === 0) return { success: false, message: "No fields to update" };
+  const { data, error } = await supabase.from("leads").update(cleanUpdates).eq("id", lead_id).select().single();
+  if (error) throw new Error(`Update failed: ${error.message}`);
+  const changes = Object.entries(cleanUpdates).map(([k, v]) => `${k}: ${v}`).join(", ");
+  await supabase.from("activities").insert({ type: "note", description: `Lead updated via AI Agent: ${changes}`, lead_id });
+  return { success: true, updated_lead: data, changes: cleanUpdates };
+}
+
+async function toolUpdateDeal(supabase: SupabaseClient, input: Record<string, any>) {
+  const { deal_id, ...updates } = input;
+  const cleanUpdates = Object.fromEntries(Object.entries(updates).filter(([_, v]) => v !== undefined));
+  if (Object.keys(cleanUpdates).length === 0) return { success: false, message: "No fields to update" };
+  const { data: current } = await supabase.from("deals").select("stage").eq("id", deal_id).single();
+  const oldStage = current?.stage;
+  const { data, error } = await supabase.from("deals").update(cleanUpdates).eq("id", deal_id).select().single();
+  if (error) throw new Error(`Update failed: ${error.message}`);
+  if (cleanUpdates.stage && cleanUpdates.stage !== oldStage) {
+    await supabase.from("activities").insert({ type: "stage_change", description: `Deal stage changed from ${oldStage} to ${cleanUpdates.stage} via AI Agent`, deal_id });
+  }
+  return { success: true, updated_deal: data, changes: cleanUpdates };
+}
+
+async function toolCreateTask(supabase: SupabaseClient, input: Record<string, any>) {
+  const { data, error } = await supabase.from("tasks").insert({ title: input.title, description: input.description ?? null, due_date: input.due_date, priority: input.priority ?? "medium", status: "pending", contact_id: input.contact_id ?? null, deal_id: input.deal_id ?? null }).select().single();
+  if (error) throw new Error(`Create failed: ${error.message}`);
+  return { success: true, task: data };
+}
+
+async function toolLogActivity(supabase: SupabaseClient, input: Record<string, any>) {
+  const { data, error } = await supabase.from("activities").insert({ type: input.type, description: input.description, contact_id: input.contact_id ?? null, deal_id: input.deal_id ?? null, lead_id: input.lead_id ?? null }).select().single();
+  if (error) throw new Error(`Log failed: ${error.message}`);
+  return { success: true, activity: data };
+}
+
+function toolDraftEmail(input: Record<string, any>) {
+  return {
+    action: "generate_email",
+    context: { recipient: input.recipient_name, title: input.recipient_title ?? "Decision Maker", company: input.company_name, industry: input.industry ?? "unknown", headcount: input.headcount, trigger: input.trigger_event ?? "general outreach", type: input.email_type, extra: input.additional_context },
+    instructions: "Generate the email now using the ADP TotalSource product knowledge and sales email guidelines in your system prompt. Return a JSON with 'subject' and 'body' fields. Tailor to the prospect's industry, headcount, and trigger event.",
+  };
+}
+
+function getDateFilter(period: string): string {
+  const now = new Date();
+  switch (period) {
+    case "today": return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    case "this_week": { const d = new Date(now); d.setDate(d.getDate() - d.getDay()); return d.toISOString(); }
+    case "this_month": return new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    case "this_quarter": { const qMonth = Math.floor(now.getMonth() / 3) * 3; return new Date(now.getFullYear(), qMonth, 1).toISOString(); }
+    case "all_time": return "2020-01-01T00:00:00Z";
+    default: return new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  }
+}
+
+async function getRecordState(supabase: SupabaseClient, table: string, id: string) {
+  const { data } = await supabase.from(table).select("*").eq("id", id).single();
+  return data;
+}
+
+async function logAgentAction(supabase: SupabaseClient, action: Record<string, any>) {
+  try { await supabase.from("agent_actions").insert(action); } catch (e) { console.error("Failed to log agent action:", e); }
+}
+
+// ─── CLAUDE API AGENT LOOP WITH SSE STREAMING ──────────────────────────────
+
+async function runAgentLoop(messages: any[], supabase: SupabaseClient, userId: string, apiKey: string): Promise<ReadableStream> {
+  const encoder = new TextEncoder();
+  return new ReadableStream({
+    async start(controller) {
+      try {
+        let conversationMessages = messages.length > 1 ? messages.slice(-10) : [{ role: "user" as const, content: messages[messages.length - 1]?.content ?? "" }];
+        let stepCount = 0;
+        const maxSteps = 8;
+
+        while (stepCount < maxSteps) {
+          stepCount++;
+          const response = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+            body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 4096, system: SYSTEM_PROMPT, tools: CRM_TOOLS, messages: conversationMessages }),
+          });
+
+          if (!response.ok) {
+            const errText = await response.text();
+            console.error("Claude API error:", response.status, errText);
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", error: `Claude API error: ${response.status}` })}\n\n`));
+            break;
+          }
+
+          const result = await response.json();
+          let hasToolUse = false;
+          const toolResults: any[] = [];
+
+          for (const block of result.content) {
+            if (block.type === "text") {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "text", content: block.text })}\n\n`));
+            } else if (block.type === "tool_use") {
+              hasToolUse = true;
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "tool_call", tool: block.name, input: block.input, risk: TOOL_RISK[block.name] ?? "low", id: block.id })}\n\n`));
+              try {
+                const toolResult = await executeTool(block.name, block.input, supabase, userId);
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "tool_result", tool: block.name, result: toolResult, id: block.id, success: true })}\n\n`));
+                toolResults.push({ type: "tool_result", tool_use_id: block.id, content: JSON.stringify(toolResult) });
+              } catch (err) {
+                const errorMsg = err instanceof Error ? err.message : String(err);
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "tool_result", tool: block.name, error: errorMsg, id: block.id, success: false })}\n\n`));
+                toolResults.push({ type: "tool_result", tool_use_id: block.id, content: JSON.stringify({ error: errorMsg }), is_error: true });
+              }
+            }
+          }
+
+          if (hasToolUse && toolResults.length > 0) {
+            conversationMessages.push({ role: "assistant" as const, content: result.content });
+            conversationMessages.push({ role: "user" as const, content: toolResults });
+          } else { break; }
+          if (result.stop_reason === "end_turn") break;
+        }
+
+        controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
+        controller.close();
+      } catch (err) {
+        console.error("Agent loop error:", err);
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", error: String(err) })}\n\n`));
+        controller.close();
+      }
+    },
+  });
+}
+
+// ─── MAIN HANDLER ───────────────────────────────────────────────────────────
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
+
+    if (!anthropicKey) {
+      return new Response(JSON.stringify({ error: "ANTHROPIC_API_KEY not configured. Set it in Supabase Edge Function Secrets." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: authHeader } } });
+    const { data: { user }, error: authError } = await authClient.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, serviceKey);
+
+    const { messages } = await req.json();
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      return new Response(JSON.stringify({ error: "Messages array required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const stream = await runAgentLoop(messages, supabase, user.id, anthropicKey);
+    return new Response(stream, { headers: { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-cache" } });
+  } catch (e) {
+    console.error("crm-agent error:", e);
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+});

@@ -13,6 +13,7 @@ import {
   TrendingUp, TrendingDown, Phone, Mail, Calendar, FileText, Activity,
   Users, DollarSign, Target, CheckSquare, Sparkles,
 } from "lucide-react";
+import { HEADCOUNT_MIN, HEADCOUNT_MAX } from "@/lib/constants";
 
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v);

@@ -251,6 +251,7 @@ export default function LeadsPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [bulkActionPending, setBulkActionPending] = useState(false);
   const [territoryOnly, setTerritoryOnly] = useState(true);
+  const [bulkConvertOpen, setBulkConvertOpen] = useState(false);
 
   // Knockout dialog state
   const [knockoutDialogType, setKnockoutDialogType] = useState<'prohibited' | 'low_probability' | 'bluefield' | null>(null);
@@ -379,6 +380,91 @@ export default function LeadsPage() {
       { header: "Created Date", accessor: (r) => r.created_at ? new Date(r.created_at).toLocaleDateString() : "" },
     ]);
     toast.success(`Exported ${selected.length} lead(s)`);
+  };
+
+  // Bulk convert — compute eligible vs skipped
+  const bulkConvertAnalysis = useMemo(() => {
+    if (!bulkConvertOpen) return null;
+    const selected = leads.filter(l => selectedIds.has(l.id));
+    const eligible: Lead[] = [];
+    const skipped: { lead: Lead; reason: string }[] = [];
+    for (const lead of selected) {
+      if (lead.status === "converted") {
+        skipped.push({ lead, reason: "Already converted" });
+        continue;
+      }
+      if (lead.status === "dismissed") {
+        skipped.push({ lead, reason: "Dismissed" });
+        continue;
+      }
+      if (lead.headcount != null && !isInTerritory(lead.headcount)) {
+        skipped.push({ lead, reason: `Headcount ${lead.headcount} outside territory (${HEADCOUNT_MIN}–${HEADCOUNT_MAX})` });
+        continue;
+      }
+      const ko = knockoutMap.get(lead.id);
+      if (ko && ko.tier === "prohibited") {
+        skipped.push({ lead, reason: `Prohibited industry: ${ko.matchedRules.map(r => r.industry_name).join(", ")}` });
+        continue;
+      }
+      eligible.push(lead);
+    }
+    return { eligible, skipped };
+  }, [bulkConvertOpen, selectedIds, leads, knockoutMap]);
+
+  const handleBulkConvert = async () => {
+    if (!bulkConvertAnalysis || bulkConvertAnalysis.eligible.length === 0) return;
+    setBulkActionPending(true);
+    let converted = 0;
+    try {
+      for (const lead of bulkConvertAnalysis.eligible) {
+        const company = await createCompany.mutateAsync({
+          name: lead.company_name,
+          industry: lead.industry,
+          website: lead.website,
+          employees: lead.headcount,
+        });
+        const nameParts = (lead.decision_maker_name ?? "").split(" ");
+        const contact = await createContact.mutateAsync({
+          first_name: nameParts[0] || lead.company_name,
+          last_name: nameParts.slice(1).join(" ") || "-",
+          email: lead.decision_maker_email,
+          phone: lead.decision_maker_phone,
+          job_title: lead.decision_maker_title,
+          company: lead.company_name,
+        });
+
+        // Add bluefield conditions to deal notes if applicable
+        const ko = knockoutMap.get(lead.id);
+        let dealNotes: string | undefined;
+        if (ko && ko.tier === "bluefield") {
+          const conditionNotes = ko.matchedRules.filter(r => r.conditions).map(r => `${r.industry_name}: ${r.conditions}`).join("\n");
+          dealNotes = conditionNotes ? `BLUEFIELD CONDITIONS:\n${conditionNotes}` : undefined;
+        }
+
+        await createDeal.mutateAsync({
+          title: `${lead.company_name} - ADP TotalSource`,
+          value: 0,
+          stage: "qualified",
+          contact_id: contact.id,
+          company_id: company.id,
+          notes: dealNotes,
+        });
+        await updateLead.mutateAsync({ id: lead.id, status: "converted" });
+        await createActivity.mutateAsync({
+          type: "conversion",
+          description: `Lead converted to deal (bulk): ${lead.company_name}`,
+        });
+        converted++;
+      }
+      const skippedCount = bulkConvertAnalysis.skipped.length;
+      toast.success(`${converted} lead(s) converted${skippedCount > 0 ? `, ${skippedCount} skipped` : ""}`);
+      setSelectedIds(new Set());
+    } catch (e: any) {
+      toast.error(e.message || "Bulk conversion failed");
+    } finally {
+      setBulkActionPending(false);
+      setBulkConvertOpen(false);
+    }
   };
 
   const handleFormSubmit = async (values: LeadFormValues) => {
@@ -641,6 +727,9 @@ export default function LeadsPage() {
               <DropdownMenuItem onClick={() => handleBulkStatus("dismissed")}>Dismissed</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <Button variant="outline" size="sm" onClick={() => setBulkConvertOpen(true)} disabled={bulkActionPending}>
+            <ArrowRightLeft className="h-4 w-4 mr-1" />Convert to Deals
+          </Button>
           <Button variant="outline" size="sm" onClick={handleBulkExport} disabled={bulkActionPending}>
             <Download className="h-4 w-4 mr-1" />Export Selected
           </Button>
@@ -980,6 +1069,49 @@ export default function LeadsPage() {
             <AlertDialogAction onClick={handleBulkDelete} disabled={bulkActionPending} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               {bulkActionPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
               {bulkActionPending ? "Deleting…" : "Delete All"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Convert Confirmation */}
+      <AlertDialog open={bulkConvertOpen} onOpenChange={setBulkConvertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Convert {bulkConvertAnalysis?.eligible.length ?? 0} Lead(s) to Deals</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div>
+                {bulkConvertAnalysis && bulkConvertAnalysis.eligible.length > 0 && (
+                  <p className="text-sm">
+                    <span className="font-medium text-emerald-600 dark:text-emerald-400">✓ {bulkConvertAnalysis.eligible.length}</span> lead(s) will be converted (Company + Contact + Deal created for each).
+                  </p>
+                )}
+                {bulkConvertAnalysis && bulkConvertAnalysis.skipped.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-sm font-medium text-destructive">⚠ {bulkConvertAnalysis.skipped.length} lead(s) will be skipped:</p>
+                    <ul className="mt-1 text-xs space-y-1 max-h-32 overflow-y-auto">
+                      {bulkConvertAnalysis.skipped.map(({ lead, reason }) => (
+                        <li key={lead.id} className="text-muted-foreground">
+                          <span className="font-medium">{lead.company_name}</span> — {reason}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {bulkConvertAnalysis && bulkConvertAnalysis.eligible.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No eligible leads to convert. All selected leads are either already converted, dismissed, out of territory, or in a prohibited industry.</p>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkActionPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkConvert}
+              disabled={bulkActionPending || (bulkConvertAnalysis?.eligible.length ?? 0) === 0}
+            >
+              {bulkActionPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+              {bulkActionPending ? "Converting…" : `Convert ${bulkConvertAnalysis?.eligible.length ?? 0} Lead(s)`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -618,8 +618,8 @@ export default function LeadsPage() {
                       <p className="font-medium">No leads yet</p>
                       <p className="text-sm mt-1 max-w-md mx-auto">Use AI Discovery to automatically find companies that are a great fit for ADP TotalSource, or add leads manually.</p>
                       <div className="flex items-center justify-center gap-2 mt-4">
-                        <Button variant="outline" size="sm" onClick={() => navigate("/ai-discovery")}>
-                          <Sparkles className="h-4 w-4 mr-1" />AI Discovery
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href="/ai-discovery"><Sparkles className="h-4 w-4 mr-1" />AI Discovery</Link>
                         </Button>
                         <Button variant="outline" size="sm" onClick={openAdd}>
                           <Plus className="h-4 w-4 mr-1" />Add Lead

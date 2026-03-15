@@ -42,6 +42,7 @@ const TIMEFRAMES = [
 ];
 
 export default function RegistryDiscoveryTab() {
+  const [, navigate] = useLocation();
   const [selectedStates, setSelectedStates] = useState<string[]>(["California", "Texas", "Florida"]);
   const [_otherState, _setOtherState] = useState("");
   const [monthsBack, setMonthsBack] = useState("6");

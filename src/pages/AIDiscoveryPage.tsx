@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import {
-  Search, Clock, Play, Loader2, CheckCircle, AlertCircle, Sparkles, Zap, MapPin,
+  Search, Clock, Play, Loader2, CheckCircle, AlertCircle, Sparkles, Zap, MapPin, Building2,
 } from "lucide-react";
 import IntentDiscoveryTab from "@/components/discovery/IntentDiscoveryTab";
 import YelpDiscoveryTab from "@/components/discovery/YelpDiscoveryTab";

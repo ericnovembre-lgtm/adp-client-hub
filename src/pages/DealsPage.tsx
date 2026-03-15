@@ -296,7 +296,7 @@ function KanbanView({
     if (oldStage === newStage) return;
     const isClosed = newStage === "closed_won" || newStage === "closed_lost";
     const wasClosed = oldStage === "closed_won" || oldStage === "closed_lost";
-    const updates: any = { id: deal.id, stage: newStage };
+    const updates: { id: string; stage: string; closed_at?: string | null } = { id: deal.id, stage: newStage };
     if (isClosed && !wasClosed) updates.closed_at = new Date().toISOString();
     else if (!isClosed && wasClosed) updates.closed_at = null;
     try {

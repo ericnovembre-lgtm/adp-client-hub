@@ -221,6 +221,33 @@ export default function LeadDetailSheet({
   const set = (field: keyof Lead, value: string | number | null) =>
     setEditData((prev) => ({ ...prev, [field]: value }));
 
+  const needsEnrichment = !lead.headcount || !lead.decision_maker_email;
+
+  const handleEnrich = async () => {
+    setIsEnriching(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("enrich-lead", {
+        body: { lead_id: lead.id },
+      });
+      if (error) throw error;
+      if (data?.error === "apollo_not_configured") {
+        toast.error("Apollo API key is not configured. Go to Settings to add it.");
+        return;
+      }
+      if (data?.error) throw new Error(data.error);
+      if (data.enriched_count > 0) {
+        toast.success(`Enriched: ${data.enriched_fields.join(", ")}`);
+        onLeadUpdated?.();
+      } else {
+        toast.info("No additional data found in Apollo for this lead.");
+      }
+    } catch {
+      toast.error("Failed to enrich lead");
+    } finally {
+      setIsEnriching(false);
+    }
+  };
+
   const editHeadcount = editData.headcount;
   const headcountOutOfTerritory = isEditing && editHeadcount != null && editHeadcount > 0 &&
     (editHeadcount < HEADCOUNT_MIN || editHeadcount > HEADCOUNT_MAX);

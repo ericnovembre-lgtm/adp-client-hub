@@ -22,7 +22,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, Pencil, Trash2, Download, Loader2, UserPlus, Mail, CheckSquare, X } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Download, Upload, Loader2, UserPlus, Mail, CheckSquare, X } from "lucide-react";
 import ContactDetailSheet from "@/components/ContactDetailSheet";
 import DraftEmailDialog from "@/components/DraftEmailDialog";
 import CompanyCombobox from "@/components/CompanyCombobox";

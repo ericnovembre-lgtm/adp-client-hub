@@ -19,7 +19,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Building2, Users, Globe, Phone, DollarSign, Download, Loader2, X } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, Building2, Users, Globe, Phone, DollarSign, Download, Upload, Loader2, X } from "lucide-react";
 
 /* ── Company Form Schema ─────────────────────────── */
 

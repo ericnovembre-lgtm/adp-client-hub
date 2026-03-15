@@ -1,48 +1,55 @@
 
 
-## Plan: Persist AI Chat History Between Sessions
+## Yelp Local Business Discovery
 
-Save chat conversations to the database so they survive page refreshes and sessions.
+Four deliverables: edge function, discovery tab component, AIDiscoveryPage tab addition, and Settings API key section.
 
-### Database Change
+### 1. Edge Function: `supabase/functions/yelp-discovery/index.ts`
 
-Create a `chat_messages` table:
+Create as specified with the user's code. One fix needed: the `user_settings` upsert at the end overwrites existing settings — will use a read-merge-write pattern instead (read current settings, spread new yelp fields on top).
 
-```sql
-CREATE TABLE public.chat_messages (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  role text NOT NULL CHECK (role IN ('user', 'assistant')),
-  content text NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
+Update `supabase/config.toml` to add `[functions.yelp-discovery]` with `verify_jwt = false`.
 
-ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+### 2. New Component: `src/components/discovery/YelpDiscoveryTab.tsx`
 
-CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
-CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
-CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
+Following the `IntentDiscoveryTab` pattern:
 
-CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
-```
+- **Location input**: text field, default "Los Angeles, CA"
+- **Category checkboxes**: grouped by industry (Healthcare, Construction & Trades, Food & Beverage, Personal Care, Automotive, Professional) — 6 collapsible groups
+- **Filters**: Min Reviews slider (10-200, default 20), Min Rating select (3.0/3.5/4.0/4.5), Min PEO Score slider (20-80, default 40), Sort by select
+- **"Find Local Businesses" button** with MapPin icon
+- **Orange info banner** explaining the feature
+- **Results table**: Business Name, Category, City, State, Reviews, Rating, Phone, Est. Headcount, PEO Score (color-coded badge with tooltip showing reasons)
+- **Summary card** with found/qualified/saved/skipped counts
 
-### Code Changes — `src/components/AIChatWidget.tsx`
+### 3. Update `src/pages/AIDiscoveryPage.tsx`
 
-1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
+Add a fourth tab trigger "Local Businesses" with MapPin icon, rendering `<YelpDiscoveryTab />`. Import MapPin from lucide-react and the new component.
 
-2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
+### 4. Update `src/pages/SettingsPage.tsx`
 
-3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
+After the Apollo API Key section (line ~770), add a Yelp Fusion API Key section with:
+- Password input + Connected/Not configured badge (same pattern as Apollo)
+- Helper text with pricing info
+- "Test Connection" button invoking `yelp-discovery` with `{ test_connection: true }`
+- State: `yelpKeyConfigured`, `testingYelp`
 
-4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
+### 5. Update `src/hooks/useUserSettings.ts`
 
-### Data flow
+Add `yelp_api_key_configured` to the `UserSettings` interface.
 
-```text
-User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
-Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
-Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
-```
+### 6. Secret: `YELP_API_KEY`
 
-No new hooks file needed — keep the logic inline in the widget since it's self-contained.
+Will use the `add_secret` tool to request the API key from the user before proceeding.
+
+### Files
+
+| File | Action |
+|------|--------|
+| `supabase/functions/yelp-discovery/index.ts` | Create |
+| `supabase/config.toml` | Add function entry |
+| `src/components/discovery/YelpDiscoveryTab.tsx` | Create |
+| `src/pages/AIDiscoveryPage.tsx` | Add 4th tab |
+| `src/pages/SettingsPage.tsx` | Add Yelp key section |
+| `src/hooks/useUserSettings.ts` | Add yelp fields |
 

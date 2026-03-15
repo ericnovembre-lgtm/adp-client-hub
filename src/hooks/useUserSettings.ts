@@ -22,6 +22,7 @@ export interface UserSettings {
   last_run_at?: string;
   last_found_count?: number;
   next_run_at?: string;
+  apollo_api_key_configured?: boolean;
 }
 
 export function useUserSettings() {

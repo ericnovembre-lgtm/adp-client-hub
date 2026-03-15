@@ -19,7 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Loader2, Save, Download, Database, Info, Plus, Search, Pencil, Trash2, ShieldX, Bot, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, Save, Download, Database, Info, Plus, Search, Pencil, Trash2, ShieldX, Bot, CheckCircle2, XCircle, Zap } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
@@ -492,6 +492,8 @@ export default function SettingsPage() {
   
   const [aiChatEnabled, setAiChatEnabled] = useState(true);
   const [autoQualifyThreshold, setAutoQualifyThreshold] = useState(60);
+  const [apolloKeyConfigured, setApolloKeyConfigured] = useState(false);
+  const [testingApollo, setTestingApollo] = useState(false);
 
   // Discovery
   const [defaultIndustry, setDefaultIndustry] = useState("");
@@ -523,6 +525,7 @@ export default function SettingsPage() {
     setDefaultState(settings.defaultState ?? "");
     setHeadcountMin(settings.defaultHeadcountMin ?? "");
     setHeadcountMax(settings.defaultHeadcountMax ?? "");
+    setApolloKeyConfigured(settings.apollo_api_key_configured ?? false);
   }, [settings]);
 
   const saveProfile = async () => {
@@ -715,6 +718,56 @@ export default function SettingsPage() {
             {updateSettings.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
             Save AI Settings
           </Button>
+          <Separator />
+          {/* Apollo API Key */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Label className="flex items-center gap-1.5">
+                <Zap className="h-4 w-4" />
+                Apollo.io API Key
+              </Label>
+              {apolloKeyConfigured ? (
+                <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 border-emerald-300">
+                  <CheckCircle2 className="h-3 w-3 mr-1" /> Connected
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-xs text-amber-700 dark:text-amber-400 border-amber-300">
+                  Not configured
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Required for Intent Discovery. Get your key from{" "}
+              <span className="font-mono text-foreground">app.apollo.io → Settings → Integrations → API Keys</span>.
+              Then add it as a project secret named <span className="font-mono text-foreground">APOLLO_API_KEY</span>.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={testingApollo}
+              onClick={async () => {
+                setTestingApollo(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke("intent-discovery", {
+                    body: { test_connection: true },
+                  });
+                  if (error) throw error;
+                  if (data?.error) throw new Error(data.error);
+                  toast.success("Apollo API connection successful!");
+                  setApolloKeyConfigured(true);
+                  await updateSettings.mutateAsync({ ...settings, apollo_api_key_configured: true });
+                } catch (e: any) {
+                  toast.error(e.message || "Apollo connection test failed");
+                  setApolloKeyConfigured(false);
+                  await updateSettings.mutateAsync({ ...settings, apollo_api_key_configured: false });
+                }
+                setTestingApollo(false);
+              }}
+            >
+              {testingApollo ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Zap className="h-4 w-4 mr-1" />}
+              Test Connection
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

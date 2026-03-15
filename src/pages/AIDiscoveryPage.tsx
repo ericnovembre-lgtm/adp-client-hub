@@ -11,11 +11,13 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import {
-  Search, Clock, Play, Loader2, CheckCircle, AlertCircle, Sparkles,
+  Search, Clock, Play, Loader2, CheckCircle, AlertCircle, Sparkles, Zap,
 } from "lucide-react";
+import IntentDiscoveryTab from "@/components/discovery/IntentDiscoveryTab";
 
 const US_STATES = [
   "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",
@@ -41,8 +43,6 @@ function getIntervalMs(freq: string) {
   }
 }
 
-
-
 export default function AIDiscoveryPage() {
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -67,7 +67,6 @@ export default function AIDiscoveryPage() {
       if (settings.defaultState && !state) setState(settings.defaultState);
       if (settings.defaultHeadcountMin != null) setHeadcountMin(String(Math.max(HEADCOUNT_MIN, settings.defaultHeadcountMin)));
       if (settings.defaultHeadcountMax != null) setHeadcountMax(String(Math.min(HEADCOUNT_MAX, settings.defaultHeadcountMax)));
-
       if (settings.scheduler_enabled !== undefined) setSchedulerEnabled(settings.scheduler_enabled);
       if (settings.scheduler_frequency) setFrequency(settings.scheduler_frequency);
     }
@@ -117,14 +116,12 @@ export default function AIDiscoveryPage() {
       qc.invalidateQueries({ queryKey: ["leads"] });
     },
     onError: () => {
-      // Update status to error
       if (settings && user) {
         updateSettings.mutate({ ...settings, scheduler_status: "error" });
       }
     },
   });
 
-  // Toggle scheduler
   const handleToggleScheduler = useCallback(async (enabled: boolean) => {
     setSchedulerEnabled(enabled);
     if (user) {
@@ -136,7 +133,6 @@ export default function AIDiscoveryPage() {
     }
   }, [settings, frequency, user, updateSettings]);
 
-  // Save frequency
   const handleFrequencyChange = useCallback(async (freq: string) => {
     setFrequency(freq);
     if (user) {
@@ -153,10 +149,8 @@ export default function AIDiscoveryPage() {
       clearInterval(schedulerTimerRef.current);
       schedulerTimerRef.current = null;
     }
-
     if (schedulerEnabled && user) {
       const intervalMs = getIntervalMs(frequency);
-      // Check if we should run now based on last run
       const lastRun = settings?.scheduler_last_run;
       if (lastRun) {
         const elapsed = Date.now() - new Date(lastRun).getTime();
@@ -164,12 +158,10 @@ export default function AIDiscoveryPage() {
           schedulerRun.mutate();
         }
       }
-
       schedulerTimerRef.current = setInterval(() => {
         schedulerRun.mutate();
       }, intervalMs);
     }
-
     return () => {
       if (schedulerTimerRef.current) clearInterval(schedulerTimerRef.current);
     };
@@ -191,217 +183,155 @@ export default function AIDiscoveryPage() {
         <h1 className="text-2xl font-bold text-foreground">AI Discovery</h1>
       </div>
 
-      {/* Manual Discovery */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Search className="h-5 w-5" />
-            Manual Discovery
-          </CardTitle>
-          <CardDescription>
-            Search for potential leads matching your criteria using AI
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="industry">Industry</Label>
-              <Input
-                id="industry"
-                placeholder="e.g. Healthcare, Construction"
-                value={industry}
-                onChange={(e) => setIndustry(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="state">State</Label>
-              <Select value={state} onValueChange={setState}>
-                <SelectTrigger id="state">
-                  <SelectValue placeholder="Any state" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="any">Any state</SelectItem>
-                  {US_STATES.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="hcMin">Min Headcount</Label>
-              <Input
-                id="hcMin"
-                type="number"
-                min={HEADCOUNT_MIN}
-                max={HEADCOUNT_MAX}
-                placeholder={String(HEADCOUNT_MIN)}
-                value={headcountMin}
-                onChange={(e) => {
-                  const v = Number(e.target.value);
-                  setHeadcountMin(String(Math.max(HEADCOUNT_MIN, Math.min(HEADCOUNT_MAX, v || HEADCOUNT_MIN))));
-                }}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="hcMax">Max Headcount</Label>
-              <Input
-                id="hcMax"
-                type="number"
-                min={HEADCOUNT_MIN}
-                max={HEADCOUNT_MAX}
-                placeholder={String(HEADCOUNT_MAX)}
-                value={headcountMax}
-                onChange={(e) => {
-                  const v = Number(e.target.value);
-                  setHeadcountMax(String(Math.max(HEADCOUNT_MIN, Math.min(HEADCOUNT_MAX, v || HEADCOUNT_MAX))));
-                }}
-              />
-            </div>
-          </div>
+      <Tabs defaultValue="ai-generated">
+        <TabsList>
+          <TabsTrigger value="ai-generated" className="gap-1.5">
+            <Sparkles className="h-4 w-4" /> AI Generated
+          </TabsTrigger>
+          <TabsTrigger value="intent-based" className="gap-1.5">
+            <Zap className="h-4 w-4" /> Intent-Based
+          </TabsTrigger>
+        </TabsList>
 
-          <p className="text-xs text-muted-foreground">Your territory: {HEADCOUNT_LABEL}</p>
-
-          <Button
-            onClick={() => manualDiscover.mutate()}
-            disabled={manualDiscover.isPending}
-            className="w-full sm:w-auto"
-            aria-label="Discover leads"
-          >
-            {manualDiscover.isPending ? (
-              <><Loader2 className="h-4 w-4 animate-spin" /> Discovering...</>
-            ) : (
-              <><Search className="h-4 w-4" /> Discover Leads</>
-            )}
-          </Button>
-
-          {manualDiscover.isIdle && (
-            <div className="rounded-lg border bg-muted/30 p-6 mt-4 text-center text-muted-foreground">
-              <Sparkles className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
-              <p className="font-medium">No AI-discovered leads yet</p>
-              <p className="text-sm mt-1 max-w-md mx-auto">Set your target criteria above and click "Discover Leads" to find companies that match the ADP TotalSource ideal client profile.</p>
-            </div>
-          )}
-
-          {manualDiscover.isSuccess && manualDiscover.data && (
-            <div className="rounded-lg border bg-muted/30 p-4 mt-4">
-              <div className="flex items-center gap-2 mb-2">
-                <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-                 <span className="text-sm font-medium text-foreground">
-                   Found {manualDiscover.data.found} leads, saved {manualDiscover.data.saved}
-                   {manualDiscover.data.skipped > 0 && `, ${manualDiscover.data.skipped} duplicates skipped`}
-                   {manualDiscover.data.errors > 0 && `, ${manualDiscover.data.errors} errors`}
-                 </span>
+        {/* AI Generated Tab — existing functionality */}
+        <TabsContent value="ai-generated" className="space-y-6">
+          {/* Manual Discovery */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Search className="h-5 w-5" />
+                Manual Discovery
+              </CardTitle>
+              <CardDescription>
+                Search for potential leads matching your criteria using AI
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="industry">Industry</Label>
+                  <Input id="industry" placeholder="e.g. Healthcare, Construction" value={industry} onChange={(e) => setIndustry(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="state">State</Label>
+                  <Select value={state} onValueChange={setState}>
+                    <SelectTrigger id="state"><SelectValue placeholder="Any state" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Any state</SelectItem>
+                      {US_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="hcMin">Min Headcount</Label>
+                  <Input id="hcMin" type="number" min={HEADCOUNT_MIN} max={HEADCOUNT_MAX} placeholder={String(HEADCOUNT_MIN)} value={headcountMin} onChange={(e) => { const v = Number(e.target.value); setHeadcountMin(String(Math.max(HEADCOUNT_MIN, Math.min(HEADCOUNT_MAX, v || HEADCOUNT_MIN)))); }} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="hcMax">Max Headcount</Label>
+                  <Input id="hcMax" type="number" min={HEADCOUNT_MIN} max={HEADCOUNT_MAX} placeholder={String(HEADCOUNT_MAX)} value={headcountMax} onChange={(e) => { const v = Number(e.target.value); setHeadcountMax(String(Math.max(HEADCOUNT_MIN, Math.min(HEADCOUNT_MAX, v || HEADCOUNT_MAX)))); }} />
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Leads have been added to your Leads page with source "auto_discovery"
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Scheduler */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Auto-Discovery Scheduler
-          </CardTitle>
-          <CardDescription>
-            Automatically discover new leads on a schedule while the app is open
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Enable Auto-Discovery</Label>
-              <p className="text-xs text-muted-foreground">Runs in the background when the app is open</p>
-            </div>
-            <Switch
-              checked={schedulerEnabled}
-              onCheckedChange={handleToggleScheduler}
-              aria-label="Toggle auto-discovery scheduler"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Frequency</Label>
-              <Select value={frequency} onValueChange={handleFrequencyChange} disabled={!schedulerEnabled}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {FREQUENCIES.map((f) => (
-                    <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <div className="flex items-center gap-2 h-10">
-                {isRunning ? (
-                  <Badge className="bg-green-500/20 text-green-700 dark:text-green-400 border-green-500/30">
-                    <span className="relative flex h-2 w-2 mr-1.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+              <p className="text-xs text-muted-foreground">Your territory: {HEADCOUNT_LABEL}</p>
+              <Button onClick={() => manualDiscover.mutate()} disabled={manualDiscover.isPending} className="w-full sm:w-auto">
+                {manualDiscover.isPending ? <><Loader2 className="h-4 w-4 animate-spin" /> Discovering...</> : <><Search className="h-4 w-4" /> Discover Leads</>}
+              </Button>
+              {manualDiscover.isIdle && (
+                <div className="rounded-lg border bg-muted/30 p-6 mt-4 text-center text-muted-foreground">
+                  <Sparkles className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
+                  <p className="font-medium">No AI-discovered leads yet</p>
+                  <p className="text-sm mt-1 max-w-md mx-auto">Set your target criteria above and click "Discover Leads" to find companies that match the ADP TotalSource ideal client profile.</p>
+                </div>
+              )}
+              {manualDiscover.isSuccess && manualDiscover.data && (
+                <div className="rounded-lg border bg-muted/30 p-4 mt-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    <span className="text-sm font-medium text-foreground">
+                      Found {manualDiscover.data.found} leads, saved {manualDiscover.data.saved}
+                      {manualDiscover.data.skipped > 0 && `, ${manualDiscover.data.skipped} duplicates skipped`}
+                      {manualDiscover.data.errors > 0 && `, ${manualDiscover.data.errors} errors`}
                     </span>
-                    Running
-                  </Badge>
-                ) : schedulerStatus === "error" ? (
-                  <Badge variant="destructive">
-                    <AlertCircle className="h-3 w-3 mr-1" /> Error
-                  </Badge>
-                ) : schedulerEnabled ? (
-                  <Badge variant="secondary">
-                    <Clock className="h-3 w-3 mr-1" /> Scheduled
-                  </Badge>
-                ) : (
-                  <Badge variant="outline">Idle</Badge>
-                )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Leads have been added to your Leads page with source "auto_discovery"</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Scheduler */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Auto-Discovery Scheduler
+              </CardTitle>
+              <CardDescription>Automatically discover new leads on a schedule while the app is open</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Enable Auto-Discovery</Label>
+                  <p className="text-xs text-muted-foreground">Runs in the background when the app is open</p>
+                </div>
+                <Switch checked={schedulerEnabled} onCheckedChange={handleToggleScheduler} />
               </div>
-            </div>
-          </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Frequency</Label>
+                  <Select value={frequency} onValueChange={handleFrequencyChange} disabled={!schedulerEnabled}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {FREQUENCIES.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Status</Label>
+                  <div className="flex items-center gap-2 h-10">
+                    {isRunning ? (
+                      <Badge className="bg-green-500/20 text-green-700 dark:text-green-400 border-green-500/30">
+                        <span className="relative flex h-2 w-2 mr-1.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                        </span>
+                        Running
+                      </Badge>
+                    ) : schedulerStatus === "error" ? (
+                      <Badge variant="destructive"><AlertCircle className="h-3 w-3 mr-1" /> Error</Badge>
+                    ) : schedulerEnabled ? (
+                      <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" /> Scheduled</Badge>
+                    ) : (
+                      <Badge variant="outline">Idle</Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-lg border bg-muted/30 p-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Last run:</span>{" "}
+                  <span className="font-medium text-foreground">{lastRun ? formatDistanceToNow(new Date(lastRun), { addSuffix: true }) : "Never"}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Next run:</span>{" "}
+                  <span className="font-medium text-foreground">{schedulerEnabled && nextRunEstimate ? formatDistanceToNow(nextRunEstimate, { addSuffix: true }) : "—"}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Last found:</span>{" "}
+                  <span className="font-medium text-foreground">{lastCount !== undefined ? `${lastCount} leads` : "—"}</span>
+                </div>
+              </div>
+              <Button variant="outline" onClick={() => schedulerRun.mutate()} disabled={schedulerRun.isPending}>
+                {schedulerRun.isPending ? <><Loader2 className="h-4 w-4 animate-spin" /> Running...</> : <><Play className="h-4 w-4" /> Run Now</>}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          <div className="rounded-lg border bg-muted/30 p-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-            <div>
-              <span className="text-muted-foreground">Last run:</span>{" "}
-              <span className="font-medium text-foreground">
-                {lastRun ? formatDistanceToNow(new Date(lastRun), { addSuffix: true }) : "Never"}
-              </span>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Next run:</span>{" "}
-              <span className="font-medium text-foreground">
-                {schedulerEnabled && nextRunEstimate
-                  ? formatDistanceToNow(nextRunEstimate, { addSuffix: true })
-                  : "—"}
-              </span>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Last found:</span>{" "}
-              <span className="font-medium text-foreground">
-                {lastCount !== undefined ? `${lastCount} leads` : "—"}
-              </span>
-            </div>
-          </div>
-
-          <Button
-            variant="outline"
-            onClick={() => schedulerRun.mutate()}
-            disabled={schedulerRun.isPending}
-            aria-label="Run discovery now"
-          >
-            {schedulerRun.isPending ? (
-              <><Loader2 className="h-4 w-4 animate-spin" /> Running...</>
-            ) : (
-              <><Play className="h-4 w-4" /> Run Now</>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
+        {/* Intent-Based Tab */}
+        <TabsContent value="intent-based">
+          <IntentDiscoveryTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

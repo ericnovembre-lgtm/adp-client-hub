@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { checkIndustryKnockout } from "@/lib/knockoutCheck";
+import { checkIndustryKnockout } from "@/lib/checkKnockoutFromDB";
 
 export interface KnockoutRule {
   id: string;

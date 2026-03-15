@@ -905,7 +905,7 @@ export default function SettingsPage() {
             }
           </div>
           <p className="text-xs text-muted-foreground">
-            Get your key from <span className="font-medium">opencorporates.com/api_accounts</span>. Required for New Business discovery. Free tier: 50 calls/month. Paid plans start at $99/month for 10K calls.
+            Discovery works without a key (lower rate limits). For higher limits, get a key from <span className="font-medium">opencorporates.com/api_accounts</span>. Paid plans start at $99/month for 10K calls.
           </p>
           <div className="flex gap-2">
             <Button

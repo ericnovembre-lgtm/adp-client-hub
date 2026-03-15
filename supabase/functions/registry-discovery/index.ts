@@ -89,6 +89,7 @@ serve(async (req) => {
         current_status: "Active",
       });
 
+      if (openCorpApiKey) searchParams.set("api_token", openCorpApiKey);
       const url = `https://api.opencorporates.com/v0.4/companies/search?${searchParams}`;
       const response = await fetch(url);
 

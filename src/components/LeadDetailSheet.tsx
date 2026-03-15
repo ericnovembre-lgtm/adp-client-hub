@@ -20,10 +20,57 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Building2, User, Mail, Phone, Globe, MapPin, Users, Briefcase,
-  Zap, Clock, Sparkles, Tag, Pencil, X, Save, Loader2, FileText, ArrowRightLeft, BarChart3,
+  Zap, Clock, Sparkles, Tag, Pencil, X, Save, Loader2, FileText, ArrowRightLeft, Target,
 } from "lucide-react";
-import { useLeadScore } from "@/hooks/useLeadScores";
+import { useLeadScore, type ScoreFactor } from "@/hooks/useLeadScores";
 import { Progress } from "@/components/ui/progress";
+
+const GRADE_COLORS: Record<string, string> = {
+  A: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300",
+  B: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
+  C: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
+  D: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+};
+
+function LeadScoreSection({ leadId }: { leadId: string }) {
+  const { score } = useLeadScore(leadId);
+
+  return (
+    <>
+      <Separator />
+      <div>
+        <h3 className="font-semibold text-sm mb-3 flex items-center gap-1.5">
+          <Target className="h-4 w-4 text-primary" />
+          Lead Score
+        </h3>
+        {score ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl font-bold text-foreground">{score.score}<span className="text-lg text-muted-foreground font-normal">/100</span></span>
+              <Badge variant="outline" className={GRADE_COLORS[score.grade] ?? ""}>{score.grade}</Badge>
+            </div>
+            {score.factors.length > 0 && (
+              <div className="space-y-2">
+                {score.factors.map((f: ScoreFactor, i: number) => (
+                  <div key={i}>
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="font-medium text-foreground">{f.factor}</span>
+                      <span className="text-muted-foreground">{f.points}/{f.max}</span>
+                    </div>
+                    <Progress value={f.max > 0 ? (f.points / f.max) * 100 : 0} className="h-2" />
+                    <p className="text-xs text-muted-foreground mt-0.5">{f.reason}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">No score available. Use the AI Agent to score this lead.</p>
+        )}
+      </div>
+    </>
+  );
+}
 
 const statusColors = LEAD_STATUS_COLORS_DETAIL;
 

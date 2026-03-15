@@ -278,6 +278,7 @@ export default function LeadsPage() {
   const createDeal = useCreateDeal();
   const createActivity = useCreateActivity();
   const { data: knockoutRules = [] } = useKnockoutRules();
+  const { leadScores } = useLeadScores();
 
   const allLeads = data?.data ?? [];
 

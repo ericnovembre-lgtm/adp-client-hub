@@ -23,6 +23,7 @@ export interface UserSettings {
   last_found_count?: number;
   next_run_at?: string;
   apollo_api_key_configured?: boolean;
+  yelp_api_key_configured?: boolean;
 }
 
 export function useUserSettings() {

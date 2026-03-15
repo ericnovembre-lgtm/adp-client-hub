@@ -335,6 +335,11 @@ export default function AIDiscoveryPage() {
         <TabsContent value="intent-based">
           <IntentDiscoveryTab />
         </TabsContent>
+
+        {/* Local Businesses Tab */}
+        <TabsContent value="local-businesses">
+          <YelpDiscoveryTab />
+        </TabsContent>
       </Tabs>
     </div>
   );

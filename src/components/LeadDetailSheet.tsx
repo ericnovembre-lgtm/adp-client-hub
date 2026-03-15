@@ -466,10 +466,21 @@ export default function LeadDetailSheet({
           <LeadScoreSection leadId={lead.id} lead={lead} />
 
           {/* Action Buttons */}
-          {!isEditing && (onDraftEmail || onConvertToDeal) && (
+          {!isEditing && (onDraftEmail || onConvertToDeal || needsEnrichment) && (
             <>
               <Separator />
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
+                {needsEnrichment && (
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={handleEnrich}
+                    disabled={isEnriching}
+                  >
+                    {isEnriching ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <SearchCheck className="h-4 w-4 mr-2" />}
+                    {isEnriching ? "Enriching…" : "Enrich Lead"}
+                  </Button>
+                )}
                 {onDraftEmail && (
                   <Button
                     variant="outline"

@@ -8,6 +8,7 @@ import type { Company } from "@/types/database";
 import { exportToCSV } from "@/lib/exportCSV";
 import { supabase } from "@/integrations/supabase/client";
 import CompanyDetailSheet from "@/components/CompanyDetailSheet";
+import CSVImportDialog from "@/components/CSVImportDialog";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

@@ -1,48 +1,44 @@
 
 
-## Plan: Persist AI Chat History Between Sessions
+## Replace empty states with ADP TotalSource-specific guidance
 
-Save chat conversations to the database so they survive page refreshes and sessions.
+Update 6 pages to replace generic empty state messages with ADP-specific copy and add CTA buttons.
 
-### Database Change
+### Changes per file
 
-Create a `chat_messages` table:
+**1. LeadsPage.tsx** (lines 615-619)
+Replace generic text. Add CTA buttons for "AI Discovery" (navigate to /ai-discovery) and "Add Lead" (calls `openAdd()`). Import `useNavigate` and `Sparkles` if needed.
 
-```sql
-CREATE TABLE public.chat_messages (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  role text NOT NULL CHECK (role IN ('user', 'assistant')),
-  content text NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
+**2. DealsPage.tsx** (lines 478-482)
+Replace text with ADP pipeline message. CTA: "Add Deal" button calling `openAdd()`.
 
-ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+**3. ContactsPage.tsx** (lines 394-398)
+Replace text with ADP decision-makers message. CTA: "Add Contact" button calling `openAdd()`.
 
-CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
-CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
-CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
+**4. CompaniesPage.tsx** (lines 308-312)
+Replace text with auto-creation message. CTA: "Add Company" button calling `openAdd()`.
 
-CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
+**5. TasksPage.tsx** (lines 406-410)
+Replace text with ADP follow-up message. CTA: "Add Task" button calling `openAdd()`.
+
+**6. AIDiscoveryPage.tsx**
+Add empty state after manual discovery result area — show message when no discovery has been run yet (check `manualDiscover.isIdle`). No structural changes needed since the page is a form, but add guidance text below the form.
+
+### Pattern for each empty state
+```tsx
+<Icon className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
+<p className="font-medium">No [entity] yet</p>
+<p className="text-sm mt-1 max-w-md mx-auto">[ADP-specific message]</p>
+<Button onClick={action} className="mt-4" variant="outline" size="sm">
+  <Plus className="h-4 w-4 mr-1" />[CTA text]
+</Button>
 ```
 
-### Code Changes — `src/components/AIChatWidget.tsx`
-
-1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
-
-2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
-
-3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
-
-4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
-
-### Data flow
-
-```text
-User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
-Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
-Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
-```
-
-No new hooks file needed — keep the logic inline in the widget since it's self-contained.
+### Files changed (6)
+- `src/pages/LeadsPage.tsx`
+- `src/pages/DealsPage.tsx`
+- `src/pages/ContactsPage.tsx`
+- `src/pages/CompaniesPage.tsx`
+- `src/pages/TasksPage.tsx`
+- `src/pages/AIDiscoveryPage.tsx`
 

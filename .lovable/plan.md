@@ -1,23 +1,49 @@
 
 
-## Improve Registry Discovery Result Volume
+## Lead Enrichment for Registry-Discovered Leads
 
-### Current State
-The edge function already does **not** filter by industry keywords at the API level — OpenCorporates doesn't support industry filtering. All recently incorporated companies are fetched, and `inferIndustryFromName()` classifies them post-hoc. The `industry_keywords` parameter from the UI is only used for a simple name-match (`matchedIndustry`) but does **not** exclude any companies.
+Registry leads lack headcount, website, and decision-maker contact info. This plan adds a post-discovery enrichment step using the Apollo API (already configured with `APOLLO_API_KEY`).
 
-The real volume bottleneck is the `per_page: 30` default limit per state. With 3 states, that's max 90 companies before deduplication.
+### Architecture
+
+```text
+Registry Discovery (OpenCorporates)
+        │
+        ▼
+   Leads saved (no headcount/contact)
+        │
+        ▼
+   Enrichment step (Apollo People Search)
+        │
+        ▼
+   Update leads with headcount, website,
+   decision maker name/title/email/phone
+```
 
 ### Changes
 
 **1. `supabase/functions/registry-discovery/index.ts`**
-- Increase default `per_page` from 30 to 100 (OpenCorporates max)
-- Remove `industry_keywords` from the request body params (not used for API filtering)
-- Keep `inferIndustryFromName()` for post-processing classification — it already handles all companies
-- Add the user-selected keywords as an additional classification pass: if `inferIndustryFromName` returns null, check against the user's keyword list as a fallback
+- After saving all registry leads, add an enrichment pass using Apollo's `organizations/enrich` endpoint
+- For each saved lead, call Apollo with the company name + state to get: headcount, website, industry (refined), and a decision-maker contact via `mixed_people/search`
+- Only enrich if `APOLLO_API_KEY` is present (graceful skip otherwise)
+- Update the lead record with enriched data
+- Log enrichment activity
+- Add enrichment stats to the response (`enriched` count)
+- Rate-limit Apollo calls (200ms delay between)
 
 **2. `src/components/discovery/RegistryDiscoveryTab.tsx`**
-- Rename "Industry Keywords" section to "Industry Classification" with helper text: "Tag discovered leads by industry (does not limit results)"
-- Change default `per_page` sent to the function from 30 to 100
-- Add a "Results per state" selector (30 / 50 / 100) so users can control volume
-- Show industry-classified vs unclassified counts in the results summary
+- Show enrichment results in the summary: "Found X, saved Y, enriched Z"
+- Add an "Enriched" badge on leads that received contact info
+- Show decision maker name/email columns in the results table when available
+- Add a note: "Leads enriched via Apollo (headcount + contacts)" when Apollo key is configured, or "Configure Apollo API key in Settings to auto-enrich leads with headcount & contacts" when not
+
+### Technical Detail
+
+The enrichment uses two Apollo endpoints per lead:
+1. `POST /v1/organizations/enrich` with `domain` or `name` — returns headcount, website, industry
+2. `POST /v1/mixed_people/search` with company name + decision-maker titles — returns contact info
+
+Fields updated on the lead: `headcount`, `website`, `industry` (if null), `decision_maker_name`, `decision_maker_title`, `decision_maker_email`, `decision_maker_phone`
+
+Leads outside territory range (2-20 employees) after enrichment get flagged with a warning activity, consistent with existing scoring behavior.
 

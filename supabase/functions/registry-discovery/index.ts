@@ -60,8 +60,8 @@ serve(async (req) => {
     const {
       states = ["California", "Texas", "Florida"],
       months_back = 6,
-      per_page = 30,
-      industry_keywords = PEO_FRIENDLY_KEYWORDS.slice(0, 5),
+      per_page = 100,
+      industry_keywords = [],
     } = body;
 
     const sinceDate = new Date();
@@ -74,6 +74,8 @@ serve(async (req) => {
       saved: 0,
       skipped_duplicate: 0,
       errors: 0,
+      classified: 0,
+      unclassified: 0,
       leads: [] as any[],
     };
 
@@ -116,9 +118,6 @@ serve(async (req) => {
         const skipPatterns = /registered agent|holding|llc series|statutory trust|blank check/i;
         if (skipPatterns.test(companyName)) continue;
 
-        const nameLC = companyName.toLowerCase();
-        const matchedIndustry = industry_keywords.find((kw: string) => nameLC.includes(kw.toLowerCase()));
-
         const { data: existing } = await supabase
           .from("leads")
           .select("id")
@@ -136,9 +135,12 @@ serve(async (req) => {
           ? new Date(company.incorporation_date).toLocaleDateString()
           : "recently";
 
+        const classifiedIndustry = inferIndustryFromName(companyName)
+          ?? matchIndustryKeywords(companyName, industry_keywords);
+
         const leadData = {
           company_name: companyName,
-          industry: matchedIndustry ?? inferIndustryFromName(companyName),
+          industry: classifiedIndustry,
           state: stateName,
           headcount: null,
           website: null,
@@ -172,6 +174,8 @@ serve(async (req) => {
         });
 
         results.saved++;
+        if (classifiedIndustry) results.classified++;
+        else results.unclassified++;
         results.leads.push({
           id: newLead.id,
           company_name: companyName,
@@ -252,4 +256,10 @@ function inferIndustryFromName(name: string): string | null {
   if (/manufactur|fabricat|machine/.test(n)) return "Manufacturing";
   if (/vet|animal|pet/.test(n)) return "Veterinary";
   return null;
+}
+
+function matchIndustryKeywords(name: string, keywords: string[]): string | null {
+  if (!keywords.length) return null;
+  const n = name.toLowerCase();
+  return keywords.find((kw: string) => n.includes(kw.toLowerCase())) ?? null;
 }

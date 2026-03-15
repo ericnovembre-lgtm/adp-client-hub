@@ -41,11 +41,17 @@ const TIMEFRAMES = [
   { value: "12", label: "Last 12 months" },
 ];
 
+const PER_PAGE_OPTIONS = [
+  { value: "30", label: "30 per state" },
+  { value: "50", label: "50 per state" },
+  { value: "100", label: "100 per state (max)" },
+];
+
 export default function RegistryDiscoveryTab() {
   const [, navigate] = useLocation();
   const [selectedStates, setSelectedStates] = useState<string[]>(["California", "Texas", "Florida"]);
-  const [_otherState, _setOtherState] = useState("");
   const [monthsBack, setMonthsBack] = useState("6");
+  const [perPage, setPerPage] = useState("100");
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>(["Construction", "Healthcare", "Restaurant", "Technology", "Real Estate"]);
   const [showOtherStates, setShowOtherStates] = useState(false);
 
@@ -70,7 +76,7 @@ export default function RegistryDiscoveryTab() {
           states: selectedStates,
           months_back: Number(monthsBack),
           industry_keywords: selectedKeywords.map(k => k.toLowerCase()),
-          per_page: 30,
+          per_page: Number(perPage),
         },
       });
       if (error) throw error;
@@ -158,22 +164,36 @@ export default function RegistryDiscoveryTab() {
             </Collapsible>
           </div>
 
-          {/* Timeframe */}
-          <div className="space-y-2 max-w-xs">
-            <Label>Incorporated within</Label>
-            <Select value={monthsBack} onValueChange={setMonthsBack}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {TIMEFRAMES.map(t => (
-                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Timeframe & Results per state */}
+          <div className="flex flex-wrap gap-4">
+            <div className="space-y-2 max-w-xs">
+              <Label>Incorporated within</Label>
+              <Select value={monthsBack} onValueChange={setMonthsBack}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {TIMEFRAMES.map(t => (
+                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 max-w-xs">
+              <Label>Results per state</Label>
+              <Select value={perPage} onValueChange={setPerPage}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {PER_PAGE_OPTIONS.map(o => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          {/* Industry Keywords */}
+          {/* Industry Classification */}
           <div className="space-y-2">
-            <Label>Industry Keywords</Label>
+            <Label>Industry Classification</Label>
+            <p className="text-xs text-muted-foreground">Tag discovered leads by industry (does not limit results)</p>
             <div className="flex flex-wrap gap-3">
               {INDUSTRY_KEYWORDS.map(kw => (
                 <label key={kw} className="flex items-center gap-1.5 text-sm cursor-pointer">
@@ -215,7 +235,12 @@ export default function RegistryDiscoveryTab() {
                     {discover.data.errors > 0 && `, ${discover.data.errors} errors`}
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground">Leads added to your Leads page with source "business_registry"</p>
+                <p className="text-xs text-muted-foreground">
+                  {discover.data.classified > 0 || discover.data.unclassified > 0
+                    ? `${discover.data.classified ?? 0} industry-classified, ${discover.data.unclassified ?? 0} unclassified. `
+                    : ""}
+                  Leads added to your Leads page with source "business_registry"
+                </p>
               </div>
 
               {discover.data.leads?.length > 0 && (

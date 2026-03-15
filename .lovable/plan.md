@@ -1,48 +1,73 @@
 
 
-## Plan: Persist AI Chat History Between Sessions
+## Make Auto-Qualify Threshold Dynamic
 
-Save chat conversations to the database so they survive page refreshes and sessions.
+### Problem
+The `handle_lead_score_change` trigger hardcodes `60` as the qualification threshold. The user wants it to read `auto_qualify_threshold` from `user_settings` instead.
 
-### Database Change
+### Challenge
+`lead_scores` has no `user_id` column, and the trigger fires via service role (from the CRM agent edge function), so `auth.uid()` is unavailable. Since this is effectively a single-user CRM (all tables use simple `authenticated` RLS), the trigger will read the first `user_settings` row to get the threshold, falling back to 60 if not set.
 
-Create a `chat_messages` table:
+### Change
+
+**Database migration** — Replace the trigger function:
 
 ```sql
-CREATE TABLE public.chat_messages (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  role text NOT NULL CHECK (role IN ('user', 'assistant')),
-  content text NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
+CREATE OR REPLACE FUNCTION public.handle_lead_score_change()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  current_status text;
+  current_company text;
+  lead_headcount integer;
+  qualify_threshold integer;
+BEGIN
+  -- Read threshold from user_settings, default 60
+  SELECT COALESCE(
+    (settings->>'auto_qualify_threshold')::integer, 60
+  ) INTO qualify_threshold
+  FROM user_settings
+  LIMIT 1;
 
-ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+  IF qualify_threshold IS NULL THEN
+    qualify_threshold := 60;
+  END IF;
 
-CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
-CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
-CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
+  SELECT status, company_name, headcount
+  INTO current_status, current_company, lead_headcount
+  FROM leads WHERE id = NEW.lead_id;
 
-CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
+  IF current_status IN ('new', 'contacted') THEN
+    IF NEW.score >= qualify_threshold THEN
+      UPDATE leads SET status = 'qualified' WHERE id = NEW.lead_id;
+      INSERT INTO activities (type, description, lead_id) VALUES (
+        'system',
+        'Lead auto-qualified by AI scoring: ' || NEW.grade || ' grade (' || NEW.score || '/100, threshold: ' || qualify_threshold || '). Top factor: ' || COALESCE(NEW.factors->0->>'factor', 'N/A') || ' (' || COALESCE(NEW.factors->0->>'points', '0') || '/' || COALESCE(NEW.factors->0->>'max', '0') || ' pts)',
+        NEW.lead_id
+      );
+    END IF;
+
+    IF NEW.score < 40 AND (lead_headcount IS NULL OR lead_headcount < 2 OR lead_headcount > 20) THEN
+      INSERT INTO activities (type, description, lead_id) VALUES (
+        'system',
+        'Low score warning: ' || current_company || ' scored ' || NEW.score || '/100 (Grade D). Headcount ' || COALESCE(lead_headcount::text, 'unknown') || ' is outside territory range (2-20). Review and consider dismissing.',
+        NEW.lead_id
+      );
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
 ```
 
-### Code Changes — `src/components/AIChatWidget.tsx`
+No other file changes needed — the `auto_qualify_threshold` field already exists in the `UserSettings` interface and the Settings page already has the threshold input.
 
-1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
+### Files
 
-2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
-
-3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
-
-4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
-
-### Data flow
-
-```text
-User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
-Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
-Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
-```
-
-No new hooks file needed — keep the logic inline in the widget since it's self-contained.
+| File | Action |
+|------|--------|
+| Database migration | Update `handle_lead_score_change` function |
 

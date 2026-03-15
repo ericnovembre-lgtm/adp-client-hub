@@ -20,7 +20,7 @@ import ReportsPage from "@/pages/ReportsPage";
 import EmailTemplatesPage from "@/pages/EmailTemplatesPage";
 import SettingsPage from "@/pages/SettingsPage";
 import NotFound from "@/pages/NotFound";
-import AIChatWidget from "@/components/AIChatWidget";
+import AgentPanel from "@/components/AgentPanel";
 import { toast } from "sonner";
 
 function handleGlobalError(error: unknown) {
@@ -104,7 +104,7 @@ const App = () => (
               <Route path="/settings">{() => <ProtectedPage><SettingsPage /></ProtectedPage>}</Route>
               <Route component={NotFound} />
             </Switch>
-            <AIChatWidget />
+            <AgentPanel />
           </TooltipProvider>
         </AuthProvider>
       </QueryClientProvider>

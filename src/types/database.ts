@@ -27,6 +27,7 @@ export interface Contact {
   status: ContactStatus | string | null;
   source: string | null;
   notes: string | null;
+  user_id: string;
   created_at: string | null;
 }
 
@@ -39,6 +40,7 @@ export interface Company {
   revenue: string | null;
   address: string | null;
   phone: string | null;
+  user_id: string;
   created_at: string | null;
 }
 
@@ -52,6 +54,7 @@ export interface Deal {
   expected_close_date: string | null;
   closed_at: string | null;
   notes: string | null;
+  user_id: string;
   created_at: string | null;
 }
 
@@ -64,6 +67,7 @@ export interface Task {
   status: TaskStatus | string | null;
   contact_id: string | null;
   deal_id: string | null;
+  user_id: string;
   created_at: string | null;
 }
 
@@ -74,6 +78,7 @@ export interface Activity {
   contact_id: string | null;
   deal_id: string | null;
   lead_id: string | null;
+  user_id: string;
   created_at: string | null;
 }
 
@@ -93,6 +98,7 @@ export interface Lead {
   ai_pitch_summary: string | null;
   status: LeadStatus | string | null;
   source: string | null;
+  user_id: string;
   created_at: string | null;
 }
 

@@ -1,40 +1,48 @@
 
 
-## Two Changes: DailyBriefWidget on Dashboard + Lead Scores on LeadsPage & LeadDetailSheet
+## Plan: Persist AI Chat History Between Sessions
 
-### Change 1 — Add DailyBriefWidget to DashboardPage
+Save chat conversations to the database so they survive page refreshes and sessions.
 
-**File:** `src/pages/DashboardPage.tsx`
+### Database Change
 
-- Add `import DailyBriefWidget from "@/components/DailyBriefWidget"` 
-- Insert `<DailyBriefWidget />` as first child inside the top-level `<div className="space-y-6">`, before the `<h1>` tag
+Create a `chat_messages` table:
 
-### Change 2 — Lead Score badges on LeadsPage
+```sql
+CREATE TABLE public.chat_messages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  role text NOT NULL CHECK (role IN ('user', 'assistant')),
+  content text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
 
-**File:** `src/pages/LeadsPage.tsx`
+ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
 
-- Import `useLeadScores` from `@/hooks/useLeadScores`
-- Call `const { leadScores } = useLeadScores()` inside `LeadsPage`
-- Add a "Score" `<TableHead>` column between "Eligibility" and the actions column (line ~765)
-- Add a `<TableCell>` in each row that looks up `leadScores.get(lead.id)` and renders:
-  - Grade badge: A=green, B=blue, C=yellow, D=red, missing=outline "—"
-  - Numeric score in `text-xs` next to the badge
-- Update skeleton/empty colSpan from 11 to 12
+CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
+CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
 
-### Change 3 — Lead Score section in LeadDetailSheet
+CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
+```
 
-**File:** `src/components/LeadDetailSheet.tsx`
+### Code Changes — `src/components/AIChatWidget.tsx`
 
-- Import `useLeadScore` from `@/hooks/useLeadScores` and `Progress` from `@/components/ui/progress`
-- Call `const { score } = useLeadScore(lead.id)` inside the component
-- Add a "Lead Score" section after the AI Pitch Summary section:
-  - If score exists: large score number (e.g. "78/100") + grade badge, then each factor as name + progress bar (value = points/max * 100) + reason in text-xs
-  - If no score: muted message "No score available. Use the AI Agent to score this lead."
+1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
 
-### Files Modified
-| File | Change |
-|------|--------|
-| `src/pages/DashboardPage.tsx` | Add DailyBriefWidget import + render above stats |
-| `src/pages/LeadsPage.tsx` | Add Score column with grade badges |
-| `src/components/LeadDetailSheet.tsx` | Add Lead Score section with factor breakdown |
+2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
+
+3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
+
+4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
+
+### Data flow
+
+```text
+User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
+Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
+Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
+```
+
+No new hooks file needed — keep the logic inline in the widget since it's self-contained.
 

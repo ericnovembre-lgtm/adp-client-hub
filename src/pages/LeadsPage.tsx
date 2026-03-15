@@ -28,6 +28,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import DraftEmailDialog from "@/components/DraftEmailDialog";
+import { useLeadScores } from "@/hooks/useLeadScores";
 import LeadDetailSheet from "@/components/LeadDetailSheet";
 import { checkKnockoutLocal, type LocalKnockoutResult } from "@/lib/checkKnockoutFromRules";
 import EligibilityBadge from "@/components/EligibilityBadge";
@@ -277,6 +278,7 @@ export default function LeadsPage() {
   const createDeal = useCreateDeal();
   const createActivity = useCreateActivity();
   const { data: knockoutRules = [] } = useKnockoutRules();
+  const { leadScores } = useLeadScores();
 
   const allLeads = data?.data ?? [];
 
@@ -763,6 +765,7 @@ export default function LeadsPage() {
               <TableHead className="hidden xl:table-cell">AI Pitch</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Eligibility</TableHead>
+              <TableHead>Score</TableHead>
               <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
@@ -770,7 +773,7 @@ export default function LeadsPage() {
             {isLoading
               ? Array.from({ length: 8 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 11 }).map((_, j) => (
+                    {Array.from({ length: 12 }).map((_, j) => (
                       <TableCell key={j}>
                         <Skeleton className="h-4 w-full" />
                       </TableCell>
@@ -779,7 +782,7 @@ export default function LeadsPage() {
                 ))
               : leads.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="text-center text-muted-foreground py-12">
+                    <TableCell colSpan={12} className="text-center text-muted-foreground py-12">
                       <Users className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
                       <p className="font-medium">No leads yet</p>
                       <p className="text-sm mt-1 max-w-md mx-auto">Use AI Discovery to automatically find companies that are a great fit for ADP TotalSource, or add leads manually.</p>
@@ -839,6 +842,24 @@ export default function LeadsPage() {
                         </TableCell>
                         <TableCell>
                           <EligibilityBadge tier={ko.tier} message={ko.message} />
+                        </TableCell>
+                        <TableCell>
+                          {(() => {
+                            const ls = leadScores.get(lead.id);
+                            if (!ls) return <Badge variant="outline">—</Badge>;
+                            const gradeColor: Record<string, string> = {
+                              A: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300",
+                              B: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
+                              C: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
+                              D: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+                            };
+                            return (
+                              <div className="flex items-center gap-1.5">
+                                <Badge variant="outline" className={gradeColor[ls.grade] ?? ""}>{ls.grade}</Badge>
+                                <span className="text-xs text-muted-foreground">{ls.score}</span>
+                              </div>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu modal={false}>

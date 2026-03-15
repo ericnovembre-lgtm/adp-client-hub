@@ -14,6 +14,7 @@ import {
   Users, DollarSign, Target, CheckSquare, Sparkles, MapPin,
 } from "lucide-react";
 import { HEADCOUNT_MIN, HEADCOUNT_MAX } from "@/lib/constants";
+import DailyBriefWidget from "@/components/DailyBriefWidget";
 
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v);
@@ -121,6 +122,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <DailyBriefWidget />
       <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
 
       {/* Stat Cards */}

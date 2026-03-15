@@ -123,6 +123,20 @@ export default function AgentPanel() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
+  // Listen for external "agent-panel-message" events (e.g. from Score All Leads button)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.message) {
+        setOpen(true);
+        // Small delay to ensure panel is open before sending
+        setTimeout(() => sendMessage(detail.message), 100);
+      }
+    };
+    window.addEventListener("agent-panel-message", handler);
+    return () => window.removeEventListener("agent-panel-message", handler);
+  }, [sendMessage]);
+
   const handleSend = () => {
     if (!input.trim() || isLoading) return;
     sendMessage(input);

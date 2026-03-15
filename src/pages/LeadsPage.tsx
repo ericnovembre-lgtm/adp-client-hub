@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Search, MoreHorizontal, Phone, UserCheck, ArrowRightLeft, XCircle, Pencil, Trash2, Download, Upload, Loader2, Users, FileText, X, CheckSquare, Sparkles, Filter } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Phone, UserCheck, ArrowRightLeft, XCircle, Pencil, Trash2, Download, Upload, Loader2, Users, FileText, X, CheckSquare, Sparkles, Filter, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Link } from "wouter";
 import { useLeads, useCreateLead, useUpdateLead, useDeleteLead } from "@/hooks/useLeads";
 import { useCreateCompany } from "@/hooks/useCompanies";
@@ -696,6 +696,16 @@ export default function LeadsPage() {
             <Filter className="h-4 w-4 mr-1" />
             {territoryOnly ? `My Territory (${HEADCOUNT_MIN}–${HEADCOUNT_MAX})` : "All Leads"}
           </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent("agent-panel-message", {
+                detail: { message: "Score all my new and contacted leads and tell me which ones I should prioritize. For each lead, evaluate headcount fit (2-20 territory, 5-15 sweet spot), check industry knockout rules, assess trigger event quality, decision maker seniority, and contact completeness. Show me the results sorted by score." }
+              }));
+            }}
+          >
+            <Sparkles className="h-4 w-4 mr-1" />Score All Leads
+          </Button>
           <Button variant="outline" onClick={() => setImportOpen(true)}>
             <Upload className="h-4 w-4 mr-1" />Import CSV
           </Button>
@@ -836,9 +846,22 @@ export default function LeadsPage() {
                           ) : "—"}
                         </TableCell>
                         <TableCell>
-                          <Badge className={statusColors[lead.status ?? "new"] ?? statusColors.new} variant="outline">
-                            {lead.status ?? "new"}
-                          </Badge>
+                          <div className="flex items-center gap-1">
+                            <Badge className={statusColors[lead.status ?? "new"] ?? statusColors.new} variant="outline">
+                              {lead.status ?? "new"}
+                            </Badge>
+                            {(() => {
+                              const ls = leadScores.get(lead.id);
+                              const status = lead.status ?? "new";
+                              if (status === "qualified" && ls && ls.score >= 60) {
+                                return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />;
+                              }
+                              if (["new", "contacted"].includes(status) && ls && ls.score < 40) {
+                                return <AlertTriangle className="h-3.5 w-3.5 text-yellow-500" />;
+                              }
+                              return null;
+                            })()}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <EligibilityBadge tier={ko.tier} message={ko.message} />

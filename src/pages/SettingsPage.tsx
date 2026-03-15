@@ -491,6 +491,7 @@ export default function SettingsPage() {
   // AI
   
   const [aiChatEnabled, setAiChatEnabled] = useState(true);
+  const [autoQualifyThreshold, setAutoQualifyThreshold] = useState(60);
 
   // Discovery
   const [defaultIndustry, setDefaultIndustry] = useState("");
@@ -517,6 +518,7 @@ export default function SettingsPage() {
     if (!settings) return;
     
     setAiChatEnabled(settings.aiChatEnabled !== false);
+    setAutoQualifyThreshold(settings.auto_qualify_threshold ?? 60);
     setDefaultIndustry(settings.defaultIndustry ?? "");
     setDefaultState(settings.defaultState ?? "");
     setHeadcountMin(settings.defaultHeadcountMin ?? "");
@@ -545,6 +547,7 @@ export default function SettingsPage() {
   const saveSettings = async () => {
     const s: UserSettings = {
       aiChatEnabled,
+      auto_qualify_threshold: autoQualifyThreshold,
       defaultIndustry: defaultIndustry || undefined,
       defaultState: defaultState || undefined,
       defaultHeadcountMin: headcountMin === "" ? undefined : Number(headcountMin),
@@ -691,6 +694,22 @@ export default function SettingsPage() {
               <p className="text-xs text-muted-foreground">Show the floating chat assistant on all pages</p>
             </div>
             <Switch checked={aiChatEnabled} onCheckedChange={setAiChatEnabled} />
+          </div>
+          <Separator />
+          <div className="space-y-2">
+            <Label>Auto-Qualify Threshold</Label>
+            <Input
+              type="number"
+              min={40}
+              max={100}
+              step={5}
+              value={autoQualifyThreshold}
+              onChange={(e) => setAutoQualifyThreshold(Math.max(40, Math.min(100, Number(e.target.value) || 60)))}
+              className="max-w-[120px]"
+            />
+            <p className="text-xs text-muted-foreground">
+              Leads scoring at or above this threshold automatically move to "qualified" status when scored by the AI agent.
+            </p>
           </div>
           <Button onClick={saveSettings} disabled={updateSettings.isPending}>
             {updateSettings.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}

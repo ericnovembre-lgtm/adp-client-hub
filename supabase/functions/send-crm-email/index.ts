@@ -35,6 +35,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
+  const userId = claimsData.claims.sub as string;
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,

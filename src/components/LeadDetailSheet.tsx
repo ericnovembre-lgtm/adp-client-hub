@@ -95,7 +95,22 @@ function LeadScoreSection({ leadId, lead }: { leadId: string; lead: Lead }) {
             )}
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">No score available. Use the AI Agent to score this lead.</p>
+          <div className="text-center py-4 space-y-3">
+            <p className="text-sm text-muted-foreground">No score available yet.</p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent("agent-panel-message", {
+                  detail: { message: `Score the lead ${lead.company_name} — evaluate headcount fit, industry knockout rules, trigger event quality, decision maker seniority, and contact completeness` }
+                }));
+              }}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              Score This Lead
+            </Button>
+          </div>
         )}
       </div>
     </>

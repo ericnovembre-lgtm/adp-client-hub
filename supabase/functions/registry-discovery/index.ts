@@ -186,6 +186,16 @@ serve(async (req) => {
       await new Promise(r => setTimeout(r, 500));
     }
 
+    // If every state returned 401/403, the API key is required
+    if (authFailures > 0 && authFailures >= states.length) {
+      return new Response(JSON.stringify({
+        error: "api_key_required",
+        message: "OpenCorporates requires an API key for access. Configure your key in Settings > API Keys to use this feature.",
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Read-merge-write settings
     const { data: existingSettings } = await supabase
       .from("user_settings")

@@ -98,6 +98,19 @@ export default function RegistryDiscoveryTab() {
         </AlertDescription>
       </Alert>
 
+      {apiKeyRequired && (
+        <Alert className="border-orange-500/30 bg-orange-500/5">
+          <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+          <AlertDescription className="text-sm text-foreground">
+            <strong>API Key Required:</strong> OpenCorporates now requires an API key for access.{" "}
+            <button onClick={() => navigate("/settings")} className="underline font-medium text-primary hover:text-primary/80">
+              Configure your key in Settings → API Keys
+            </button>{" "}
+            to use this feature.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">

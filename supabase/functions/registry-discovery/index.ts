@@ -74,6 +74,8 @@ serve(async (req) => {
       saved: 0,
       skipped_duplicate: 0,
       errors: 0,
+      classified: 0,
+      unclassified: 0,
       leads: [] as any[],
     };
 

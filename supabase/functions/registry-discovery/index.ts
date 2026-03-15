@@ -136,9 +136,12 @@ serve(async (req) => {
           ? new Date(company.incorporation_date).toLocaleDateString()
           : "recently";
 
+        const classifiedIndustry = inferIndustryFromName(companyName)
+          ?? matchIndustryKeywords(companyName, industry_keywords);
+
         const leadData = {
           company_name: companyName,
-          industry: matchedIndustry ?? inferIndustryFromName(companyName),
+          industry: classifiedIndustry,
           state: stateName,
           headcount: null,
           website: null,

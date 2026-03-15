@@ -40,8 +40,10 @@ export function useCompany(id: string | undefined) {
 export function useCreateCompany() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (company: TablesInsert<"companies">) => {
-      const { data, error } = await supabase.from("companies").insert(company).select().single();
+    mutationFn: async (company: Omit<TablesInsert<"companies">, "user_id">) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const { data, error } = await supabase.from("companies").insert({ ...company, user_id: user.id }).select().single();
       if (error) throw error;
       return data as Company;
     },

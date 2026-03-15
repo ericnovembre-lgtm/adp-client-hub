@@ -37,8 +37,10 @@ export function useActivity(id: string | undefined) {
 export function useCreateActivity() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (activity: TablesInsert<"activities">) => {
-      const { data, error } = await supabase.from("activities").insert(activity).select().single();
+    mutationFn: async (activity: Omit<TablesInsert<"activities">, "user_id">) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const { data, error } = await supabase.from("activities").insert({ ...activity, user_id: user.id }).select().single();
       if (error) throw error;
       return data as Activity;
     },

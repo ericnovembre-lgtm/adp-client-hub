@@ -223,7 +223,7 @@ serve(async (req) => {
 
         const { data: newLead, error: insertErr } = await supabase
           .from("leads")
-          .insert(leadData)
+          .insert({ ...leadData, user_id: user.id })
           .select()
           .single();
 
@@ -237,6 +237,7 @@ serve(async (req) => {
           type: "system",
           description: `Lead discovered via Yelp: ${bizName} — ${biz.review_count} reviews, ${biz.rating}★, ${primaryCategory}, ${biz.location?.city ?? ""}. PEO score: ${score}/100.`,
           lead_id: newLead.id,
+          user_id: user.id,
         });
 
         results.saved++;

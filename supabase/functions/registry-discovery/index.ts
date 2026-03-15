@@ -156,7 +156,7 @@ serve(async (req) => {
 
         const { data: newLead, error: insertErr } = await supabase
           .from("leads")
-          .insert(leadData)
+          .insert({ ...leadData, user_id: userId })
           .select()
           .single();
 
@@ -170,6 +170,7 @@ serve(async (req) => {
           type: "system",
           description: `Lead discovered via Business Registry: ${companyName} — incorporated ${incDate} in ${stateName}. Company type: ${company.company_type ?? "unknown"}.`,
           lead_id: newLead.id,
+          user_id: userId,
         });
 
         results.saved++;

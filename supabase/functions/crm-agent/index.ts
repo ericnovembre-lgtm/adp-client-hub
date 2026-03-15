@@ -252,6 +252,8 @@ After answering the user's question, if you notice relevant patterns, briefly me
 Keep proactive suggestions to one sentence. Don't be pushy.`;
 
 async function executeTool(toolName: string, input: Record<string, any>, supabase: SupabaseClient, userId: string): Promise<any> {
+  // Inject userId into input for tools that insert data
+  input.__user_id = userId;
   const startTime = Date.now();
   let result: any;
   let previousState: any = null;
@@ -416,7 +418,7 @@ async function toolUpdateLead(supabase: SupabaseClient, input: Record<string, an
   const { data, error } = await supabase.from("leads").update(cleanUpdates).eq("id", lead_id).select().single();
   if (error) throw new Error(`Update failed: ${error.message}`);
   const changes = Object.entries(cleanUpdates).map(([k, v]) => `${k}: ${v}`).join(", ");
-  await supabase.from("activities").insert({ type: "note", description: `Lead updated via AI Agent: ${changes}`, lead_id });
+  await supabase.from("activities").insert({ type: "note", description: `Lead updated via AI Agent: ${changes}`, lead_id, user_id: input.__user_id });
   return { success: true, updated_lead: data, changes: cleanUpdates };
 }
 
@@ -429,19 +431,19 @@ async function toolUpdateDeal(supabase: SupabaseClient, input: Record<string, an
   const { data, error } = await supabase.from("deals").update(cleanUpdates).eq("id", deal_id).select().single();
   if (error) throw new Error(`Update failed: ${error.message}`);
   if (cleanUpdates.stage && cleanUpdates.stage !== oldStage) {
-    await supabase.from("activities").insert({ type: "stage_change", description: `Deal stage changed from ${oldStage} to ${cleanUpdates.stage} via AI Agent`, deal_id });
+    await supabase.from("activities").insert({ type: "stage_change", description: `Deal stage changed from ${oldStage} to ${cleanUpdates.stage} via AI Agent`, deal_id, user_id: input.__user_id });
   }
   return { success: true, updated_deal: data, changes: cleanUpdates };
 }
 
 async function toolCreateTask(supabase: SupabaseClient, input: Record<string, any>) {
-  const { data, error } = await supabase.from("tasks").insert({ title: input.title, description: input.description ?? null, due_date: input.due_date, priority: input.priority ?? "medium", status: "pending", contact_id: input.contact_id ?? null, deal_id: input.deal_id ?? null }).select().single();
+  const { data, error } = await supabase.from("tasks").insert({ title: input.title, description: input.description ?? null, due_date: input.due_date, priority: input.priority ?? "medium", status: "pending", contact_id: input.contact_id ?? null, deal_id: input.deal_id ?? null, user_id: input.__user_id }).select().single();
   if (error) throw new Error(`Create failed: ${error.message}`);
   return { success: true, task: data };
 }
 
 async function toolLogActivity(supabase: SupabaseClient, input: Record<string, any>) {
-  const { data, error } = await supabase.from("activities").insert({ type: input.type, description: input.description, contact_id: input.contact_id ?? null, deal_id: input.deal_id ?? null, lead_id: input.lead_id ?? null }).select().single();
+  const { data, error } = await supabase.from("activities").insert({ type: input.type, description: input.description, contact_id: input.contact_id ?? null, deal_id: input.deal_id ?? null, lead_id: input.lead_id ?? null, user_id: input.__user_id }).select().single();
   if (error) throw new Error(`Log failed: ${error.message}`);
   return { success: true, activity: data };
 }

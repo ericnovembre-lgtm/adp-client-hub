@@ -180,6 +180,7 @@ serve(async (req) => {
         ai_pitch_summary: lead.ai_pitch_summary || null,
         source: "auto_discovery",
         status: "new",
+        user_id: user.id,
       });
 
       if (error) {
@@ -190,6 +191,7 @@ serve(async (req) => {
         await supabase.from("activities").insert({
           type: "system",
           description: `Auto-discovered lead: ${lead.company_name}`,
+          user_id: user.id,
         });
       }
     }

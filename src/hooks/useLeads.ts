@@ -40,8 +40,10 @@ export function useLead(id: string | undefined) {
 export function useCreateLead() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (lead: TablesInsert<"leads">) => {
-      const { data, error } = await supabase.from("leads").insert(lead).select().single();
+    mutationFn: async (lead: Omit<TablesInsert<"leads">, "user_id">) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const { data, error } = await supabase.from("leads").insert({ ...lead, user_id: user.id }).select().single();
       if (error) throw error;
       return data as Lead;
     },

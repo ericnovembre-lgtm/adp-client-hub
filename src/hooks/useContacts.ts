@@ -40,8 +40,10 @@ export function useContact(id: string | undefined) {
 export function useCreateContact() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (contact: TablesInsert<"contacts">) => {
-      const { data, error } = await supabase.from("contacts").insert(contact).select().single();
+    mutationFn: async (contact: Omit<TablesInsert<"contacts">, "user_id">) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const { data, error } = await supabase.from("contacts").insert({ ...contact, user_id: user.id }).select().single();
       if (error) throw error;
       return data as Contact;
     },

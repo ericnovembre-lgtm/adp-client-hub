@@ -160,6 +160,14 @@ export default function CSVImportDialog({ entityType, open, onOpenChange, onImpo
       }
     }
 
+    // Get current user for user_id scoping
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("Not authenticated");
+      setImporting(false);
+      return;
+    }
+
     const mapped: Record<string, string | number | null>[] = [];
     let skipped = 0;
     const dupes: string[] = [];
@@ -205,7 +213,7 @@ export default function CSVImportDialog({ entityType, open, onOpenChange, onImpo
     const batchSize = 10;
 
     for (let i = 0; i < mapped.length; i += batchSize) {
-      const batch = mapped.slice(i, i + batchSize);
+      const batch = mapped.slice(i, i + batchSize).map(row => ({ ...row, user_id: user.id }));
       const { error } = await supabase.from(entityType).insert(batch as any);
       if (error) {
         failed += batch.length;

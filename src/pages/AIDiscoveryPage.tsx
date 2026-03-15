@@ -193,6 +193,9 @@ export default function AIDiscoveryPage() {
           <TabsTrigger value="intent-based" className="gap-1.5">
             <Zap className="h-4 w-4" /> Intent-Based
           </TabsTrigger>
+          <TabsTrigger value="new-businesses" className="gap-1.5">
+            <Building2 className="h-4 w-4" /> New Businesses
+          </TabsTrigger>
           <TabsTrigger value="local-businesses" className="gap-1.5">
             <MapPin className="h-4 w-4" /> Local Businesses
           </TabsTrigger>

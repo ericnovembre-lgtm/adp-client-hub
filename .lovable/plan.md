@@ -1,48 +1,28 @@
 
 
-## Plan: Persist AI Chat History Between Sessions
+## Plan: Make Contact and Company Names Clickable in DealsPage and DealDetailSheet
 
-Save chat conversations to the database so they survive page refreshes and sessions.
+### `src/pages/DealsPage.tsx`
 
-### Database Change
+**Import**: Add `Link` from `wouter` (or use `useLocation` — `Link` is simpler).
 
-Create a `chat_messages` table:
+**ListView** (lines 492-493): Replace plain text contact/company cells with clickable links:
+- Contact cell: `<Link href="/contacts" className="text-primary hover:underline">{name}</Link>` (when contact_id exists)
+- Company cell: `<Link href="/companies" className="text-primary hover:underline">{name}</Link>` (when company_id exists)
 
-```sql
-CREATE TABLE public.chat_messages (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  role text NOT NULL CHECK (role IN ('user', 'assistant')),
-  content text NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
+**KanbanView** (lines 357-358): Same treatment in `renderDealCard` — wrap company/contact `<p>` text in `<Link>` with `text-primary hover:underline` styling. Add `e.stopPropagation()` on click to prevent card click from firing.
 
-ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+### `src/components/DealDetailSheet.tsx`
 
-CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
-CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
-CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
+**Import**: Add `Link` from `wouter`.
 
-CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
-```
+**View mode only** (lines 218, 233): Replace the plain `contactName` and `companyName` values in `InfoRow` with `<Link>` elements:
+- Contact: `<Link href="/contacts" className="text-primary hover:underline">{contactName}</Link>`
+- Company: `<Link href="/companies" className="text-primary hover:underline">{companyName}</Link>`
 
-### Code Changes — `src/components/AIChatWidget.tsx`
+### Files changed
+- `src/pages/DealsPage.tsx` — add Link import, update 4 locations
+- `src/components/DealDetailSheet.tsx` — add Link import, update 2 locations
 
-1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
-
-2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
-
-3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
-
-4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
-
-### Data flow
-
-```text
-User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
-Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
-Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
-```
-
-No new hooks file needed — keep the logic inline in the widget since it's self-contained.
+No database or dependency changes needed.
 

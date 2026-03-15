@@ -19,7 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Loader2, Save, Download, Database, Info, Plus, Search, Pencil, Trash2, ShieldX, Bot, CheckCircle2, XCircle, Zap } from "lucide-react";
+import { Loader2, Save, Download, Database, Info, Plus, Search, Pencil, Trash2, ShieldX, Bot, CheckCircle2, XCircle, Zap, BarChart3 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
@@ -496,6 +496,8 @@ export default function SettingsPage() {
   const [testingApollo, setTestingApollo] = useState(false);
   const [yelpKeyConfigured, setYelpKeyConfigured] = useState(false);
   const [testingYelp, setTestingYelp] = useState(false);
+  const [censusKeyConfigured, setCensusKeyConfigured] = useState(false);
+  const [testingCensus, setTestingCensus] = useState(false);
 
   // Discovery
   const [defaultIndustry, setDefaultIndustry] = useState("");
@@ -529,6 +531,7 @@ export default function SettingsPage() {
     setHeadcountMax(settings.defaultHeadcountMax ?? "");
     setApolloKeyConfigured(settings.apollo_api_key_configured ?? false);
     setYelpKeyConfigured(settings.yelp_api_key_configured ?? false);
+    setCensusKeyConfigured(settings.census_api_key_configured ?? false);
   }, [settings]);
 
   const saveProfile = async () => {
@@ -819,6 +822,62 @@ export default function SettingsPage() {
               }}
             >
               {testingYelp ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Zap className="h-4 w-4 mr-1" />}
+              Test Connection
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Census API Key */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            Census API Key
+            <Badge variant="outline" className="ml-2 text-xs text-muted-foreground">Optional</Badge>
+          </CardTitle>
+          <CardDescription>Free from api.census.gov/data/key_signup.html. Works without a key at lower rate limits, but a key removes throttling. Registration is instant.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="flex gap-2">
+              {censusKeyConfigured ? (
+                <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 border-emerald-300">
+                  <CheckCircle2 className="h-3 w-3 mr-1" /> Connected
+                </Badge>
+              ) : (
+                <>
+                  <Badge variant="outline" className="text-muted-foreground">Not configured</Badge>
+                  <Badge variant="outline" className="text-muted-foreground bg-muted/50">Works without key</Badge>
+                </>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={testingCensus}
+              onClick={async () => {
+                setTestingCensus(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke("market-intelligence", {
+                    body: { states: ["California"], industries: ["Construction"], compare_years: ["2022", "2021"] },
+                  });
+                  if (error) throw error;
+                  if (data?.error) throw new Error(data.error);
+                  toast.success("Census API connection successful!");
+                  setCensusKeyConfigured(true);
+                  await updateSettings.mutateAsync({ ...settings, census_api_key_configured: true });
+                } catch (e: any) {
+                  toast.error(e.message || "Census connection test failed");
+                  setCensusKeyConfigured(false);
+                  await updateSettings.mutateAsync({ ...settings, census_api_key_configured: false });
+                }
+                setTestingCensus(false);
+              }}
+            >
+              {testingCensus ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Zap className="h-4 w-4 mr-1" />}
               Test Connection
             </Button>
           </div>

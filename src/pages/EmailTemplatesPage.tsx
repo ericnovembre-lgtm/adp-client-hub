@@ -34,13 +34,13 @@ export default function EmailTemplatesPage() {
     company_name: "Acme Corp",
     headcount: "15",
   });
-  const [copied, setCopied] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const handleCopy = async (tpl: EmailTemplate) => {
     const filled = `Subject: ${fillTemplate(tpl.subject, previewFields)}\n\n${fillTemplate(tpl.body, previewFields)}`;
     await navigator.clipboard.writeText(filled);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setCopiedId(tpl.id);
+    setTimeout(() => setCopiedId(null), 2000);
     toast.success("Template copied to clipboard");
   };
 
@@ -107,7 +107,7 @@ export default function EmailTemplatesPage() {
                 <Eye className="h-3.5 w-3.5 mr-1" /> Preview
               </Button>
               <Button size="sm" className="flex-1" onClick={() => handleCopy(tpl)}>
-                {copied ? <Check className="h-3.5 w-3.5 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
+                {copiedId === tpl.id ? <Check className="h-3.5 w-3.5 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
                 Copy
               </Button>
             </div>
@@ -143,7 +143,11 @@ export default function EmailTemplatesPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setPreviewTemplate(null)}>Close</Button>
             <Button onClick={() => previewTemplate && handleCopy(previewTemplate)}>
-              <Copy className="h-4 w-4 mr-1" /> Copy to Clipboard
+              {copiedId === previewTemplate?.id ? (
+                <><Check className="h-4 w-4 mr-1" /> Copied!</>
+              ) : (
+                <><Copy className="h-4 w-4 mr-1" /> Copy to Clipboard</>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

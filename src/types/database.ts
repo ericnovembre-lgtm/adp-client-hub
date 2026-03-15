@@ -42,6 +42,7 @@ export interface Deal {
   contact_id: string | null;
   company_id: string | null;
   expected_close_date: string | null;
+  closed_at: string | null;
   notes: string | null;
   created_at: string | null;
 }

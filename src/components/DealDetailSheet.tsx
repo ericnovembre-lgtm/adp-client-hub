@@ -277,6 +277,15 @@ export default function DealDetailSheet({
                 value={deal.expected_close_date ? format(new Date(deal.expected_close_date), "MMM d, yyyy") : null}
               />
             )}
+
+            {/* Closed on (read-only) */}
+            {!isEditing && deal.closed_at && (deal.stage === "closed_won" || deal.stage === "closed_lost") && (
+              <InfoRow
+                icon={<Clock className="h-4 w-4" />}
+                label="Closed on"
+                value={format(new Date(deal.closed_at), "MMM d, yyyy")}
+              />
+            )}
           </div>
 
           {/* Notes */}

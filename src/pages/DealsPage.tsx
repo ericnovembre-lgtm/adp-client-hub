@@ -294,8 +294,13 @@ function KanbanView({
   const moveDeal = async (deal: Deal, newStage: Stage) => {
     const oldStage = deal.stage ?? "lead";
     if (oldStage === newStage) return;
+    const isClosed = newStage === "closed_won" || newStage === "closed_lost";
+    const wasClosed = oldStage === "closed_won" || oldStage === "closed_lost";
+    const updates: any = { id: deal.id, stage: newStage };
+    if (isClosed && !wasClosed) updates.closed_at = new Date().toISOString();
+    else if (!isClosed && wasClosed) updates.closed_at = null;
     try {
-      await updateDeal.mutateAsync({ id: deal.id, stage: newStage });
+      await updateDeal.mutateAsync(updates);
       await createActivity.mutateAsync({
         type: "stage_change",
         description: `Deal "${deal.title}" moved from ${STAGE_LABELS[oldStage as Stage] ?? oldStage} to ${STAGE_LABELS[newStage]}`,

@@ -125,9 +125,8 @@ export function useMonthlyRevenue() {
       const from12 = startOfMonth(subMonths(new Date(), 11)).toISOString();
       const { data, error } = await supabase
         .from("deals")
-        .select("value, expected_close_date")
-        .eq("stage", "closed_won")
-        .gte("expected_close_date", from12);
+        .select("value, expected_close_date, closed_at")
+        .eq("stage", "closed_won");
       if (error) throw error;
 
       const months: { month: string; revenue: number }[] = [];
@@ -138,8 +137,9 @@ export function useMonthlyRevenue() {
         const end = endOfMonth(m);
         const rev = data
           .filter((d) => {
-            if (!d.expected_close_date) return false;
-            const dt = new Date(d.expected_close_date);
+            const dateStr = d.closed_at ?? d.expected_close_date;
+            if (!dateStr) return false;
+            const dt = new Date(dateStr);
             return dt >= start && dt <= end;
           })
           .reduce((s, d) => s + (d.value ?? 0), 0);

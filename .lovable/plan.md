@@ -1,48 +1,31 @@
 
 
-## Plan: Persist AI Chat History Between Sessions
+## Territory Summary Widget for Dashboard
 
-Save chat conversations to the database so they survive page refreshes and sessions.
+### What we're building
+A compact card on the Dashboard that shows a visual breakdown of leads by territory status: **in-territory** (headcount 2–20), **out-of-territory** (headcount outside 2–20), and **unknown** (null headcount). Includes counts, percentages, and a segmented progress bar.
 
-### Database Change
+### Design
+The widget will sit between the stat cards and the two-column section. It will be a single `Card` with:
+- Title: "Territory Coverage"
+- Three labeled segments: In-Territory (green), Out-of-Territory (red), Unknown (yellow)
+- A stacked horizontal bar showing proportions
+- Count + percentage for each segment
 
-Create a `chat_messages` table:
+### Implementation
 
-```sql
-CREATE TABLE public.chat_messages (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  role text NOT NULL CHECK (role IN ('user', 'assistant')),
-  content text NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
+**1. Add a `useTerritoryStats` hook in `useDashboardStats.ts`**
+- Query all non-dismissed leads, selecting only `headcount`
+- Compute three counts client-side: `inTerritory` (2–20), `outOfTerritory` (defined but outside range), `unknown` (null)
+- Return counts and percentages
 
-ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+**2. Add the Territory Summary widget to `DashboardPage.tsx`**
+- Import the new hook and `Progress` component
+- Render a `Card` after the stat cards grid with three inline stats and a custom stacked bar (three colored `div`s with percentage widths inside a rounded container)
+- Use `MapPin` icon from lucide-react
+- Show skeleton while loading
 
-CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
-CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
-CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
-
-CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
-```
-
-### Code Changes — `src/components/AIChatWidget.tsx`
-
-1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
-
-2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
-
-3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
-
-4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
-
-### Data flow
-
-```text
-User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
-Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
-Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
-```
-
-No new hooks file needed — keep the logic inline in the widget since it's self-contained.
+### Files changed
+- `src/hooks/useDashboardStats.ts` — add `useTerritoryStats` export
+- `src/pages/DashboardPage.tsx` — import and render territory widget
 

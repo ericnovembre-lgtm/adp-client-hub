@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Copy, Sparkles, Loader2, Check } from "lucide-react";
+import { Copy, Sparkles, Loader2, Check, Send } from "lucide-react";
 
 interface MergeFields {
   contact_name: string;
@@ -23,14 +23,16 @@ interface DraftEmailDialogProps {
   onOpenChange: (open: boolean) => void;
   mergeFields: MergeFields;
   contactId?: string | null;
+  contactEmail?: string | null;
 }
 
-export default function DraftEmailDialog({ open, onOpenChange, mergeFields, contactId }: DraftEmailDialogProps) {
+export default function DraftEmailDialog({ open, onOpenChange, mergeFields, contactId, contactEmail }: DraftEmailDialogProps) {
   const [selectedTemplateId, setSelectedTemplateId] = useState(EMAIL_TEMPLATES[0].id);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [sending, setSending] = useState(false);
 
   const allFields: Record<string, string> = {
     contact_name: mergeFields.contact_name,
@@ -70,7 +72,6 @@ export default function DraftEmailDialog({ open, onOpenChange, mergeFields, cont
 
       if (resp.error) throw resp.error;
 
-      // Handle streaming response - read full text
       if (resp.data instanceof ReadableStream) {
         const reader = resp.data.getReader();
         const decoder = new TextDecoder();
@@ -81,7 +82,6 @@ export default function DraftEmailDialog({ open, onOpenChange, mergeFields, cont
           done = d;
           if (value) {
             const chunk = decoder.decode(value, { stream: true });
-            // Parse SSE lines
             for (const line of chunk.split("\n")) {
               if (!line.startsWith("data: ")) continue;
               const json = line.slice(6).trim();
@@ -113,9 +113,46 @@ export default function DraftEmailDialog({ open, onOpenChange, mergeFields, cont
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     toast.success("Email copied to clipboard");
-
-    // Log activity
     await logActivity("email", `Email drafted for ${mergeFields.contact_name}: ${subject}`, contactId);
+  };
+
+  const handleSend = async () => {
+    if (!contactEmail) {
+      toast.error("Contact has no email address");
+      return;
+    }
+
+    setSending(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("You must be logged in to send emails");
+        return;
+      }
+
+      const resp = await supabase.functions.invoke("send-crm-email", {
+        body: {
+          to: contactEmail,
+          subject,
+          body,
+          contact_id: contactId,
+        },
+      });
+
+      if (resp.error) throw resp.error;
+
+      const result = resp.data;
+      if (result?.error) {
+        toast.error(result.error);
+      } else {
+        toast.success(`Email sent to ${contactEmail}`);
+        onOpenChange(false);
+      }
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to send email");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -139,6 +176,13 @@ export default function DraftEmailDialog({ open, onOpenChange, mergeFields, cont
               </SelectContent>
             </Select>
           </div>
+
+          {contactEmail && (
+            <div className="space-y-2">
+              <Label>To</Label>
+              <Input value={contactEmail} disabled className="text-muted-foreground" />
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Subject</Label>
@@ -184,13 +228,22 @@ export default function DraftEmailDialog({ open, onOpenChange, mergeFields, cont
 
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleCopy}>
+          <Button variant="outline" onClick={handleCopy}>
             {copied ? (
               <><Check className="h-4 w-4 mr-1" /> Copied!</>
             ) : (
               <><Copy className="h-4 w-4 mr-1" /> Copy to Clipboard</>
             )}
           </Button>
+          {contactEmail && (
+            <Button onClick={handleSend} disabled={sending}>
+              {sending ? (
+                <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Sending...</>
+              ) : (
+                <><Send className="h-4 w-4 mr-1" /> Send Email</>
+              )}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

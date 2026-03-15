@@ -6,6 +6,7 @@ import { useUpdateContact } from "@/hooks/useContacts";
 import { useCompanies } from "@/hooks/useCompanies";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import ActivityTimeline from "@/components/ActivityTimeline";
+import EmailHistory from "@/components/EmailHistory";
 import { toast } from "sonner";
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -15,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Mail, Phone, Building2, Briefcase, User,
   Pencil, X, Save, Loader2, Clock,
@@ -262,7 +264,18 @@ export default function ContactDetailSheet({
 
         <Separator className="my-6" />
 
-        <ActivityTimeline entityType="contact" entityId={contact.id} />
+        <Tabs defaultValue="activity">
+          <TabsList className="w-full">
+            <TabsTrigger value="activity" className="flex-1">Activity</TabsTrigger>
+            <TabsTrigger value="emails" className="flex-1">Emails</TabsTrigger>
+          </TabsList>
+          <TabsContent value="activity">
+            <ActivityTimeline entityType="contact" entityId={contact.id} />
+          </TabsContent>
+          <TabsContent value="emails">
+            <EmailHistory contactId={contact.id} />
+          </TabsContent>
+        </Tabs>
 
         {contact.created_at && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground pt-4">

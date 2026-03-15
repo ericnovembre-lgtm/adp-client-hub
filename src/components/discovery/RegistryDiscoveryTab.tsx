@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Building2, Loader2, CheckCircle, ChevronDown, Info } from "lucide-react";
+import { Building2, Loader2, CheckCircle, ChevronDown, Info, AlertTriangle } from "lucide-react";
 
 const TOP_STATES = [
   "California", "Texas", "Florida", "New York", "Georgia",

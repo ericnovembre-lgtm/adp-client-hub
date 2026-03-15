@@ -39,8 +39,8 @@ export default function EmailTemplatesPage() {
   const handleCopy = async (tpl: EmailTemplate) => {
     const filled = `Subject: ${fillTemplate(tpl.subject, previewFields)}\n\n${fillTemplate(tpl.body, previewFields)}`;
     await navigator.clipboard.writeText(filled);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setCopiedId(tpl.id);
+    setTimeout(() => setCopiedId(null), 2000);
     toast.success("Template copied to clipboard");
   };
 

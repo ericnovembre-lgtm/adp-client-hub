@@ -10,6 +10,7 @@ import EligibilityBadge from "@/components/EligibilityBadge";
 import ActivityTimeline from "@/components/ActivityTimeline";
 import { toast } from "sonner";
 
+import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";

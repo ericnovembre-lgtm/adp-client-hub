@@ -419,7 +419,7 @@ export default function LeadDetailSheet({
           )}
 
           {/* Lead Score */}
-          <LeadScoreSection leadId={lead.id} />
+          <LeadScoreSection leadId={lead.id} lead={lead} />
 
           {/* Action Buttons */}
           {!isEditing && (onDraftEmail || onConvertToDeal) && (

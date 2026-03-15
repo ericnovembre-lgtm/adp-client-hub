@@ -695,6 +695,22 @@ export default function SettingsPage() {
             </div>
             <Switch checked={aiChatEnabled} onCheckedChange={setAiChatEnabled} />
           </div>
+          <Separator />
+          <div className="space-y-2">
+            <Label>Auto-Qualify Threshold</Label>
+            <Input
+              type="number"
+              min={40}
+              max={100}
+              step={5}
+              value={autoQualifyThreshold}
+              onChange={(e) => setAutoQualifyThreshold(Math.max(40, Math.min(100, Number(e.target.value) || 60)))}
+              className="max-w-[120px]"
+            />
+            <p className="text-xs text-muted-foreground">
+              Leads scoring at or above this threshold automatically move to "qualified" status when scored by the AI agent.
+            </p>
+          </div>
           <Button onClick={saveSettings} disabled={updateSettings.isPending}>
             {updateSettings.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
             Save AI Settings

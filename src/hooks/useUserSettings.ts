@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 export interface UserSettings {
   aiModel?: string;
   aiChatEnabled?: boolean;
+  auto_qualify_threshold?: number;
   defaultIndustry?: string;
   defaultState?: string;
   defaultHeadcountMin?: number;

@@ -846,9 +846,22 @@ export default function LeadsPage() {
                           ) : "—"}
                         </TableCell>
                         <TableCell>
-                          <Badge className={statusColors[lead.status ?? "new"] ?? statusColors.new} variant="outline">
-                            {lead.status ?? "new"}
-                          </Badge>
+                          <div className="flex items-center gap-1">
+                            <Badge className={statusColors[lead.status ?? "new"] ?? statusColors.new} variant="outline">
+                              {lead.status ?? "new"}
+                            </Badge>
+                            {(() => {
+                              const ls = leadScores.get(lead.id);
+                              const status = lead.status ?? "new";
+                              if (status === "qualified" && ls && ls.score >= 60) {
+                                return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />;
+                              }
+                              if (["new", "contacted"].includes(status) && ls && ls.score < 40) {
+                                return <AlertTriangle className="h-3.5 w-3.5 text-yellow-500" />;
+                              }
+                              return null;
+                            })()}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <EligibilityBadge tier={ko.tier} message={ko.message} />

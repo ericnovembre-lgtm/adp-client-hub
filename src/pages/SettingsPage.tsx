@@ -887,6 +887,57 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* OpenCorporates API Key */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Building2 className="h-5 w-5" />
+            OpenCorporates API Key
+          </CardTitle>
+          <CardDescription>Required for New Business discovery via business registries</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Input type="password" placeholder="Enter your OpenCorporates API key" disabled className="max-w-md" />
+            {openCorpKeyConfigured
+              ? <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-300"><CheckCircle2 className="h-3 w-3 mr-1" />Connected</Badge>
+              : <Badge variant="outline"><XCircle className="h-3 w-3 mr-1" />Not configured</Badge>
+            }
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Get your key from <span className="font-medium">opencorporates.com/api_accounts</span>. Required for New Business discovery. Free tier: 50 calls/month. Paid plans start at $99/month for 10K calls.
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={testingOpenCorp}
+              onClick={async () => {
+                setTestingOpenCorp(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke("registry-discovery", {
+                    body: { states: ["Delaware"], months_back: 1, per_page: 1, industry_keywords: ["test"] },
+                  });
+                  if (error) throw error;
+                  if (data?.error) throw new Error(data.error);
+                  toast.success("OpenCorporates connection successful!");
+                  setOpenCorpKeyConfigured(true);
+                  await updateSettings.mutateAsync({ ...settings, opencorporates_api_key_configured: true });
+                } catch (e: any) {
+                  toast.error(e.message || "OpenCorporates connection test failed");
+                  setOpenCorpKeyConfigured(false);
+                  await updateSettings.mutateAsync({ ...settings, opencorporates_api_key_configured: false });
+                }
+                setTestingOpenCorp(false);
+              }}
+            >
+              {testingOpenCorp ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Zap className="h-4 w-4 mr-1" />}
+              Test Connection
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Discovery Settings */}
       <Card>
         <CardHeader>

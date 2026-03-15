@@ -491,6 +491,7 @@ export default function SettingsPage() {
   // AI
   
   const [aiChatEnabled, setAiChatEnabled] = useState(true);
+  const [autoQualifyThreshold, setAutoQualifyThreshold] = useState(60);
 
   // Discovery
   const [defaultIndustry, setDefaultIndustry] = useState("");

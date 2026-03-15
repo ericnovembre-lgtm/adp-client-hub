@@ -534,6 +534,7 @@ export default function SettingsPage() {
     setApolloKeyConfigured(settings.apollo_api_key_configured ?? false);
     setYelpKeyConfigured(settings.yelp_api_key_configured ?? false);
     setCensusKeyConfigured(settings.census_api_key_configured ?? false);
+    setOpenCorpKeyConfigured(settings.opencorporates_api_key_configured ?? false);
   }, [settings]);
 
   const saveProfile = async () => {

@@ -124,15 +124,22 @@ export default function AIChatWidget() {
     if (open && inputRef.current) inputRef.current.focus();
   }, [open]);
 
+  // Persist to localStorage whenever messages change
+  useEffect(() => {
+    saveMessages(messages);
+  }, [messages]);
+
   const send = async () => {
     const text = input.trim();
     if (!text || isLoading) return;
     setInput("");
-    const userMsg: Msg = { role: "user", content: text };
+    const now = new Date().toISOString();
+    const userMsg: Msg = { role: "user", content: text, timestamp: now };
     setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
 
     let assistantSoFar = "";
+    const assistantTimestamp = new Date().toISOString();
     const upsert = (chunk: string) => {
       assistantSoFar += chunk;
       setMessages((prev) => {
@@ -140,7 +147,7 @@ export default function AIChatWidget() {
         if (last?.role === "assistant") {
           return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m));
         }
-        return [...prev, { role: "assistant", content: assistantSoFar }];
+        return [...prev, { role: "assistant" as const, content: assistantSoFar, timestamp: assistantTimestamp }];
       });
     };
 

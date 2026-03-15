@@ -343,6 +343,140 @@ function KnockoutRulesSection() {
   );
 }
 
+// --- Agent Activity Log Section ---
+
+function relativeTime(dateStr: string | null) {
+  if (!dateStr) return "—";
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} hr ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d ago`;
+  return new Date(dateStr).toLocaleDateString();
+}
+
+function formatAgentToolName(name: string) {
+  return name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function formatLatency(ms: number | null) {
+  if (!ms) return "—";
+  if (ms >= 1000) return `${(ms / 1000).toFixed(1)}s`;
+  return `${ms}ms`;
+}
+
+const riskBadgeMap: Record<string, { label: string; className: string }> = {
+  low: { label: "Low", className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 border-emerald-300" },
+  med: { label: "Med", className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 border-yellow-300" },
+  medium: { label: "Med", className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 border-yellow-300" },
+  high: { label: "High", className: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-300" },
+};
+
+function AgentActivitySection() {
+  const { data: agentActions = [], isLoading } = useQuery({
+    queryKey: ["agent-actions"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("agent_actions")
+        .select("id, tool_name, risk_level, input_params, output_result, tokens_used, latency_ms, error, created_at")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      return data ?? [];
+    },
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Bot className="h-5 w-5" />
+          Agent Activity Log
+        </CardTitle>
+        <CardDescription>Recent AI agent tool executions and audit trail</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="rounded-md border overflow-x-auto max-h-[500px] overflow-y-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Time</TableHead>
+                <TableHead>Tool</TableHead>
+                <TableHead>Risk</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Tokens</TableHead>
+                <TableHead>Latency</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    {Array.from({ length: 6 }).map((_, j) => (
+                      <TableCell key={j}><div className="h-4 bg-muted animate-pulse rounded" /></TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : agentActions.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    No agent activity yet. Start a conversation with the AI Agent to see tool executions here.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                agentActions.map((action) => {
+                  const risk = riskBadgeMap[action.risk_level] ?? { label: action.risk_level, className: "" };
+                  const hasError = !!action.error;
+                  return (
+                    <TableRow key={action.id}>
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                        {relativeTime(action.created_at)}
+                      </TableCell>
+                      <TableCell className="font-medium text-sm">
+                        {formatAgentToolName(action.tool_name)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={risk.className}>{risk.label}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {hasError ? (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <XCircle className="h-4 w-4 text-destructive" />
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p className="text-xs">{action.error}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ) : (
+                          <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {action.tokens_used ? action.tokens_used : "—"}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {formatLatency(action.latency_ms)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Showing the most recent 50 actions. Agent actions are logged automatically for audit purposes.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function SettingsPage() {
   const { user } = useAuth();
   const { data: settings, isLoading } = useUserSettings();

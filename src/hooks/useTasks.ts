@@ -37,8 +37,10 @@ export function useTask(id: string | undefined) {
 export function useCreateTask() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (task: TablesInsert<"tasks">) => {
-      const { data, error } = await supabase.from("tasks").insert(task).select().single();
+    mutationFn: async (task: Omit<TablesInsert<"tasks">, "user_id">) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const { data, error } = await supabase.from("tasks").insert({ ...task, user_id: user.id }).select().single();
       if (error) throw error;
       return data as Task;
     },

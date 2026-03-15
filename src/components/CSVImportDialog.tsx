@@ -160,6 +160,14 @@ export default function CSVImportDialog({ entityType, open, onOpenChange, onImpo
       }
     }
 
+    // Get current user for user_id scoping
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("Not authenticated");
+      setImporting(false);
+      return;
+    }
+
     const mapped: Record<string, string | number | null>[] = [];
     let skipped = 0;
     const dupes: string[] = [];

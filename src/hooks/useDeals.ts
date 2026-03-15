@@ -37,8 +37,10 @@ export function useDeal(id: string | undefined) {
 export function useCreateDeal() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (deal: TablesInsert<"deals">) => {
-      const { data, error } = await supabase.from("deals").insert(deal).select().single();
+    mutationFn: async (deal: Omit<TablesInsert<"deals">, "user_id">) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const { data, error } = await supabase.from("deals").insert({ ...deal, user_id: user.id }).select().single();
       if (error) throw error;
       return data as Deal;
     },

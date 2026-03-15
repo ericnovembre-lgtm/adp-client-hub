@@ -29,7 +29,6 @@ export default function DraftEmailDialog({ open, onOpenChange, mergeFields, cont
   const [selectedTemplateId, setSelectedTemplateId] = useState(EMAIL_TEMPLATES[0].id);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
-  const [initialized, setInitialized] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 

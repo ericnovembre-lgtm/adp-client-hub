@@ -1074,7 +1074,49 @@ export default function LeadsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {emailLead && (
+      {/* Bulk Convert Confirmation */}
+      <AlertDialog open={bulkConvertOpen} onOpenChange={setBulkConvertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Convert {bulkConvertAnalysis?.eligible.length ?? 0} Lead(s) to Deals</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div>
+                {bulkConvertAnalysis && bulkConvertAnalysis.eligible.length > 0 && (
+                  <p className="text-sm">
+                    <span className="font-medium text-emerald-600 dark:text-emerald-400">✓ {bulkConvertAnalysis.eligible.length}</span> lead(s) will be converted (Company + Contact + Deal created for each).
+                  </p>
+                )}
+                {bulkConvertAnalysis && bulkConvertAnalysis.skipped.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-sm font-medium text-destructive">⚠ {bulkConvertAnalysis.skipped.length} lead(s) will be skipped:</p>
+                    <ul className="mt-1 text-xs space-y-1 max-h-32 overflow-y-auto">
+                      {bulkConvertAnalysis.skipped.map(({ lead, reason }) => (
+                        <li key={lead.id} className="text-muted-foreground">
+                          <span className="font-medium">{lead.company_name}</span> — {reason}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {bulkConvertAnalysis && bulkConvertAnalysis.eligible.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No eligible leads to convert. All selected leads are either already converted, dismissed, out of territory, or in a prohibited industry.</p>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkActionPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkConvert}
+              disabled={bulkActionPending || (bulkConvertAnalysis?.eligible.length ?? 0) === 0}
+            >
+              {bulkActionPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+              {bulkActionPending ? "Converting…" : `Convert ${bulkConvertAnalysis?.eligible.length ?? 0} Lead(s)`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
         <DraftEmailDialog
           open={!!emailLead}
           onOpenChange={(v) => { if (!v) setEmailLead(null); }}

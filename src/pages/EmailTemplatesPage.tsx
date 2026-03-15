@@ -34,7 +34,7 @@ export default function EmailTemplatesPage() {
     company_name: "Acme Corp",
     headcount: "15",
   });
-  const [copied, setCopied] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const handleCopy = async (tpl: EmailTemplate) => {
     const filled = `Subject: ${fillTemplate(tpl.subject, previewFields)}\n\n${fillTemplate(tpl.body, previewFields)}`;

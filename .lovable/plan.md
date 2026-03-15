@@ -1,18 +1,19 @@
 
 
-## Plan: Persist AI Chat History Between Sessions
+## Persist AI Chat History Between Sessions
 
-Save chat conversations to the database so they survive page refreshes and sessions.
+### What changes
+Replace the current `localStorage`-based chat persistence with database-backed storage so conversations survive across devices and sessions.
 
-### Database Change
+### Database Migration
 
-Create a `chat_messages` table:
+Create a `chat_messages` table with RLS policies restricting access to the owning user:
 
 ```sql
 CREATE TABLE public.chat_messages (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  role text NOT NULL CHECK (role IN ('user', 'assistant')),
+  user_id uuid NOT NULL,
+  role text NOT NULL,
   content text NOT NULL,
   created_at timestamptz DEFAULT now()
 );
@@ -26,23 +27,23 @@ CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE
 CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
 ```
 
+Note: Using a validation trigger instead of CHECK constraint for the `role` column to avoid immutability issues.
+
 ### Code Changes — `src/components/AIChatWidget.tsx`
 
-1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
+1. **Remove** `localStorage` helpers (`loadMessages`, `saveMessages`, `STORAGE_KEY`) and the `useEffect` that persists to localStorage.
 
-2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
+2. **Import** `supabase` client and `useAuth` from AuthContext.
 
-3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
+3. **Load on mount**: When widget opens and user is authenticated, query `chat_messages` ordered by `created_at` ascending, populate `messages` state. Show loading skeleton briefly.
 
-4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
+4. **Save on send**: After creating `userMsg`, insert it into `chat_messages`. After streaming completes in `onDone`, insert the final assistant message.
 
-### Data flow
+5. **Clear chat**: Trash button calls `DELETE FROM chat_messages WHERE user_id = auth.uid()` then clears local state.
 
-```text
-User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
-Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
-Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
-```
+6. **Fallback**: If no authenticated user, keep messages in memory only (no DB calls).
 
-No new hooks file needed — keep the logic inline in the widget since it's self-contained.
+### Files changed
+- **Migration** — new `chat_messages` table
+- `src/components/AIChatWidget.tsx` — swap localStorage for database persistence
 

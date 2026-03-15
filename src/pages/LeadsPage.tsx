@@ -846,8 +846,9 @@ export default function LeadsPage() {
             <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogCancel disabled={deleteLead.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleteLead.isPending} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleteLead.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

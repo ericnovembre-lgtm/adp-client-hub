@@ -1,48 +1,33 @@
 
 
-## Plan: Persist AI Chat History Between Sessions
+## Add `closed_at` column to deals for accurate revenue reporting
 
-Save chat conversations to the database so they survive page refreshes and sessions.
+### 1. Database migration
+Add nullable `closed_at` column to the deals table.
 
-### Database Change
+### 2. Update Deal type
+Add `closed_at: string | null` to `src/types/database.ts` Deal interface.
 
-Create a `chat_messages` table:
+### 3. Auto-set `closed_at` on stage changes
 
-```sql
-CREATE TABLE public.chat_messages (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  role text NOT NULL CHECK (role IN ('user', 'assistant')),
-  content text NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
+Three locations where stage changes happen:
 
-ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+- **DealsPage.tsx `onSubmit`** (line ~132): When creating/editing via form dialog, check if new stage is `closed_won`/`closed_lost` — set `closed_at = now()`. If moving away from closed, set `closed_at = null`.
+- **DealsPage.tsx `moveDeal`** (line ~290): Kanban drag-and-drop stage change — same logic.
+- **DealDetailSheet.tsx `handleSave`** (line ~107): Inline edit stage change — same logic.
 
-CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
-CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
-CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
+### 4. Update `useMonthlyRevenue` in `useReportsData.ts`
+- Select `closed_at` in addition to `value` and `expected_close_date`
+- Bucket by `closed_at ?? expected_close_date` (fallback for historical data)
+- Filter using a broader date range approach since `closed_at` may not exist on old records
 
-CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
-```
+### 5. Show `closed_at` in DealDetailSheet
+After the "Expected Close" info row, add a read-only `InfoRow` showing "Closed on: Mar 14, 2026" when the deal has a `closed_at` value and stage is `closed_won` or `closed_lost`.
 
-### Code Changes — `src/components/AIChatWidget.tsx`
-
-1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
-
-2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
-
-3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
-
-4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
-
-### Data flow
-
-```text
-User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
-Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
-Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
-```
-
-No new hooks file needed — keep the logic inline in the widget since it's self-contained.
+### Files changed
+- DB migration (new `closed_at` column)
+- `src/types/database.ts`
+- `src/pages/DealsPage.tsx`
+- `src/components/DealDetailSheet.tsx`
+- `src/hooks/useReportsData.ts`
 

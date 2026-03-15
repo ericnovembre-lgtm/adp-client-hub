@@ -112,6 +112,7 @@ Deno.serve(async (req) => {
         subject,
         contact_id: contact_id || null,
         status: "failed",
+        user_id: userId,
       });
 
       return new Response(

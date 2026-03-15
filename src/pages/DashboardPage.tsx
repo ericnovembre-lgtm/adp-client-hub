@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useDashboardStats, usePipelineData, type StatItem } from "@/hooks/useDashboardStats";
+import { useDashboardStats, usePipelineData, useTerritoryStats, type StatItem } from "@/hooks/useDashboardStats";
 import { useUserSettings } from "@/hooks/useUserSettings";
 import { formatDistanceToNow } from "date-fns";
 import { useLocation } from "wouter";

@@ -684,6 +684,9 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Agent Activity Log */}
+      <AgentActivitySection />
+
       {/* About */}
       <Card>
         <CardHeader>

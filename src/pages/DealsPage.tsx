@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { supabase } from "@/integrations/supabase/client";
 import { exportToCSV } from "@/lib/exportCSV";
 import { useDeals, useCreateDeal, useUpdateDeal, useDeleteDeal } from "@/hooks/useDeals";
@@ -354,8 +355,8 @@ function KanbanView({
           </div>
         )}
         <div className="space-y-1 text-xs text-muted-foreground">
-          {deal.company_id && companyMap.has(deal.company_id) && <p>{companyMap.get(deal.company_id)}</p>}
-          {deal.contact_id && contactMap.has(deal.contact_id) && <p>{contactMap.get(deal.contact_id)}</p>}
+          {deal.company_id && companyMap.has(deal.company_id) && <p><Link href="/companies" className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>{companyMap.get(deal.company_id)}</Link></p>}
+          {deal.contact_id && contactMap.has(deal.contact_id) && <p><Link href="/contacts" className="text-primary hover:underline" onClick={(e) => e.stopPropagation()}>{contactMap.get(deal.contact_id)}</Link></p>}
           {deal.expected_close_date && <p>Close: {format(new Date(deal.expected_close_date), "MMM d, yyyy")}</p>}
         </div>
       </CardContent>
@@ -489,8 +490,8 @@ function ListView({
                   <TableCell>
                     {d.stage && <Badge className={STAGE_BADGE_COLORS[d.stage as Stage] ?? ""} variant="outline">{STAGE_LABELS[d.stage as Stage] ?? d.stage}</Badge>}
                   </TableCell>
-                  <TableCell>{d.contact_id && contactMap.has(d.contact_id) ? contactMap.get(d.contact_id) : "—"}</TableCell>
-                  <TableCell>{d.company_id && companyMap.has(d.company_id) ? companyMap.get(d.company_id) : "—"}</TableCell>
+                  <TableCell>{d.contact_id && contactMap.has(d.contact_id) ? <Link href="/contacts" className="text-primary hover:underline">{contactMap.get(d.contact_id)}</Link> : "—"}</TableCell>
+                  <TableCell>{d.company_id && companyMap.has(d.company_id) ? <Link href="/companies" className="text-primary hover:underline">{companyMap.get(d.company_id)}</Link> : "—"}</TableCell>
                   <TableCell>{d.expected_close_date ? format(new Date(d.expected_close_date), "MMM d, yyyy") : "—"}</TableCell>
                   <TableCell>{d.created_at ? format(new Date(d.created_at), "MMM d, yyyy") : "—"}</TableCell>
                   <TableCell>

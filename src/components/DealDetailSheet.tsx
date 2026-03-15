@@ -24,6 +24,7 @@ import {
   DollarSign, CalendarIcon, Building2, User, FileText,
   Pencil, X, Save, Loader2, Clock, GripVertical,
 } from "lucide-react";
+import { Link } from "wouter";
 
 function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
   if (!value) return null;
@@ -215,7 +216,7 @@ export default function DealDetailSheet({
                 />
               </EditRow>
             ) : (
-              <InfoRow icon={<User className="h-4 w-4" />} label="Contact" value={contactName} />
+              <InfoRow icon={<User className="h-4 w-4" />} label="Contact" value={contactName ? <Link href="/contacts" className="text-primary hover:underline">{contactName}</Link> : undefined} />
             )}
 
             {/* Company */}
@@ -230,7 +231,7 @@ export default function DealDetailSheet({
                 />
               </EditRow>
             ) : (
-              <InfoRow icon={<Building2 className="h-4 w-4" />} label="Company" value={companyName} />
+              <InfoRow icon={<Building2 className="h-4 w-4" />} label="Company" value={companyName ? <Link href="/companies" className="text-primary hover:underline">{companyName}</Link> : undefined} />
             )}
 
             {/* Expected Close Date */}

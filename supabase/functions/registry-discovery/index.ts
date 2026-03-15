@@ -37,12 +37,7 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const openCorpApiKey = Deno.env.get("OPENCORPORATES_API_KEY");
 
-    if (!openCorpApiKey) {
-      return new Response(
-        JSON.stringify({ error: "OPENCORPORATES_API_KEY not configured. Get your key from opencorporates.com/api_accounts, then add it in Settings." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // API key is optional — OpenCorporates works without auth at lower rate limits
 
     // Auth
     const authHeader = req.headers.get("authorization");

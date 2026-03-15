@@ -59,6 +59,8 @@ export default function RegistryDiscoveryTab() {
     );
   };
 
+  const [apiKeyRequired, setApiKeyRequired] = useState(false);
+
   const discover = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("registry-discovery", {
@@ -70,14 +72,19 @@ export default function RegistryDiscoveryTab() {
         },
       });
       if (error) throw error;
+      if (data?.error === "api_key_required") {
+        setApiKeyRequired(true);
+        throw new Error("OpenCorporates API key required");
+      }
       if (data?.error) throw new Error(data.error);
+      setApiKeyRequired(false);
       return data;
     },
     onSuccess: (data) => {
-      toast.success(`Discovered ${data.saved} new businesses!`);
+      toast.success(`Discovered ${data.saved} new businesses${data.enriched ? `, enriched ${data.enriched}` : ""}!`);
     },
     onError: (err: Error) => {
-      toast.error(err.message || "Discovery failed");
+      if (!apiKeyRequired) toast.error(err.message || "Discovery failed");
     },
   });
 

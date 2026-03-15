@@ -77,6 +77,8 @@ serve(async (req) => {
       leads: [] as any[],
     };
 
+    let authFailures = 0;
+
     for (const stateName of states) {
       const jurisdictionCode = STATE_JURISDICTIONS[stateName];
       if (!jurisdictionCode) continue;
@@ -92,6 +94,12 @@ serve(async (req) => {
       if (openCorpApiKey) searchParams.set("api_token", openCorpApiKey);
       const url = `https://api.opencorporates.com/v0.4/companies/search?${searchParams}`;
       const response = await fetch(url);
+
+      if (response.status === 401 || response.status === 403) {
+        console.warn(`OpenCorporates API auth error for ${stateName}: ${response.status}`);
+        authFailures++;
+        continue;
+      }
 
       if (!response.ok) {
         console.error(`OpenCorporates API error for ${stateName}:`, response.status);

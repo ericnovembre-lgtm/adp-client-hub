@@ -643,6 +643,7 @@ export default function DealsPage() {
           onEdit={openEdit}
           onDelete={(id) => setDeleteId(id)}
           onClickDeal={(d) => setDetailDeal(d)}
+          onAdd={openAdd}
         />
       )}
 

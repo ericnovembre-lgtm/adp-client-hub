@@ -59,6 +59,111 @@ export type Database = {
           },
         ]
       }
+      agent_actions: {
+        Row: {
+          approval_status: string | null
+          created_at: string | null
+          error: string | null
+          id: string
+          input_params: Json | null
+          latency_ms: number | null
+          model: string | null
+          output_result: Json | null
+          previous_state: Json | null
+          risk_level: string
+          session_id: string | null
+          tokens_used: number | null
+          tool_name: string
+          user_id: string
+        }
+        Insert: {
+          approval_status?: string | null
+          created_at?: string | null
+          error?: string | null
+          id?: string
+          input_params?: Json | null
+          latency_ms?: number | null
+          model?: string | null
+          output_result?: Json | null
+          previous_state?: Json | null
+          risk_level?: string
+          session_id?: string | null
+          tokens_used?: number | null
+          tool_name: string
+          user_id: string
+        }
+        Update: {
+          approval_status?: string | null
+          created_at?: string | null
+          error?: string | null
+          id?: string
+          input_params?: Json | null
+          latency_ms?: number | null
+          model?: string | null
+          output_result?: Json | null
+          previous_state?: Json | null
+          risk_level?: string
+          session_id?: string | null
+          tokens_used?: number | null
+          tool_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      agent_recommendations: {
+        Row: {
+          acted_on: boolean | null
+          acted_on_at: string | null
+          batch_id: string | null
+          body: string
+          created_at: string | null
+          dismissed: boolean | null
+          dismissed_at: string | null
+          entity_id: string | null
+          entity_type: string | null
+          expires_at: string | null
+          id: string
+          priority: number | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          acted_on?: boolean | null
+          acted_on_at?: string | null
+          batch_id?: string | null
+          body: string
+          created_at?: string | null
+          dismissed?: boolean | null
+          dismissed_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          expires_at?: string | null
+          id?: string
+          priority?: number | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          acted_on?: boolean | null
+          acted_on_at?: string | null
+          batch_id?: string | null
+          body?: string
+          created_at?: string | null
+          dismissed?: boolean | null
+          dismissed_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          expires_at?: string | null
+          id?: string
+          priority?: number | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           content: string
@@ -306,6 +411,44 @@ export type Database = {
           wc_codes?: string | null
         }
         Relationships: []
+      }
+      lead_scores: {
+        Row: {
+          created_at: string | null
+          factors: Json | null
+          grade: string
+          id: string
+          lead_id: string
+          score: number
+          scored_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          factors?: Json | null
+          grade?: string
+          id?: string
+          lead_id: string
+          score?: number
+          scored_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          factors?: Json | null
+          grade?: string
+          id?: string
+          lead_id?: string
+          score?: number
+          scored_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_scores_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       leads: {
         Row: {

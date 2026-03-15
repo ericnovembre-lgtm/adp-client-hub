@@ -37,12 +37,7 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const openCorpApiKey = Deno.env.get("OPENCORPORATES_API_KEY");
 
-    if (!openCorpApiKey) {
-      return new Response(
-        JSON.stringify({ error: "OPENCORPORATES_API_KEY not configured. Get your key from opencorporates.com/api_accounts, then add it in Settings." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    // API key is optional — OpenCorporates works without auth at lower rate limits
 
     // Auth
     const authHeader = req.headers.get("authorization");
@@ -87,7 +82,6 @@ serve(async (req) => {
       if (!jurisdictionCode) continue;
 
       const searchParams = new URLSearchParams({
-        api_token: openCorpApiKey,
         jurisdiction_code: jurisdictionCode,
         order: "incorporation_date",
         per_page: String(Math.min(per_page, 100)),
@@ -95,6 +89,7 @@ serve(async (req) => {
         current_status: "Active",
       });
 
+      if (openCorpApiKey) searchParams.set("api_token", openCorpApiKey);
       const url = `https://api.opencorporates.com/v0.4/companies/search?${searchParams}`;
       const response = await fetch(url);
 

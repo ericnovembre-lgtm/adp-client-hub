@@ -382,6 +382,91 @@ export default function LeadsPage() {
     toast.success(`Exported ${selected.length} lead(s)`);
   };
 
+  // Bulk convert — compute eligible vs skipped
+  const bulkConvertAnalysis = useMemo(() => {
+    if (!bulkConvertOpen) return null;
+    const selected = leads.filter(l => selectedIds.has(l.id));
+    const eligible: Lead[] = [];
+    const skipped: { lead: Lead; reason: string }[] = [];
+    for (const lead of selected) {
+      if (lead.status === "converted") {
+        skipped.push({ lead, reason: "Already converted" });
+        continue;
+      }
+      if (lead.status === "dismissed") {
+        skipped.push({ lead, reason: "Dismissed" });
+        continue;
+      }
+      if (lead.headcount != null && !isInTerritory(lead.headcount)) {
+        skipped.push({ lead, reason: `Headcount ${lead.headcount} outside territory (${HEADCOUNT_MIN}–${HEADCOUNT_MAX})` });
+        continue;
+      }
+      const ko = knockoutMap.get(lead.id);
+      if (ko && ko.tier === "prohibited") {
+        skipped.push({ lead, reason: `Prohibited industry: ${ko.matchedRules.map(r => r.industry_name).join(", ")}` });
+        continue;
+      }
+      eligible.push(lead);
+    }
+    return { eligible, skipped };
+  }, [bulkConvertOpen, selectedIds, leads, knockoutMap]);
+
+  const handleBulkConvert = async () => {
+    if (!bulkConvertAnalysis || bulkConvertAnalysis.eligible.length === 0) return;
+    setBulkActionPending(true);
+    let converted = 0;
+    try {
+      for (const lead of bulkConvertAnalysis.eligible) {
+        const company = await createCompany.mutateAsync({
+          name: lead.company_name,
+          industry: lead.industry,
+          website: lead.website,
+          employees: lead.headcount,
+        });
+        const nameParts = (lead.decision_maker_name ?? "").split(" ");
+        const contact = await createContact.mutateAsync({
+          first_name: nameParts[0] || lead.company_name,
+          last_name: nameParts.slice(1).join(" ") || "-",
+          email: lead.decision_maker_email,
+          phone: lead.decision_maker_phone,
+          job_title: lead.decision_maker_title,
+          company: lead.company_name,
+        });
+
+        // Add bluefield conditions to deal notes if applicable
+        const ko = knockoutMap.get(lead.id);
+        let dealNotes: string | undefined;
+        if (ko && ko.tier === "bluefield") {
+          const conditionNotes = ko.matchedRules.filter(r => r.conditions).map(r => `${r.industry_name}: ${r.conditions}`).join("\n");
+          dealNotes = conditionNotes ? `BLUEFIELD CONDITIONS:\n${conditionNotes}` : undefined;
+        }
+
+        await createDeal.mutateAsync({
+          title: `${lead.company_name} - ADP TotalSource`,
+          value: 0,
+          stage: "qualified",
+          contact_id: contact.id,
+          company_id: company.id,
+          notes: dealNotes,
+        });
+        await updateLead.mutateAsync({ id: lead.id, status: "converted" });
+        await createActivity.mutateAsync({
+          type: "conversion",
+          description: `Lead converted to deal (bulk): ${lead.company_name}`,
+        });
+        converted++;
+      }
+      const skippedCount = bulkConvertAnalysis.skipped.length;
+      toast.success(`${converted} lead(s) converted${skippedCount > 0 ? `, ${skippedCount} skipped` : ""}`);
+      setSelectedIds(new Set());
+    } catch (e: any) {
+      toast.error(e.message || "Bulk conversion failed");
+    } finally {
+      setBulkActionPending(false);
+      setBulkConvertOpen(false);
+    }
+  };
+
   const handleFormSubmit = async (values: LeadFormValues) => {
     try {
       const payload = {

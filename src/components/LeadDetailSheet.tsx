@@ -32,23 +32,52 @@ const GRADE_COLORS: Record<string, string> = {
   D: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
 };
 
-function LeadScoreSection({ leadId }: { leadId: string }) {
+function LeadScoreSection({ leadId, lead }: { leadId: string; lead: Lead }) {
   const { score } = useLeadScore(leadId);
+  const status = lead.status ?? "new";
+  const isPreQualified = ["new", "contacted"].includes(status);
+
+  const handleRescore = () => {
+    window.dispatchEvent(new CustomEvent("agent-panel-message", {
+      detail: { message: `Re-score the lead ${lead.company_name} and update the results` }
+    }));
+  };
 
   return (
     <>
       <Separator />
       <div>
-        <h3 className="font-semibold text-sm mb-3 flex items-center gap-1.5">
-          <Target className="h-4 w-4 text-primary" />
-          Lead Score
-        </h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold text-sm flex items-center gap-1.5">
+            <Target className="h-4 w-4 text-primary" />
+            Lead Score
+          </h3>
+          {score && (
+            <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={handleRescore}>
+              <RefreshCw className="h-3 w-3" />
+              Re-score
+            </Button>
+          )}
+        </div>
         {score ? (
           <div className="space-y-3">
             <div className="flex items-center gap-3">
               <span className="text-3xl font-bold text-foreground">{score.score}<span className="text-lg text-muted-foreground font-normal">/100</span></span>
               <Badge variant="outline" className={GRADE_COLORS[score.grade] ?? ""}>{score.grade}</Badge>
             </div>
+            {/* Qualification banners */}
+            {isPreQualified && score.score >= 60 && (
+              <div className="rounded-md border border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950 p-3 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
+                This lead qualifies for outreach — Grade {score.grade} with a score of {score.score}/100
+              </div>
+            )}
+            {isPreQualified && score.score < 40 && (
+              <div className="rounded-md border border-yellow-300 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950 p-3 text-xs text-yellow-800 dark:text-yellow-300 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                Low priority — review scoring factors before investing time
+              </div>
+            )}
             {score.factors.length > 0 && (
               <div className="space-y-2">
                 {score.factors.map((f: ScoreFactor, i: number) => (

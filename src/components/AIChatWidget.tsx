@@ -206,7 +206,7 @@ export default function AIChatWidget() {
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/20"
-                onClick={() => setMessages([])}
+                onClick={() => { setMessages([]); localStorage.removeItem(STORAGE_KEY); }}
                 aria-label="Clear chat"
               >
                 <Trash2 className="h-4 w-4" />

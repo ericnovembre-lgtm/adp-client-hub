@@ -174,6 +174,8 @@ serve(async (req) => {
         });
 
         results.saved++;
+        if (classifiedIndustry) results.classified++;
+        else results.unclassified++;
         results.leads.push({
           id: newLead.id,
           company_name: companyName,

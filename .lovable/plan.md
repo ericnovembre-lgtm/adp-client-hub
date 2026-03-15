@@ -1,48 +1,21 @@
 
 
-## Plan: Persist AI Chat History Between Sessions
+## Create `src/hooks/useAgentChat.ts`
 
-Save chat conversations to the database so they survive page refreshes and sessions.
+### What will be created
 
-### Database Change
+A new hook file that manages SSE-streamed conversations with the `crm-agent` edge function. It uses `useAuth()` to get the session, raw `fetch` for the POST, and parses SSE events for text, tool calls, tool results, and errors.
 
-Create a `chat_messages` table:
+### Key details
+- Interfaces: `AgentToolCall`, `AgentMessage`
+- State: `messages`, `isLoading`, `sessionId` (UUID per conversation)
+- `sendMessage(text)`: appends user msg, fetches SSE stream from `crm-agent`, parses `data:` lines into text/tool_call/tool_result/error events, builds assistant message incrementally
+- `clearChat()`: resets messages, new sessionId
+- Auth from `useAuth()` — session access token in Authorization header
+- No existing files modified
 
-```sql
-CREATE TABLE public.chat_messages (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  role text NOT NULL CHECK (role IN ('user', 'assistant')),
-  content text NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
-
-ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
-CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
-CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
-
-CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
-```
-
-### Code Changes — `src/components/AIChatWidget.tsx`
-
-1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
-
-2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
-
-3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
-
-4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
-
-### Data flow
-
-```text
-User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
-Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
-Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
-```
-
-No new hooks file needed — keep the logic inline in the widget since it's self-contained.
+### Files
+| File | Action |
+|------|--------|
+| `src/hooks/useAgentChat.ts` | Create |
 

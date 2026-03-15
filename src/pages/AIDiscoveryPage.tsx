@@ -192,6 +192,9 @@ export default function AIDiscoveryPage() {
           <TabsTrigger value="intent-based" className="gap-1.5">
             <Zap className="h-4 w-4" /> Intent-Based
           </TabsTrigger>
+          <TabsTrigger value="local-businesses" className="gap-1.5">
+            <MapPin className="h-4 w-4" /> Local Businesses
+          </TabsTrigger>
         </TabsList>
 
         {/* AI Generated Tab — existing functionality */}

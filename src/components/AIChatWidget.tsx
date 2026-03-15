@@ -6,7 +6,27 @@ import { MessageCircle, X, ArrowLeft, Trash2, Send, Loader2 } from "lucide-react
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-type Msg = { role: "user" | "assistant"; content: string };
+type Msg = { role: "user" | "assistant"; content: string; timestamp: string };
+
+const STORAGE_KEY = "saveplus24_chat_history";
+const MAX_MESSAGES = 50;
+
+function loadMessages(): Msg[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as Msg[];
+    return parsed.slice(-MAX_MESSAGES);
+  } catch {
+    return [];
+  }
+}
+
+function saveMessages(msgs: Msg[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(msgs.slice(-MAX_MESSAGES)));
+  } catch {}
+}
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 

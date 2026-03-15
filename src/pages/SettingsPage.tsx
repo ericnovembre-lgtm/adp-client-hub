@@ -5,6 +5,7 @@ import { useUserSettings, useUpdateUserSettings, type UserSettings } from "@/hoo
 import { useKnockoutRules, useCreateKnockoutRule, useUpdateKnockoutRule, useDeleteKnockoutRule, type KnockoutRule } from "@/hooks/useKnockoutRules";
 import { exportToCSV } from "@/lib/exportCSV";
 import { KNOWLEDGE_VERSION } from "@/lib/adpProductKnowledge";
+import { HEADCOUNT_MIN, HEADCOUNT_MAX, HEADCOUNT_LABEL } from "@/lib/constants";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

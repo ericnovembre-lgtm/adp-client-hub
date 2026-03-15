@@ -47,15 +47,12 @@ export default function DraftEmailDialog({ open, onOpenChange, mergeFields, cont
     setBody(fillTemplate(tpl.body, allFields));
   };
 
-  // Initialize on first open
-  if (open && !initialized) {
-    applyTemplate(EMAIL_TEMPLATES[0].id);
-    setInitialized(true);
-  }
-  if (!open && initialized) {
-    setInitialized(false);
-    setCopied(false);
-  }
+  useEffect(() => {
+    if (open) {
+      applyTemplate(EMAIL_TEMPLATES[0].id);
+      setCopied(false);
+    }
+  }, [open]);
 
   const handleCustomizeWithAI = async () => {
     setAiLoading(true);

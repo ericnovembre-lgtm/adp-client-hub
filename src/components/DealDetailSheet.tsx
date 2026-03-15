@@ -104,7 +104,9 @@ export default function DealDetailSheet({
   const handleSave = async () => {
     try {
       const stageChanged = editData.stage && editData.stage !== deal.stage;
-      await updateDeal.mutateAsync({
+      const isClosed = editData.stage === "closed_won" || editData.stage === "closed_lost";
+      const wasClosed = deal.stage === "closed_won" || deal.stage === "closed_lost";
+      const updates: any = {
         id: deal.id,
         title: editData.title ?? deal.title,
         value: editData.value,
@@ -113,7 +115,12 @@ export default function DealDetailSheet({
         company_id: editData.company_id,
         expected_close_date: editData.expected_close_date,
         notes: editData.notes,
-      });
+      };
+      if (stageChanged) {
+        if (isClosed && !wasClosed) updates.closed_at = new Date().toISOString();
+        else if (!isClosed && wasClosed) updates.closed_at = null;
+      }
+      await updateDeal.mutateAsync(updates);
       if (stageChanged) {
         await logActivity(
           "stage_change",

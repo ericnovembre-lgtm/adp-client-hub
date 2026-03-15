@@ -1117,6 +1117,7 @@ export default function LeadsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {emailLead && (
         <DraftEmailDialog
           open={!!emailLead}
           onOpenChange={(v) => { if (!v) setEmailLead(null); }}

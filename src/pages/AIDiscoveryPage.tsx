@@ -15,9 +15,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import {
-  Search, Clock, Play, Loader2, CheckCircle, AlertCircle, Sparkles, Zap,
+  Search, Clock, Play, Loader2, CheckCircle, AlertCircle, Sparkles, Zap, MapPin,
 } from "lucide-react";
 import IntentDiscoveryTab from "@/components/discovery/IntentDiscoveryTab";
+import YelpDiscoveryTab from "@/components/discovery/YelpDiscoveryTab";
 
 const US_STATES = [
   "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",
@@ -191,6 +192,9 @@ export default function AIDiscoveryPage() {
           <TabsTrigger value="intent-based" className="gap-1.5">
             <Zap className="h-4 w-4" /> Intent-Based
           </TabsTrigger>
+          <TabsTrigger value="local-businesses" className="gap-1.5">
+            <MapPin className="h-4 w-4" /> Local Businesses
+          </TabsTrigger>
         </TabsList>
 
         {/* AI Generated Tab — existing functionality */}
@@ -330,6 +334,11 @@ export default function AIDiscoveryPage() {
         {/* Intent-Based Tab */}
         <TabsContent value="intent-based">
           <IntentDiscoveryTab />
+        </TabsContent>
+
+        {/* Local Businesses Tab */}
+        <TabsContent value="local-businesses">
+          <YelpDiscoveryTab />
         </TabsContent>
       </Tabs>
     </div>

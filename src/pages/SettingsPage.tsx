@@ -494,6 +494,8 @@ export default function SettingsPage() {
   const [autoQualifyThreshold, setAutoQualifyThreshold] = useState(60);
   const [apolloKeyConfigured, setApolloKeyConfigured] = useState(false);
   const [testingApollo, setTestingApollo] = useState(false);
+  const [yelpKeyConfigured, setYelpKeyConfigured] = useState(false);
+  const [testingYelp, setTestingYelp] = useState(false);
 
   // Discovery
   const [defaultIndustry, setDefaultIndustry] = useState("");
@@ -526,6 +528,7 @@ export default function SettingsPage() {
     setHeadcountMin(settings.defaultHeadcountMin ?? "");
     setHeadcountMax(settings.defaultHeadcountMax ?? "");
     setApolloKeyConfigured(settings.apollo_api_key_configured ?? false);
+    setYelpKeyConfigured(settings.yelp_api_key_configured ?? false);
   }, [settings]);
 
   const saveProfile = async () => {
@@ -765,6 +768,57 @@ export default function SettingsPage() {
               }}
             >
               {testingApollo ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Zap className="h-4 w-4 mr-1" />}
+              Test Connection
+            </Button>
+          </div>
+          <Separator />
+          {/* Yelp Fusion API Key */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Label className="flex items-center gap-1.5">
+                <Zap className="h-4 w-4" />
+                Yelp Fusion API Key
+              </Label>
+              {yelpKeyConfigured ? (
+                <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 border-emerald-300">
+                  <CheckCircle2 className="h-3 w-3 mr-1" /> Connected
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-xs text-amber-700 dark:text-amber-400 border-amber-300">
+                  Not configured
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Required for Local Business Discovery. Get your key from{" "}
+              <span className="font-mono text-foreground">yelp.com/developers → Create App</span>.
+              Free: 5,000 calls/day.
+              Then add it as a project secret named <span className="font-mono text-foreground">YELP_API_KEY</span>.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={testingYelp}
+              onClick={async () => {
+                setTestingYelp(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke("yelp-discovery", {
+                    body: { test_connection: true },
+                  });
+                  if (error) throw error;
+                  if (data?.error) throw new Error(data.error);
+                  toast.success("Yelp API connection successful!");
+                  setYelpKeyConfigured(true);
+                  await updateSettings.mutateAsync({ ...settings, yelp_api_key_configured: true });
+                } catch (e: any) {
+                  toast.error(e.message || "Yelp connection test failed");
+                  setYelpKeyConfigured(false);
+                  await updateSettings.mutateAsync({ ...settings, yelp_api_key_configured: false });
+                }
+                setTestingYelp(false);
+              }}
+            >
+              {testingYelp ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Zap className="h-4 w-4 mr-1" />}
               Test Connection
             </Button>
           </div>

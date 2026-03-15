@@ -104,7 +104,9 @@ export default function DealDetailSheet({
   const handleSave = async () => {
     try {
       const stageChanged = editData.stage && editData.stage !== deal.stage;
-      await updateDeal.mutateAsync({
+      const isClosed = editData.stage === "closed_won" || editData.stage === "closed_lost";
+      const wasClosed = deal.stage === "closed_won" || deal.stage === "closed_lost";
+      const updates: any = {
         id: deal.id,
         title: editData.title ?? deal.title,
         value: editData.value,
@@ -113,7 +115,12 @@ export default function DealDetailSheet({
         company_id: editData.company_id,
         expected_close_date: editData.expected_close_date,
         notes: editData.notes,
-      });
+      };
+      if (stageChanged) {
+        if (isClosed && !wasClosed) updates.closed_at = new Date().toISOString();
+        else if (!isClosed && wasClosed) updates.closed_at = null;
+      }
+      await updateDeal.mutateAsync(updates);
       if (stageChanged) {
         await logActivity(
           "stage_change",
@@ -268,6 +275,15 @@ export default function DealDetailSheet({
                 icon={<CalendarIcon className="h-4 w-4" />}
                 label="Expected Close"
                 value={deal.expected_close_date ? format(new Date(deal.expected_close_date), "MMM d, yyyy") : null}
+              />
+            )}
+
+            {/* Closed on (read-only) */}
+            {!isEditing && deal.closed_at && (deal.stage === "closed_won" || deal.stage === "closed_lost") && (
+              <InfoRow
+                icon={<Clock className="h-4 w-4" />}
+                label="Closed on"
+                value={format(new Date(deal.closed_at), "MMM d, yyyy")}
               />
             )}
           </div>

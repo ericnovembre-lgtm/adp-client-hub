@@ -126,15 +126,23 @@ function DealFormDialog({
 
   const onSubmit = async (values: DealFormValues) => {
     try {
-      const payload = {
+      const stage = (values.stage as string) || null;
+      const isClosed = stage === "closed_won" || stage === "closed_lost";
+      const wasClosed = isEdit && (deal.stage === "closed_won" || deal.stage === "closed_lost");
+      const payload: any = {
         title: values.title,
         value: typeof values.value === "number" ? values.value : null,
-        stage: (values.stage as string) || null,
+        stage,
         contact_id: (values.contact_id as string) || null,
         company_id: (values.company_id as string) || null,
         expected_close_date: values.expected_close_date ? values.expected_close_date.toISOString() : null,
         notes: (values.notes as string) || null,
       };
+      if (isClosed && !wasClosed) {
+        payload.closed_at = new Date().toISOString();
+      } else if (!isClosed && wasClosed) {
+        payload.closed_at = null;
+      }
       if (isEdit) {
         await updateDeal.mutateAsync({ id: deal.id, ...payload });
         toast.success("Deal updated");
@@ -286,8 +294,13 @@ function KanbanView({
   const moveDeal = async (deal: Deal, newStage: Stage) => {
     const oldStage = deal.stage ?? "lead";
     if (oldStage === newStage) return;
+    const isClosed = newStage === "closed_won" || newStage === "closed_lost";
+    const wasClosed = oldStage === "closed_won" || oldStage === "closed_lost";
+    const updates: any = { id: deal.id, stage: newStage };
+    if (isClosed && !wasClosed) updates.closed_at = new Date().toISOString();
+    else if (!isClosed && wasClosed) updates.closed_at = null;
     try {
-      await updateDeal.mutateAsync({ id: deal.id, stage: newStage });
+      await updateDeal.mutateAsync(updates);
       await createActivity.mutateAsync({
         type: "stage_change",
         description: `Deal "${deal.title}" moved from ${STAGE_LABELS[oldStage as Stage] ?? oldStage} to ${STAGE_LABELS[newStage]}`,

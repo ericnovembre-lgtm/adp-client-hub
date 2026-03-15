@@ -32,7 +32,7 @@ import LeadDetailSheet from "@/components/LeadDetailSheet";
 import { checkKnockoutLocal, type LocalKnockoutResult } from "@/lib/checkKnockoutFromRules";
 import EligibilityBadge from "@/components/EligibilityBadge";
 import CSVImportDialog from "@/components/CSVImportDialog";
-import { LEAD_STATUS_COLORS, HEADCOUNT_MIN, HEADCOUNT_MAX, HEADCOUNT_LABEL } from "@/lib/constants";
+import { LEAD_STATUS_COLORS, HEADCOUNT_MIN, HEADCOUNT_MAX } from "@/lib/constants";
 
 const leadSchema = z.object({
   company_name: z.string().trim().min(1, "Company name is required").max(200, "Max 200 characters"),

@@ -525,6 +525,7 @@ export default function SettingsPage() {
     setDefaultState(settings.defaultState ?? "");
     setHeadcountMin(settings.defaultHeadcountMin ?? "");
     setHeadcountMax(settings.defaultHeadcountMax ?? "");
+    setApolloKeyConfigured(settings.apollo_api_key_configured ?? false);
   }, [settings]);
 
   const saveProfile = async () => {

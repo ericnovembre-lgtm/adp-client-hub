@@ -1,48 +1,36 @@
 
 
-## Plan: Persist AI Chat History Between Sessions
+## Fix: OpenCorporates API Returns 401 Without Key
 
-Save chat conversations to the database so they survive page refreshes and sessions.
+The OpenCorporates API v0.4 now requires authentication for all requests. Without `OPENCORPORATES_API_KEY`, every call returns 401.
 
-### Database Change
+### Options
 
-Create a `chat_messages` table:
+| Approach | Pros | Cons |
+|----------|------|------|
+| **A. Graceful error + clear messaging** | Honest UX, no fake data | Feature non-functional until key obtained |
+| **B. Switch to free alternative API** | Works immediately | Limited data quality |
 
-```sql
-CREATE TABLE public.chat_messages (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  role text NOT NULL CHECK (role IN ('user', 'assistant')),
-  content text NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
+### Recommended: Option A — Graceful 401 Handling + UI Messaging
 
-ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+**1. `supabase/functions/registry-discovery/index.ts`**
+- When a state returns 401, track it and continue
+- After all states, if every state returned 401, return a structured error: `{ error: "api_key_required", message: "OpenCorporates requires an API key..." }`
+- Log a warning instead of generic error
 
-CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
-CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
-CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
+**2. `src/components/discovery/RegistryDiscoveryTab.tsx`**
+- Handle the `api_key_required` error specifically
+- Show an alert: "OpenCorporates requires an API key for access. Configure your key in Settings > API Keys to use this feature."
+- Link to Settings page
+- Keep the "Discover" button but show the key requirement prominently
 
-CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
-```
+**3. `src/pages/SettingsPage.tsx`**
+- Update the OpenCorporates card to remove "Works without key" badge
+- Change to "Required" badge, matching Apollo/Yelp pattern
+- Update helper text accordingly
 
-### Code Changes — `src/components/AIChatWidget.tsx`
-
-1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
-
-2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
-
-3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
-
-4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
-
-### Data flow
-
-```text
-User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
-Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
-Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
-```
-
-No new hooks file needed — keep the logic inline in the widget since it's self-contained.
+### Changes Summary
+- Edge function: Better 401 handling with structured error response
+- Discovery tab: Show actionable error when key is missing
+- Settings: Correct the badge from "optional" to "required"
 

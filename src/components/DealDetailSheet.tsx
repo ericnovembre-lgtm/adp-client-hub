@@ -106,7 +106,7 @@ export default function DealDetailSheet({
       const stageChanged = editData.stage && editData.stage !== deal.stage;
       const isClosed = editData.stage === "closed_won" || editData.stage === "closed_lost";
       const wasClosed = deal.stage === "closed_won" || deal.stage === "closed_lost";
-      const updates: any = {
+      const updates: Partial<Deal> & { id: string } = {
         id: deal.id,
         title: editData.title ?? deal.title,
         value: editData.value,

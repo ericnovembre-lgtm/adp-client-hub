@@ -1,3 +1,11 @@
+// Union types for type-safe status/stage/priority fields
+export type DealStage = "lead" | "qualified" | "proposal" | "negotiation" | "closed_won" | "closed_lost";
+export type LeadStatus = "new" | "contacted" | "qualified" | "converted" | "dismissed";
+export type ContactStatus = "lead" | "prospect" | "customer" | "inactive";
+export type TaskPriority = "low" | "medium" | "high" | "urgent";
+export type TaskStatus = "pending" | "in_progress" | "completed";
+export type ActivityType = "note" | "call" | "email" | "meeting" | "status_change" | "stage_change" | "conversion" | "system";
+
 export interface User {
   id: string;
   username: string;
@@ -16,7 +24,7 @@ export interface Contact {
   company: string | null;
   company_id: string | null;
   job_title: string | null;
-  status: string | null;
+  status: ContactStatus | string | null;
   source: string | null;
   notes: string | null;
   created_at: string | null;
@@ -38,7 +46,7 @@ export interface Deal {
   id: string;
   title: string;
   value: number | null;
-  stage: string | null;
+  stage: DealStage | string | null;
   contact_id: string | null;
   company_id: string | null;
   expected_close_date: string | null;
@@ -52,8 +60,8 @@ export interface Task {
   title: string;
   description: string | null;
   due_date: string | null;
-  priority: string | null;
-  status: string | null;
+  priority: TaskPriority | string | null;
+  status: TaskStatus | string | null;
   contact_id: string | null;
   deal_id: string | null;
   created_at: string | null;
@@ -61,7 +69,7 @@ export interface Task {
 
 export interface Activity {
   id: string;
-  type: string;
+  type: ActivityType | string;
   description: string;
   contact_id: string | null;
   deal_id: string | null;
@@ -83,7 +91,7 @@ export interface Lead {
   trigger_event: string | null;
   trigger_type: string | null;
   ai_pitch_summary: string | null;
-  status: string | null;
+  status: LeadStatus | string | null;
   source: string | null;
   created_at: string | null;
 }

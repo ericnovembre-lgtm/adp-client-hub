@@ -172,8 +172,12 @@ export default function AIChatWidget() {
     };
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
       await streamChat({
         messages: [...messages, userMsg],
+        token,
         onDelta: upsert,
         onDone: () => {
           setIsLoading(false);

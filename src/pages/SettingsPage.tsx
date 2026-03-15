@@ -518,6 +518,7 @@ export default function SettingsPage() {
     if (!settings) return;
     
     setAiChatEnabled(settings.aiChatEnabled !== false);
+    setAutoQualifyThreshold(settings.auto_qualify_threshold ?? 60);
     setDefaultIndustry(settings.defaultIndustry ?? "");
     setDefaultState(settings.defaultState ?? "");
     setHeadcountMin(settings.defaultHeadcountMin ?? "");

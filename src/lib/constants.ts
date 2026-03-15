@@ -44,3 +44,8 @@ export const STAGE_HEADER_COLORS: Record<string, string> = {
 };
 
 export const ACTIVITY_TYPES = ["note", "call", "email"] as const;
+
+// Territory constants — Down Market segment
+export const HEADCOUNT_MIN = 2;
+export const HEADCOUNT_MAX = 20;
+export const HEADCOUNT_LABEL = "Down Market (2–20 employees)";

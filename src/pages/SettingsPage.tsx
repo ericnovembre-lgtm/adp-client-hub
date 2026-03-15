@@ -571,6 +571,10 @@ export default function SettingsPage() {
           <CardDescription>Pre-populate the AI Discovery page form with these defaults</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="rounded-md border border-primary/30 bg-primary/5 px-4 py-3 flex items-center gap-2">
+            <Badge variant="secondary" className="font-semibold">{HEADCOUNT_LABEL}</Badge>
+            <span className="text-xs text-muted-foreground">Your assigned territory</span>
+          </div>
           <div className="space-y-2">
             <Label>Default Industry</Label>
             <Input value={defaultIndustry} onChange={(e) => setDefaultIndustry(e.target.value)} placeholder="e.g. Construction" />
@@ -589,11 +593,31 @@ export default function SettingsPage() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Min Headcount</Label>
-              <Input type="number" value={headcountMin} onChange={(e) => setHeadcountMin(e.target.value ? Number(e.target.value) : "")} placeholder="5" />
+              <Input
+                type="number"
+                min={HEADCOUNT_MIN}
+                max={HEADCOUNT_MAX}
+                value={headcountMin}
+                onChange={(e) => {
+                  const v = e.target.value ? Number(e.target.value) : "";
+                  setHeadcountMin(v === "" ? "" : Math.max(HEADCOUNT_MIN, Math.min(HEADCOUNT_MAX, v)));
+                }}
+                placeholder={String(HEADCOUNT_MIN)}
+              />
             </div>
             <div className="space-y-2">
               <Label>Max Headcount</Label>
-              <Input type="number" value={headcountMax} onChange={(e) => setHeadcountMax(e.target.value ? Number(e.target.value) : "")} placeholder="20" />
+              <Input
+                type="number"
+                min={HEADCOUNT_MIN}
+                max={HEADCOUNT_MAX}
+                value={headcountMax}
+                onChange={(e) => {
+                  const v = e.target.value ? Number(e.target.value) : "";
+                  setHeadcountMax(v === "" ? "" : Math.max(HEADCOUNT_MIN, Math.min(HEADCOUNT_MAX, v)));
+                }}
+                placeholder={String(HEADCOUNT_MAX)}
+              />
             </div>
           </div>
           <Button onClick={saveSettings} disabled={updateSettings.isPending}>

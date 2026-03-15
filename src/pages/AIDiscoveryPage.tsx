@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserSettings, useUpdateUserSettings } from "@/hooks/useUserSettings";
+import { HEADCOUNT_MIN, HEADCOUNT_MAX, HEADCOUNT_LABEL } from "@/lib/constants";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,8 +52,8 @@ export default function AIDiscoveryPage() {
   // Manual discovery form state
   const [industry, setIndustry] = useState("");
   const [state, setState] = useState("");
-  const [headcountMin, setHeadcountMin] = useState("");
-  const [headcountMax, setHeadcountMax] = useState("");
+  const [headcountMin, setHeadcountMin] = useState(String(HEADCOUNT_MIN));
+  const [headcountMax, setHeadcountMax] = useState(String(HEADCOUNT_MAX));
 
   // Scheduler state
   const [schedulerEnabled, setSchedulerEnabled] = useState(false);
@@ -64,8 +65,8 @@ export default function AIDiscoveryPage() {
     if (settings) {
       if (settings.defaultIndustry && !industry) setIndustry(settings.defaultIndustry);
       if (settings.defaultState && !state) setState(settings.defaultState);
-      if (settings.defaultHeadcountMin && !headcountMin) setHeadcountMin(String(settings.defaultHeadcountMin));
-      if (settings.defaultHeadcountMax && !headcountMax) setHeadcountMax(String(settings.defaultHeadcountMax));
+      if (settings.defaultHeadcountMin != null) setHeadcountMin(String(Math.max(HEADCOUNT_MIN, settings.defaultHeadcountMin)));
+      if (settings.defaultHeadcountMax != null) setHeadcountMax(String(Math.min(HEADCOUNT_MAX, settings.defaultHeadcountMax)));
 
       if (settings.scheduler_enabled !== undefined) setSchedulerEnabled(settings.scheduler_enabled);
       if (settings.scheduler_frequency) setFrequency(settings.scheduler_frequency);
@@ -79,8 +80,8 @@ export default function AIDiscoveryPage() {
         body: {
           industry: industry || undefined,
           state: state || undefined,
-          headcount_min: headcountMin ? Number(headcountMin) : undefined,
-          headcount_max: headcountMax ? Number(headcountMax) : undefined,
+          headcount_min: headcountMin ? Number(headcountMin) : HEADCOUNT_MIN,
+          headcount_max: headcountMax ? Number(headcountMax) : HEADCOUNT_MAX,
           user_id: user?.id,
         },
       });
@@ -102,8 +103,8 @@ export default function AIDiscoveryPage() {
         body: {
           industry: settings?.defaultIndustry || industry || undefined,
           state: settings?.defaultState || state || undefined,
-          headcount_min: settings?.defaultHeadcountMin || (headcountMin ? Number(headcountMin) : undefined),
-          headcount_max: settings?.defaultHeadcountMax || (headcountMax ? Number(headcountMax) : undefined),
+          headcount_min: settings?.defaultHeadcountMin || (headcountMin ? Number(headcountMin) : HEADCOUNT_MIN),
+          headcount_max: settings?.defaultHeadcountMax || (headcountMax ? Number(headcountMax) : HEADCOUNT_MAX),
           user_id: user?.id,
         },
       });
@@ -231,10 +232,14 @@ export default function AIDiscoveryPage() {
               <Input
                 id="hcMin"
                 type="number"
-                min={0}
-                placeholder="5"
+                min={HEADCOUNT_MIN}
+                max={HEADCOUNT_MAX}
+                placeholder={String(HEADCOUNT_MIN)}
                 value={headcountMin}
-                onChange={(e) => setHeadcountMin(e.target.value)}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setHeadcountMin(String(Math.max(HEADCOUNT_MIN, Math.min(HEADCOUNT_MAX, v || HEADCOUNT_MIN))));
+                }}
               />
             </div>
             <div className="space-y-2">
@@ -242,13 +247,19 @@ export default function AIDiscoveryPage() {
               <Input
                 id="hcMax"
                 type="number"
-                min={0}
-                placeholder="100"
+                min={HEADCOUNT_MIN}
+                max={HEADCOUNT_MAX}
+                placeholder={String(HEADCOUNT_MAX)}
                 value={headcountMax}
-                onChange={(e) => setHeadcountMax(e.target.value)}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setHeadcountMax(String(Math.max(HEADCOUNT_MIN, Math.min(HEADCOUNT_MAX, v || HEADCOUNT_MAX))));
+                }}
               />
             </div>
           </div>
+
+          <p className="text-xs text-muted-foreground">Your territory: {HEADCOUNT_LABEL}</p>
 
           <Button
             onClick={() => manualDiscover.mutate()}

@@ -110,6 +110,7 @@ export default function DashboardPage() {
         .from("leads")
         .select("*")
         .neq("status", "dismissed")
+        .or(`headcount.is.null,and(headcount.gte.${HEADCOUNT_MIN},headcount.lte.${HEADCOUNT_MAX})`)
         .order("created_at", { ascending: false })
         .limit(10);
       if (error) throw error;

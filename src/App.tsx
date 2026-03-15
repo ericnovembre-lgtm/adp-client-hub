@@ -104,7 +104,7 @@ const App = () => (
               <Route path="/settings">{() => <ProtectedPage><SettingsPage /></ProtectedPage>}</Route>
               <Route component={NotFound} />
             </Switch>
-            <AIChatWidget />
+            <AgentPanel />
           </TooltipProvider>
         </AuthProvider>
       </QueryClientProvider>

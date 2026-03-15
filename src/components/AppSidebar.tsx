@@ -6,6 +6,7 @@ import {
   Handshake,
   CheckSquare,
   Sparkles,
+  TrendingUp,
   Mail,
   BarChart3,
   Settings,

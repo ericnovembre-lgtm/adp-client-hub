@@ -492,6 +492,8 @@ export default function SettingsPage() {
   
   const [aiChatEnabled, setAiChatEnabled] = useState(true);
   const [autoQualifyThreshold, setAutoQualifyThreshold] = useState(60);
+  const [apolloKeyConfigured, setApolloKeyConfigured] = useState(false);
+  const [testingApollo, setTestingApollo] = useState(false);
 
   // Discovery
   const [defaultIndustry, setDefaultIndustry] = useState("");

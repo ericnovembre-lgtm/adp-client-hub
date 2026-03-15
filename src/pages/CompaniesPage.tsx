@@ -156,6 +156,7 @@ export default function CompaniesPage() {
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [detailCompany, setDetailCompany] = useState<Company | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   // Bulk selection
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());

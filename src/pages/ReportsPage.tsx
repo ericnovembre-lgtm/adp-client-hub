@@ -112,7 +112,9 @@ export default function ReportsPage() {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={customTo} onSelect={setCustomTo} className="p-3 pointer-events-auto" />
+                  <Calendar mode="single" selected={customTo} onSelect={(d) => {
+                    if (d && customFrom && d < customFrom) { setCustomTo(customFrom); setCustomFrom(d); } else { setCustomTo(d); }
+                  }} disabled={(date) => !!customFrom && date < customFrom} className="p-3 pointer-events-auto" />
                 </PopoverContent>
               </Popover>
             </div>

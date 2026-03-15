@@ -122,7 +122,6 @@ export function useMonthlyRevenue() {
   return useQuery({
     queryKey: ["reports", "monthly-revenue"],
     queryFn: async () => {
-      const from12 = startOfMonth(subMonths(new Date(), 11)).toISOString();
       const { data, error } = await supabase
         .from("deals")
         .select("value, expected_close_date, closed_at")

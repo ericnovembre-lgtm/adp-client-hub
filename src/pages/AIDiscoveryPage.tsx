@@ -340,6 +340,11 @@ export default function AIDiscoveryPage() {
           <IntentDiscoveryTab />
         </TabsContent>
 
+        {/* New Businesses Tab */}
+        <TabsContent value="new-businesses">
+          <RegistryDiscoveryTab />
+        </TabsContent>
+
         {/* Local Businesses Tab */}
         <TabsContent value="local-businesses">
           <YelpDiscoveryTab />

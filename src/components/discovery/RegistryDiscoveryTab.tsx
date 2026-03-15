@@ -235,7 +235,12 @@ export default function RegistryDiscoveryTab() {
                     {discover.data.errors > 0 && `, ${discover.data.errors} errors`}
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground">Leads added to your Leads page with source "business_registry"</p>
+                <p className="text-xs text-muted-foreground">
+                  {discover.data.classified > 0 || discover.data.unclassified > 0
+                    ? `${discover.data.classified ?? 0} industry-classified, ${discover.data.unclassified ?? 0} unclassified. `
+                    : ""}
+                  Leads added to your Leads page with source "business_registry"
+                </p>
               </div>
 
               {discover.data.leads?.length > 0 && (

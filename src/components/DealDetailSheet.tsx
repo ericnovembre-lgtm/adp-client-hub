@@ -24,6 +24,7 @@ import {
   DollarSign, CalendarIcon, Building2, User, FileText,
   Pencil, X, Save, Loader2, Clock, GripVertical,
 } from "lucide-react";
+import { Link } from "wouter";
 
 function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
   if (!value) return null;

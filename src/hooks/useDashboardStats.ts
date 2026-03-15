@@ -82,6 +82,53 @@ export function useDashboardStats() {
   });
 }
 
+export interface TerritoryStats {
+  inTerritory: number;
+  outOfTerritory: number;
+  unknown: number;
+  total: number;
+  inPct: number;
+  outPct: number;
+  unknownPct: number;
+}
+
+export function useTerritoryStats() {
+  return useQuery({
+    queryKey: ["dashboard-territory"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("leads")
+        .select("headcount")
+        .neq("status", "dismissed");
+      if (error) throw error;
+
+      let inTerritory = 0;
+      let outOfTerritory = 0;
+      let unknown = 0;
+
+      for (const row of data ?? []) {
+        if (row.headcount === null) unknown++;
+        else if (row.headcount >= 2 && row.headcount <= 20) inTerritory++;
+        else outOfTerritory++;
+      }
+
+      const total = inTerritory + outOfTerritory + unknown;
+      const pct = (n: number) => (total === 0 ? 0 : Math.round((n / total) * 100));
+
+      return {
+        inTerritory,
+        outOfTerritory,
+        unknown,
+        total,
+        inPct: pct(inTerritory),
+        outPct: pct(outOfTerritory),
+        unknownPct: pct(unknown),
+      } as TerritoryStats;
+    },
+    staleTime: 30_000,
+  });
+}
+
 export function usePipelineData() {
   return useQuery({
     queryKey: ["dashboard-pipeline"],

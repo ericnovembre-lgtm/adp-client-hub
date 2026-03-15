@@ -317,10 +317,10 @@ async function executeTool(toolName: string, input: Record<string, any>, supabas
       default: throw new Error(`Unknown tool: ${toolName}`);
     }
 
-    await logAgentAction(supabase, { user_id: userId, tool_name: toolName, risk_level: TOOL_RISK[toolName] ?? "low", input_params: input, output_result: result, previous_state: previousState, approval_status: "auto", model: "claude-sonnet-4-20250514", latency_ms: Date.now() - startTime });
+    await logAgentAction(supabase, { user_id: userId, tool_name: toolName, risk_level: TOOL_RISK[toolName] ?? "low", input_params: input, output_result: result, previous_state: previousState, approval_status: "auto", model: AI_MODEL, latency_ms: Date.now() - startTime });
     return result;
   } catch (error) {
-    await logAgentAction(supabase, { user_id: userId, tool_name: toolName, risk_level: TOOL_RISK[toolName] ?? "low", input_params: input, output_result: null, previous_state: previousState, approval_status: "auto", model: "claude-sonnet-4-20250514", latency_ms: Date.now() - startTime, error: error instanceof Error ? error.message : String(error) });
+    await logAgentAction(supabase, { user_id: userId, tool_name: toolName, risk_level: TOOL_RISK[toolName] ?? "low", input_params: input, output_result: null, previous_state: previousState, approval_status: "auto", model: AI_MODEL, latency_ms: Date.now() - startTime, error: error instanceof Error ? error.message : String(error) });
     throw error;
   }
 }

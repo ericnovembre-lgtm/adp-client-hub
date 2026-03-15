@@ -200,6 +200,7 @@ serve(async (req) => {
         type: "system",
         description: `Lead discovered via Apollo Intent: ${companyName} (${headcount ?? "?"} employees, ${org.industry ?? "unknown industry"}). Decision maker: ${leadData.decision_maker_name ?? "unknown"}, ${leadData.decision_maker_title ?? "unknown title"}.`,
         lead_id: newLead.id,
+        user_id: userId,
       });
 
       results.saved++;

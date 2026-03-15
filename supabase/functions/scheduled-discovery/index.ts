@@ -191,6 +191,7 @@ serve(async (req) => {
         await supabase.from("activities").insert({
           type: "system",
           description: `Auto-discovered lead: ${lead.company_name}`,
+          user_id: user.id,
         });
       }
     }

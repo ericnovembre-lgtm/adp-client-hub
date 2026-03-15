@@ -107,7 +107,7 @@ export default function EmailTemplatesPage() {
                 <Eye className="h-3.5 w-3.5 mr-1" /> Preview
               </Button>
               <Button size="sm" className="flex-1" onClick={() => handleCopy(tpl)}>
-                {copied ? <Check className="h-3.5 w-3.5 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
+                {copiedId === tpl.id ? <Check className="h-3.5 w-3.5 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
                 Copy
               </Button>
             </div>

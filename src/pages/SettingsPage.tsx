@@ -528,6 +528,7 @@ export default function SettingsPage() {
     setHeadcountMin(settings.defaultHeadcountMin ?? "");
     setHeadcountMax(settings.defaultHeadcountMax ?? "");
     setApolloKeyConfigured(settings.apollo_api_key_configured ?? false);
+    setYelpKeyConfigured(settings.yelp_api_key_configured ?? false);
   }, [settings]);
 
   const saveProfile = async () => {

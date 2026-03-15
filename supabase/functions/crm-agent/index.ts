@@ -418,7 +418,7 @@ async function toolUpdateLead(supabase: SupabaseClient, input: Record<string, an
   const { data, error } = await supabase.from("leads").update(cleanUpdates).eq("id", lead_id).select().single();
   if (error) throw new Error(`Update failed: ${error.message}`);
   const changes = Object.entries(cleanUpdates).map(([k, v]) => `${k}: ${v}`).join(", ");
-  await supabase.from("activities").insert({ type: "note", description: `Lead updated via AI Agent: ${changes}`, lead_id });
+  await supabase.from("activities").insert({ type: "note", description: `Lead updated via AI Agent: ${changes}`, lead_id, user_id: input.__user_id });
   return { success: true, updated_lead: data, changes: cleanUpdates };
 }
 

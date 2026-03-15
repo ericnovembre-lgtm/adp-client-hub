@@ -436,6 +436,13 @@ export default function CompaniesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CSVImportDialog
+        entityType="companies"
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImportComplete={() => setImportOpen(false)}
+      />
     </div>
   );
 }

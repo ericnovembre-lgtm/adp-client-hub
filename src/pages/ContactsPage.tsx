@@ -494,6 +494,13 @@ export default function ContactsPage() {
           contactId={emailContact.id}
         />
       )}
+
+      <CSVImportDialog
+        entityType="contacts"
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImportComplete={() => setImportOpen(false)}
+      />
     </div>
   );
 }

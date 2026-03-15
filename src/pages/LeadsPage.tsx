@@ -893,6 +893,13 @@ export default function LeadsPage() {
         onDraftEmail={(lead) => { setDetailLead(null); setEmailLead(lead); }}
         onConvertToDeal={(lead) => { setDetailLead(null); initiateConvert(lead); }}
       />
+
+      <CSVImportDialog
+        entityType="leads"
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImportComplete={() => setImportOpen(false)}
+      />
     </div>
   );
 }

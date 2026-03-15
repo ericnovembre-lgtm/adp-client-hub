@@ -894,18 +894,18 @@ export default function SettingsPage() {
             <Building2 className="h-5 w-5" />
             OpenCorporates API Key
           </CardTitle>
-          <CardDescription>Optional — improves rate limits for New Business discovery</CardDescription>
+          <CardDescription>Required for New Business discovery via state registries</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-2">
             <Input type="password" placeholder="Enter your OpenCorporates API key" disabled className="max-w-md" />
             {openCorpKeyConfigured
               ? <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-300"><CheckCircle2 className="h-3 w-3 mr-1" />Connected</Badge>
-              : <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border-blue-300"><Info className="h-3 w-3 mr-1" />Works without key</Badge>
+              : <Badge variant="outline" className="text-orange-700 dark:text-orange-400 border-orange-500/30"><Info className="h-3 w-3 mr-1" />Required</Badge>
             }
           </div>
           <p className="text-xs text-muted-foreground">
-            Discovery works without a key (lower rate limits). For higher limits, get a key from <span className="font-medium">opencorporates.com/api_accounts</span>. Paid plans start at $99/month for 10K calls.
+            An API key is required to access OpenCorporates registry data. Get a key from <span className="font-medium">opencorporates.com/api_accounts</span>. Paid plans start at $99/month for 10K calls.
           </p>
           <div className="flex gap-2">
             <Button

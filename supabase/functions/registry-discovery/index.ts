@@ -29,129 +29,6 @@ const PEO_FRIENDLY_KEYWORDS = [
   "trucking", "auto", "veterinary", "fitness", "salon", "spa",
 ];
 
-function inferIndustryFromName(name: string): string | null {
-  const n = name.toLowerCase();
-  if (/construct|build|roof|pav|excavat/.test(n)) return "Construction";
-  if (/consult|advisory|strateg/.test(n)) return "Consulting";
-  if (/medical|health|clinic|dental|ortho|chiro|therap/.test(n)) return "Healthcare";
-  if (/restaurant|cafe|grill|bistro|catering|food/.test(n)) return "Food & Beverage";
-  if (/clean|janitor|maid|sanit/.test(n)) return "Cleaning Services";
-  if (/landscap|lawn|tree|garden/.test(n)) return "Landscaping";
-  if (/plumb|electr|hvac|mechanic|weld/.test(n)) return "Trades";
-  if (/tech|software|digital|app|cyber|data/.test(n)) return "Technology";
-  if (/real estate|realty|property|mortgage/.test(n)) return "Real Estate";
-  if (/truck|freight|logist|transport|haul/.test(n)) return "Transportation";
-  if (/salon|barber|beauty|spa|nail/.test(n)) return "Personal Care";
-  if (/fitness|gym|yoga|train/.test(n)) return "Fitness";
-  if (/account|bookkeep|tax|cpa/.test(n)) return "Accounting";
-  if (/market|advertis|media|design|brand/.test(n)) return "Marketing";
-  if (/auto|car|tire|body shop|mechanic/.test(n)) return "Automotive";
-  if (/staffing|recruit|talent|employ/.test(n)) return "Staffing";
-  if (/insur|underwr/.test(n)) return "Insurance";
-  if (/manufactur|fabricat|machine/.test(n)) return "Manufacturing";
-  if (/vet|animal|pet/.test(n)) return "Veterinary";
-  return null;
-}
-
-async function enrichLeadWithApollo(
-  lead: { id: string; company_name: string; state: string },
-  apolloApiKey: string,
-  supabase: any,
-): Promise<boolean> {
-  try {
-    // Step 1: Enrich organization
-    const orgRes = await fetch("https://api.apollo.io/v1/organizations/enrich", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Api-Key": apolloApiKey },
-      body: JSON.stringify({ domain: null, name: lead.company_name }),
-    });
-
-    let headcount: number | null = null;
-    let website: string | null = null;
-    let industry: string | null = null;
-
-    if (orgRes.ok) {
-      const orgData = await orgRes.json();
-      const org = orgData?.organization;
-      if (org) {
-        headcount = org.estimated_num_employees ?? org.employee_count ?? null;
-        website = org.website_url ?? org.primary_domain ?? null;
-        industry = org.industry ?? null;
-      }
-    }
-
-    await new Promise(r => setTimeout(r, 200));
-
-    // Step 2: Search for decision maker
-    const peopleRes = await fetch("https://api.apollo.io/v1/mixed_people/search", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Api-Key": apolloApiKey },
-      body: JSON.stringify({
-        organization_name: lead.company_name,
-        person_titles: ["Owner", "CEO", "President", "Founder", "Managing Partner", "CFO", "HR Director", "VP HR"],
-        per_page: 1,
-      }),
-    });
-
-    let dmName: string | null = null;
-    let dmTitle: string | null = null;
-    let dmEmail: string | null = null;
-    let dmPhone: string | null = null;
-
-    if (peopleRes.ok) {
-      const peopleData = await peopleRes.json();
-      const person = peopleData?.people?.[0];
-      if (person) {
-        dmName = [person.first_name, person.last_name].filter(Boolean).join(" ") || null;
-        dmTitle = person.title ?? null;
-        dmEmail = person.email ?? null;
-        dmPhone = person.phone_number ?? person.sanitized_phone ?? null;
-      }
-    }
-
-    // Only update if we got something useful
-    const hasData = headcount || website || dmName || dmEmail;
-    if (!hasData) return false;
-
-    const updatePayload: Record<string, any> = {};
-    if (headcount) updatePayload.headcount = headcount;
-    if (website) updatePayload.website = website;
-    if (industry) updatePayload.industry = industry;
-    if (dmName) updatePayload.decision_maker_name = dmName;
-    if (dmTitle) updatePayload.decision_maker_title = dmTitle;
-    if (dmEmail) updatePayload.decision_maker_email = dmEmail;
-    if (dmPhone) updatePayload.decision_maker_phone = dmPhone;
-
-    await supabase.from("leads").update(updatePayload).eq("id", lead.id);
-
-    // Log enrichment activity
-    const parts = [];
-    if (headcount) parts.push(`headcount: ${headcount}`);
-    if (dmName) parts.push(`contact: ${dmName}`);
-    if (dmEmail) parts.push(`email: ${dmEmail}`);
-
-    await supabase.from("activities").insert({
-      type: "system",
-      description: `Lead enriched via Apollo: ${lead.company_name} — ${parts.join(", ")}.`,
-      lead_id: lead.id,
-    });
-
-    // Territory warning for enriched leads outside 2-20 range
-    if (headcount && (headcount < 2 || headcount > 20)) {
-      await supabase.from("activities").insert({
-        type: "system",
-        description: `Territory warning: ${lead.company_name} has ${headcount} employees (outside 2-20 range). Review fit for Down Market territory.`,
-        lead_id: lead.id,
-      });
-    }
-
-    return true;
-  } catch (err) {
-    console.error(`Apollo enrichment failed for ${lead.company_name}:`, err);
-    return false;
-  }
-}
-
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -159,7 +36,8 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const openCorpApiKey = Deno.env.get("OPENCORPORATES_API_KEY");
-    const apolloApiKey = Deno.env.get("APOLLO_API_KEY");
+
+    // API key is optional — OpenCorporates works without auth at lower rate limits
 
     // Auth
     const authHeader = req.headers.get("authorization");
@@ -194,12 +72,12 @@ serve(async (req) => {
       searched_states: states,
       found: 0,
       saved: 0,
-      enriched: 0,
       skipped_duplicate: 0,
       errors: 0,
       leads: [] as any[],
-      enrichment_available: !!apolloApiKey,
     };
+
+    let authFailures = 0;
 
     for (const stateName of states) {
       const jurisdictionCode = STATE_JURISDICTIONS[stateName];
@@ -216,6 +94,12 @@ serve(async (req) => {
       if (openCorpApiKey) searchParams.set("api_token", openCorpApiKey);
       const url = `https://api.opencorporates.com/v0.4/companies/search?${searchParams}`;
       const response = await fetch(url);
+
+      if (response.status === 401 || response.status === 403) {
+        console.warn(`OpenCorporates API auth error for ${stateName}: ${response.status}`);
+        authFailures++;
+        continue;
+      }
 
       if (!response.ok) {
         console.error(`OpenCorporates API error for ${stateName}:`, response.status);
@@ -296,44 +180,20 @@ serve(async (req) => {
           company_type: company.company_type,
           industry: leadData.industry,
           trigger: "new_business_formation",
-          enriched: false,
         });
       }
 
       await new Promise(r => setTimeout(r, 500));
     }
 
-    // Enrichment pass using Apollo
-    if (apolloApiKey && results.leads.length > 0) {
-      console.log(`Starting Apollo enrichment for ${results.leads.length} leads...`);
-      for (const lead of results.leads) {
-        const success = await enrichLeadWithApollo(
-          { id: lead.id, company_name: lead.company_name, state: lead.state },
-          apolloApiKey,
-          supabase,
-        );
-        if (success) {
-          results.enriched++;
-          lead.enriched = true;
-
-          // Re-fetch the updated lead data for the response
-          const { data: updated } = await supabase
-            .from("leads")
-            .select("headcount, website, industry, decision_maker_name, decision_maker_email, decision_maker_title, decision_maker_phone")
-            .eq("id", lead.id)
-            .single();
-
-          if (updated) {
-            lead.headcount = updated.headcount;
-            lead.website = updated.website;
-            lead.industry = updated.industry ?? lead.industry;
-            lead.decision_maker_name = updated.decision_maker_name;
-            lead.decision_maker_email = updated.decision_maker_email;
-          }
-        }
-        await new Promise(r => setTimeout(r, 200));
-      }
-      console.log(`Apollo enrichment complete: ${results.enriched}/${results.leads.length} enriched`);
+    // If every state returned 401/403, the API key is required
+    if (authFailures > 0 && authFailures >= states.length) {
+      return new Response(JSON.stringify({
+        error: "api_key_required",
+        message: "OpenCorporates requires an API key for access. Configure your key in Settings > API Keys to use this feature.",
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Read-merge-write settings
@@ -348,7 +208,6 @@ serve(async (req) => {
       registry_last_run: new Date().toISOString(),
       registry_last_source: "opencorporates",
       registry_leads_saved: results.saved,
-      registry_leads_enriched: results.enriched,
       registry_status: "completed",
     };
 
@@ -370,3 +229,27 @@ serve(async (req) => {
     );
   }
 });
+
+function inferIndustryFromName(name: string): string | null {
+  const n = name.toLowerCase();
+  if (/construct|build|roof|pav|excavat/.test(n)) return "Construction";
+  if (/consult|advisory|strateg/.test(n)) return "Consulting";
+  if (/medical|health|clinic|dental|ortho|chiro|therap/.test(n)) return "Healthcare";
+  if (/restaurant|cafe|grill|bistro|catering|food/.test(n)) return "Food & Beverage";
+  if (/clean|janitor|maid|sanit/.test(n)) return "Cleaning Services";
+  if (/landscap|lawn|tree|garden/.test(n)) return "Landscaping";
+  if (/plumb|electr|hvac|mechanic|weld/.test(n)) return "Trades";
+  if (/tech|software|digital|app|cyber|data/.test(n)) return "Technology";
+  if (/real estate|realty|property|mortgage/.test(n)) return "Real Estate";
+  if (/truck|freight|logist|transport|haul/.test(n)) return "Transportation";
+  if (/salon|barber|beauty|spa|nail/.test(n)) return "Personal Care";
+  if (/fitness|gym|yoga|train/.test(n)) return "Fitness";
+  if (/account|bookkeep|tax|cpa/.test(n)) return "Accounting";
+  if (/market|advertis|media|design|brand/.test(n)) return "Marketing";
+  if (/auto|car|tire|body shop|mechanic/.test(n)) return "Automotive";
+  if (/staffing|recruit|talent|employ/.test(n)) return "Staffing";
+  if (/insur|underwr/.test(n)) return "Insurance";
+  if (/manufactur|fabricat|machine/.test(n)) return "Manufacturing";
+  if (/vet|animal|pet/.test(n)) return "Veterinary";
+  return null;
+}

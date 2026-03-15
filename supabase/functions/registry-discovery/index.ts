@@ -257,3 +257,9 @@ function inferIndustryFromName(name: string): string | null {
   if (/vet|animal|pet/.test(n)) return "Veterinary";
   return null;
 }
+
+function matchIndustryKeywords(name: string, keywords: string[]): string | null {
+  if (!keywords.length) return null;
+  const n = name.toLowerCase();
+  return keywords.find((kw: string) => n.includes(kw.toLowerCase())) ?? null;
+}

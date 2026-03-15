@@ -41,6 +41,12 @@ const TIMEFRAMES = [
   { value: "12", label: "Last 12 months" },
 ];
 
+const PER_PAGE_OPTIONS = [
+  { value: "30", label: "30 per state" },
+  { value: "50", label: "50 per state" },
+  { value: "100", label: "100 per state (max)" },
+];
+
 export default function RegistryDiscoveryTab() {
   const [, navigate] = useLocation();
   const [selectedStates, setSelectedStates] = useState<string[]>(["California", "Texas", "Florida"]);

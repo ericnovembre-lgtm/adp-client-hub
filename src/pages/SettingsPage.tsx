@@ -547,6 +547,7 @@ export default function SettingsPage() {
   const saveSettings = async () => {
     const s: UserSettings = {
       aiChatEnabled,
+      auto_qualify_threshold: autoQualifyThreshold,
       defaultIndustry: defaultIndustry || undefined,
       defaultState: defaultState || undefined,
       defaultHeadcountMin: headcountMin === "" ? undefined : Number(headcountMin),

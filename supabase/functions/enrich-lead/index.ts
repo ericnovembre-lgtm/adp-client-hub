@@ -181,6 +181,7 @@ Deno.serve(async (req) => {
         type: "system",
         description: `Lead enriched via Apollo: added ${enrichedFields.join(", ")}`,
         lead_id,
+        user_id: userId,
       });
     }
 

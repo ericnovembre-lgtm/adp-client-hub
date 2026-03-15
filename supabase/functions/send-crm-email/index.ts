@@ -141,6 +141,7 @@ Deno.serve(async (req) => {
         type: "email",
         description: `Email sent to ${to}: ${subject}`,
         contact_id,
+        user_id: userId,
       });
     }
 

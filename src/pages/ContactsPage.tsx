@@ -26,6 +26,7 @@ import { Plus, Search, Pencil, Trash2, Download, Upload, Loader2, UserPlus, Mail
 import ContactDetailSheet from "@/components/ContactDetailSheet";
 import DraftEmailDialog from "@/components/DraftEmailDialog";
 import CompanyCombobox from "@/components/CompanyCombobox";
+import CSVImportDialog from "@/components/CSVImportDialog";
 
 const contactSchema = z.object({
   first_name: z.string().trim().min(1, "First name is required").max(100, "Max 100 characters"),

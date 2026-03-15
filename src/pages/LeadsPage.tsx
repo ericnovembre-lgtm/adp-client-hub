@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Search, MoreHorizontal, Phone, UserCheck, ArrowRightLeft, XCircle, Pencil, Trash2, Download, Upload, Loader2, Users, FileText, X, CheckSquare, Sparkles } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Phone, UserCheck, ArrowRightLeft, XCircle, Pencil, Trash2, Download, Upload, Loader2, Users, FileText, X, CheckSquare, Sparkles, Filter } from "lucide-react";
 import { Link } from "wouter";
 import { useLeads, useCreateLead, useUpdateLead, useDeleteLead } from "@/hooks/useLeads";
 import { useCreateCompany } from "@/hooks/useCompanies";
@@ -32,6 +32,7 @@ import LeadDetailSheet from "@/components/LeadDetailSheet";
 import { checkKnockoutLocal, type LocalKnockoutResult } from "@/lib/checkKnockoutFromRules";
 import EligibilityBadge from "@/components/EligibilityBadge";
 import CSVImportDialog from "@/components/CSVImportDialog";
+import { LEAD_STATUS_COLORS, HEADCOUNT_MIN, HEADCOUNT_MAX } from "@/lib/constants";
 
 const leadSchema = z.object({
   company_name: z.string().trim().min(1, "Company name is required").max(200, "Max 200 characters"),
@@ -49,9 +50,12 @@ const leadSchema = z.object({
 
 type LeadFormValues = z.infer<typeof leadSchema>;
 
-import { LEAD_STATUS_COLORS } from "@/lib/constants";
-
 const statusColors = LEAD_STATUS_COLORS;
+
+function isInTerritory(headcount: number | null | undefined): boolean {
+  if (headcount == null) return false;
+  return headcount >= HEADCOUNT_MIN && headcount <= HEADCOUNT_MAX;
+}
 
 // --- Lead Form Dialog with industry onBlur knockout warning ---
 
@@ -102,6 +106,9 @@ function LeadFormDialog({
           status: "new",
         },
   });
+
+  const watchedHeadcount = form.watch("headcount");
+  const headcountOutOfTerritory = watchedHeadcount != null && watchedHeadcount > 0 && !isInTerritory(watchedHeadcount);
 
   const handleOpenChange = (v: boolean) => {
     if (!v) {
@@ -162,6 +169,11 @@ function LeadFormDialog({
             <div className="grid gap-2">
               <Label htmlFor="headcount">Headcount</Label>
               <Input id="headcount" type="number" {...form.register("headcount")} />
+              {headcountOutOfTerritory && (
+                <p className="text-xs text-orange-600 dark:text-orange-400">
+                  ⚠️ This headcount is outside your down market territory ({HEADCOUNT_MIN}–{HEADCOUNT_MAX} employees)
+                </p>
+              )}
             </div>
             <div className="grid gap-2">
               <Label htmlFor="industry">Industry</Label>
@@ -238,10 +250,14 @@ export default function LeadsPage() {
   const [detailLead, setDetailLead] = useState<Lead | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [bulkActionPending, setBulkActionPending] = useState(false);
+  const [territoryOnly, setTerritoryOnly] = useState(true);
 
   // Knockout dialog state
   const [knockoutDialogType, setKnockoutDialogType] = useState<'prohibited' | 'low_probability' | 'bluefield' | null>(null);
   const [knockoutDialogResult, setKnockoutDialogResult] = useState<LocalKnockoutResult | null>(null);
+
+  // Headcount territory warning dialog for conversion
+  const [headcountWarningLead, setHeadcountWarningLead] = useState<Lead | null>(null);
 
   // Debounce search
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -261,7 +277,13 @@ export default function LeadsPage() {
   const createActivity = useCreateActivity();
   const { data: knockoutRules = [] } = useKnockoutRules();
 
-  const leads = data?.data ?? [];
+  const allLeads = data?.data ?? [];
+
+  // Territory filter (client-side)
+  const leads = useMemo(() => {
+    if (!territoryOnly) return allLeads;
+    return allLeads.filter(l => l.headcount == null || isInTerritory(l.headcount));
+  }, [allLeads, territoryOnly]);
 
   // Pre-compute knockout results for all visible leads
   const knockoutMap = useMemo(() => {
@@ -398,8 +420,17 @@ export default function LeadsPage() {
     }
   };
 
-  // Initiate conversion — check knockout first
+  // Initiate conversion — check headcount territory first, then knockout
   const initiateConvert = useCallback((lead: Lead) => {
+    // Check headcount territory first
+    if (lead.headcount != null && !isInTerritory(lead.headcount)) {
+      setHeadcountWarningLead(lead);
+      return;
+    }
+    proceedToKnockoutCheck(lead);
+  }, [knockoutRules]);
+
+  const proceedToKnockoutCheck = useCallback((lead: Lead) => {
     const result = checkKnockoutLocal(lead.industry, knockoutRules);
     if (result.tier === 'clear') {
       setConvertLead(lead);
@@ -516,6 +547,43 @@ export default function LeadsPage() {
     setExporting(false);
   };
 
+  // Headcount cell rendering helper
+  const renderHeadcountCell = (lead: Lead) => {
+    if (lead.headcount == null) {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                —
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Headcount unknown — verify before pursuing</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+    if (!isInTerritory(lead.headcount)) {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                {lead.headcount}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Outside your territory ({HEADCOUNT_MIN}–{HEADCOUNT_MAX} employees)</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+    return lead.headcount;
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -531,6 +599,15 @@ export default function LeadsPage() {
               className="pl-9"
             />
           </div>
+          <Button
+            variant={territoryOnly ? "default" : "outline"}
+            size="sm"
+            onClick={() => setTerritoryOnly(v => !v)}
+            className="shrink-0"
+          >
+            <Filter className="h-4 w-4 mr-1" />
+            {territoryOnly ? `My Territory (${HEADCOUNT_MIN}–${HEADCOUNT_MAX})` : "All Leads"}
+          </Button>
           <Button variant="outline" onClick={() => setImportOpen(true)}>
             <Upload className="h-4 w-4 mr-1" />Import CSV
           </Button>
@@ -646,7 +723,7 @@ export default function LeadsPage() {
                             <div className="text-xs text-muted-foreground">{lead.decision_maker_title}</div>
                           )}
                         </TableCell>
-                        <TableCell className="hidden md:table-cell">{lead.headcount ?? "—"}</TableCell>
+                        <TableCell className="hidden md:table-cell">{renderHeadcountCell(lead)}</TableCell>
                         <TableCell className="hidden lg:table-cell">{lead.industry ?? "—"}</TableCell>
                         <TableCell className="hidden lg:table-cell">{lead.state ?? "—"}</TableCell>
                         <TableCell className="hidden xl:table-cell max-w-[200px] truncate">
@@ -744,6 +821,31 @@ export default function LeadsPage() {
         isSubmitting={createLead.isPending || updateLead.isPending}
         knockoutRules={knockoutRules}
       />
+
+      {/* Headcount Territory Warning for Conversion */}
+      <AlertDialog
+        open={!!headcountWarningLead}
+        onOpenChange={(v) => { if (!v) setHeadcountWarningLead(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>⚠️ Outside Territory</AlertDialogTitle>
+            <AlertDialogDescription>
+              This company has {headcountWarningLead?.headcount} employees, which is outside your down market territory ({HEADCOUNT_MIN}–{HEADCOUNT_MAX}). Are you sure you want to create a deal?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              const lead = headcountWarningLead;
+              setHeadcountWarningLead(null);
+              if (lead) proceedToKnockoutCheck(lead);
+            }}>
+              Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Convert Confirmation — Prohibited */}
       <AlertDialog

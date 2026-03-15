@@ -13,6 +13,7 @@ import {
   TrendingUp, TrendingDown, Phone, Mail, Calendar, FileText, Activity,
   Users, DollarSign, Target, CheckSquare, Sparkles,
 } from "lucide-react";
+import { HEADCOUNT_MIN, HEADCOUNT_MAX } from "@/lib/constants";
 
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v);
@@ -109,6 +110,7 @@ export default function DashboardPage() {
         .from("leads")
         .select("*")
         .neq("status", "dismissed")
+        .or(`headcount.is.null,and(headcount.gte.${HEADCOUNT_MIN},headcount.lte.${HEADCOUNT_MAX})`)
         .order("created_at", { ascending: false })
         .limit(10);
       if (error) throw error;

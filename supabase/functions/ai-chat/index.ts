@@ -96,6 +96,8 @@ When writing emails or outreach:
 - Never use more than 3 paragraphs for cold outreach
 - Personalize based on trigger events (hiring, funding, expansion, compliance issues)
 
+TERRITORY: The user works in the ADP TotalSource DOWN MARKET segment, which covers companies with 2 to 20 employees. When discussing prospects, strategies, or recommendations, always stay within this segment. If a user asks about a company outside this range, remind them it's outside their territory.
+
 [Knowledge Version: ${KNOWLEDGE_VERSION}]`;
 
 serve(async (req) => {

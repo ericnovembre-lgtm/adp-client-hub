@@ -5,7 +5,7 @@ import type { Lead } from "@/types/database";
 import { useUpdateLead } from "@/hooks/useLeads";
 import { useKnockoutRules } from "@/hooks/useKnockoutRules";
 import { checkKnockoutLocal } from "@/lib/checkKnockoutFromRules";
-import { LEAD_STATUS_COLORS_DETAIL } from "@/lib/constants";
+import { LEAD_STATUS_COLORS_DETAIL, HEADCOUNT_MIN, HEADCOUNT_MAX } from "@/lib/constants";
 import EligibilityBadge from "@/components/EligibilityBadge";
 import ActivityTimeline from "@/components/ActivityTimeline";
 import { toast } from "sonner";
@@ -125,6 +125,10 @@ export default function LeadDetailSheet({
   const set = (field: keyof Lead, value: string | number | null) =>
     setEditData((prev) => ({ ...prev, [field]: value }));
 
+  const editHeadcount = editData.headcount;
+  const headcountOutOfTerritory = isEditing && editHeadcount != null && editHeadcount > 0 &&
+    (editHeadcount < HEADCOUNT_MIN || editHeadcount > HEADCOUNT_MAX);
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-[440px] sm:max-w-[440px] overflow-y-auto">
@@ -204,6 +208,11 @@ export default function LeadDetailSheet({
                 </EditRow>
                 <EditRow icon={<Users className="h-4 w-4" />} label="Headcount">
                   <Input type="number" value={editData.headcount ?? ""} onChange={(e) => set("headcount", e.target.value ? Number(e.target.value) : null)} placeholder="Headcount" />
+                  {headcountOutOfTerritory && (
+                    <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                      ⚠️ This headcount is outside your down market territory ({HEADCOUNT_MIN}–{HEADCOUNT_MAX} employees)
+                    </p>
+                  )}
                 </EditRow>
                 <EditRow icon={<MapPin className="h-4 w-4" />} label="State">
                   <Input value={editData.state ?? ""} onChange={(e) => set("state", e.target.value)} placeholder="State" />

@@ -1,70 +1,48 @@
 
 
-## Send Emails Directly from CRM with Open/Click Tracking
+## Plan: Persist AI Chat History Between Sessions
 
-### Current State
-- A `DraftEmailDialog` exists that drafts emails from templates and copies them to clipboard — no actual sending.
-- An email domain (`notify.eric.novembre`) is configured but DNS is still pending. Emails cannot be sent until DNS is verified.
-- No email infrastructure (queue, send log, etc.) is set up yet.
+Save chat conversations to the database so they survive page refreshes and sessions.
 
-### What We'll Build
+### Database Change
 
-**1. Email Infrastructure Setup**
-- Run `setup_email_infra` to create the email queue, `email_send_log` table, suppression list, and `process-email-queue` cron job.
+Create a `chat_messages` table:
 
-**2. Database: `email_tracking_events` table**
-Track opens and clicks per sent email:
 ```sql
-CREATE TABLE public.email_tracking_events (
+CREATE TABLE public.chat_messages (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  message_id text NOT NULL,
-  event_type text NOT NULL, -- 'open' or 'click'
-  url text,
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  role text NOT NULL CHECK (role IN ('user', 'assistant')),
+  content text NOT NULL,
   created_at timestamptz DEFAULT now()
 );
-ALTER TABLE public.email_tracking_events ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Authenticated users can select tracking events"
-  ON public.email_tracking_events FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Anon can insert tracking events"
-  ON public.email_tracking_events FOR INSERT TO anon WITH CHECK (true);
-CREATE INDEX idx_tracking_message ON public.email_tracking_events(message_id);
+
+ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
+CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
+
+CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
 ```
 
-**3. Edge Function: `email-tracker`**
-A public endpoint (no JWT) that handles:
-- **GET `/email-tracker?type=open&mid=<message_id>`** — returns a 1×1 transparent pixel, inserts an open event
-- **GET `/email-tracker?type=click&mid=<message_id>&url=<encoded_url>`** — inserts a click event, 302 redirects to the target URL
+### Code Changes — `src/components/AIChatWidget.tsx`
 
-**4. Edge Function: `send-crm-email`**
-Authenticated endpoint that:
-- Accepts `{ to, subject, body, contact_id }` from the frontend
-- Generates a unique `message_id`
-- Injects a tracking pixel `<img>` for open tracking
-- Rewrites `<a href>` links to route through `email-tracker` for click tracking
-- Enqueues the email via transactional email infrastructure
-- Logs an activity ("Email sent to …")
-- Returns `{ message_id }` to the frontend
+1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
 
-**5. Update `DraftEmailDialog`**
-- Add a **"Send Email"** button alongside the existing "Copy to Clipboard" button
-- Requires the contact to have an email address
-- Calls `send-crm-email` edge function
-- Shows success/failure toast
-- Logs activity on success
+2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
 
-**6. Email Sent History & Tracking UI**
-- Add an **"Emails"** tab or section in `ContactDetailSheet` showing sent emails for that contact
-- Display subject, date sent, open count, click count from `email_send_log` + `email_tracking_events`
+3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
 
-### Files Changed
-- **Migration** — new `email_tracking_events` table
-- **Infrastructure** — `setup_email_infra` call
-- `supabase/functions/email-tracker/index.ts` — tracking pixel + click redirect
-- `supabase/functions/send-crm-email/index.ts` — send with tracking injection
-- `supabase/config.toml` — new function configs
-- `src/components/DraftEmailDialog.tsx` — add Send button
-- `src/components/ContactDetailSheet.tsx` — email history section
+4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
 
-### Important Note
-The email domain DNS is still pending. Everything will be built and deployed, but actual email delivery will only work once DNS verification completes. The user can monitor this in Cloud settings.
+### Data flow
+
+```text
+User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
+Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
+Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
+```
+
+No new hooks file needed — keep the logic inline in the widget since it's self-contained.
 

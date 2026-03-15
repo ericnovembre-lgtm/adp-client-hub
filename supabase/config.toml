@@ -2,3 +2,9 @@ project_id = "rcnndfrqkelekzhspjud"
 
 [functions.scheduled-discovery]
 verify_jwt = false
+
+[functions.email-tracker]
+verify_jwt = false
+
+[functions.send-crm-email]
+verify_jwt = false

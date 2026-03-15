@@ -1127,6 +1127,7 @@ export default function LeadsPage() {
             company_name: emailLead.company_name,
             headcount: emailLead.headcount ? String(emailLead.headcount) : "",
           }}
+          contactEmail={emailLead.decision_maker_email}
         />
       )}
 

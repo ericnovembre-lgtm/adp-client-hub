@@ -226,6 +226,60 @@ export type Database = {
           },
         ]
       }
+      email_send_log: {
+        Row: {
+          contact_id: string | null
+          created_at: string | null
+          id: string
+          message_id: string | null
+          recipient_email: string
+          status: string | null
+          subject: string | null
+        }
+        Insert: {
+          contact_id?: string | null
+          created_at?: string | null
+          id?: string
+          message_id?: string | null
+          recipient_email: string
+          status?: string | null
+          subject?: string | null
+        }
+        Update: {
+          contact_id?: string | null
+          created_at?: string | null
+          id?: string
+          message_id?: string | null
+          recipient_email?: string
+          status?: string | null
+          subject?: string | null
+        }
+        Relationships: []
+      }
+      email_tracking_events: {
+        Row: {
+          created_at: string | null
+          event_type: string
+          id: string
+          message_id: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_type: string
+          id?: string
+          message_id: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          message_id?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
       knockout_rules: {
         Row: {
           conditions: string | null

@@ -437,7 +437,7 @@ async function toolUpdateDeal(supabase: SupabaseClient, input: Record<string, an
 }
 
 async function toolCreateTask(supabase: SupabaseClient, input: Record<string, any>) {
-  const { data, error } = await supabase.from("tasks").insert({ title: input.title, description: input.description ?? null, due_date: input.due_date, priority: input.priority ?? "medium", status: "pending", contact_id: input.contact_id ?? null, deal_id: input.deal_id ?? null }).select().single();
+  const { data, error } = await supabase.from("tasks").insert({ title: input.title, description: input.description ?? null, due_date: input.due_date, priority: input.priority ?? "medium", status: "pending", contact_id: input.contact_id ?? null, deal_id: input.deal_id ?? null, user_id: input.__user_id }).select().single();
   if (error) throw new Error(`Create failed: ${error.message}`);
   return { success: true, task: data };
 }

@@ -98,7 +98,9 @@ export default function ReportsPage() {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={customFrom} onSelect={setCustomFrom} className="p-3 pointer-events-auto" />
+                  <Calendar mode="single" selected={customFrom} onSelect={(d) => {
+                    if (d && customTo && d > customTo) { setCustomFrom(customTo); setCustomTo(d); } else { setCustomFrom(d); }
+                  }} disabled={(date) => !!customTo && date > customTo} className="p-3 pointer-events-auto" />
                 </PopoverContent>
               </Popover>
               <span className="text-muted-foreground text-xs">—</span>

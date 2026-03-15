@@ -1,48 +1,41 @@
 
 
-## Plan: Persist AI Chat History Between Sessions
+## Registry Discovery (New Businesses) Implementation
 
-Save chat conversations to the database so they survive page refreshes and sessions.
+The registry-discovery feature does not exist yet. Here's the plan:
 
-### Database Change
+### Files to Create/Modify
 
-Create a `chat_messages` table:
+| File | Action |
+|------|--------|
+| `supabase/functions/registry-discovery/index.ts` | Create — OpenCorporates API edge function |
+| `src/components/discovery/RegistryDiscoveryTab.tsx` | Create — "New Businesses" tab component |
+| `src/pages/AIDiscoveryPage.tsx` | Add 4th tab "New Businesses" with Building2 icon |
+| `src/pages/SettingsPage.tsx` | Add OpenCorporates API key section after Census section (~line 885) |
+| `src/hooks/useUserSettings.ts` | Add `opencorporates_api_key_configured` field |
 
-```sql
-CREATE TABLE public.chat_messages (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  role text NOT NULL CHECK (role IN ('user', 'assistant')),
-  content text NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
+### 1. Edge Function: `registry-discovery`
+Create as specified in the prompt. Uses OpenCorporates API to search recently incorporated businesses by state/jurisdiction. Includes `inferIndustryFromName` heuristic, duplicate checking, and activity logging. Will fix the settings upsert to use read-merge-write pattern (same fix applied to yelp-discovery). Add `[functions.registry-discovery]` with `verify_jwt = false` to `supabase/config.toml`.
 
-ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+### 2. RegistryDiscoveryTab Component
+Following the IntentDiscoveryTab/YelpDiscoveryTab pattern:
+- **State checkboxes**: Top 10 states by new business filings (CA, TX, FL, NY, GA, NC, IL, OH, PA, VA) + "Other" dropdown
+- **Timeframe dropdown**: Last 3/6/12 months (default: 6)
+- **Industry keyword checkboxes**: 12 PEO-friendly categories
+- **Green info banner** with Building2 icon explaining the feature
+- **"Discover New Businesses" button** with Building2 icon
+- **Results table**: Company Name, State, Incorporation Date, Company Type, Inferred Industry, Status
+- **Summary card**: Found X, saved Y, skipped Z duplicates
 
-CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
-CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
-CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
+### 3. AIDiscoveryPage Tab Addition
+Add a 4th tab trigger "New Businesses" with Building2 icon between Intent-Based and Local Businesses tabs. Renders `<RegistryDiscoveryTab />`.
 
-CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
-```
+### 4. Settings: OpenCorporates API Key
+After the Census API Key card (~line 885), add a new Card with:
+- Password input + Connected/Not configured badges
+- Helper text with pricing info
+- "Test Connection" button invoking `registry-discovery`
 
-### Code Changes — `src/components/AIChatWidget.tsx`
-
-1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
-
-2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
-
-3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
-
-4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
-
-### Data flow
-
-```text
-User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
-Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
-Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
-```
-
-No new hooks file needed — keep the logic inline in the widget since it's self-contained.
+### 5. Secret
+Will use `add_secret` tool to request `OPENCORPORATES_API_KEY`.
 

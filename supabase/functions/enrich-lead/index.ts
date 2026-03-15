@@ -40,6 +40,7 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const userId = claims.claims.sub as string;
 
     const apolloKey = Deno.env.get("APOLLO_API_KEY");
     if (!apolloKey) {

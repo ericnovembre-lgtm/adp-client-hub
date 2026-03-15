@@ -13,6 +13,8 @@ interface SearchableSelectProps {
   searchPlaceholder?: string;
   emptyMessage?: string;
   className?: string;
+  disabled?: boolean;
+  allowNone?: boolean;
 }
 
 export function SearchableSelect({
@@ -23,6 +25,8 @@ export function SearchableSelect({
   searchPlaceholder = "Search…",
   emptyMessage = "No results.",
   className,
+  disabled = false,
+  allowNone = true,
 }: SearchableSelectProps) {
   const [open, setOpen] = useState(false);
   const selected = options.find((i) => i.value === value);
@@ -30,21 +34,23 @@ export function SearchableSelect({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" role="combobox" className={cn("w-full justify-between font-normal", className)}>
+        <Button variant="outline" role="combobox" disabled={disabled} className={cn("w-full justify-between font-normal", className)}>
           {selected ? selected.label : <span className="text-muted-foreground">{placeholder}</span>}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0 pointer-events-auto" align="start">
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0 pointer-events-auto" align="start">
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList>
             <CommandEmpty>{emptyMessage}</CommandEmpty>
             <CommandGroup>
-              <CommandItem value="__none__" onSelect={() => { onValueChange(""); setOpen(false); }}>
-                <Check className={cn("mr-2 h-4 w-4", !value ? "opacity-100" : "opacity-0")} />
-                None
-              </CommandItem>
+              {allowNone && (
+                <CommandItem value="__none__" onSelect={() => { onValueChange(""); setOpen(false); }}>
+                  <Check className={cn("mr-2 h-4 w-4", !value ? "opacity-100" : "opacity-0")} />
+                  None
+                </CommandItem>
+              )}
               {options.map((item) => (
                 <CommandItem key={item.value} value={item.label} onSelect={() => { onValueChange(item.value); setOpen(false); }}>
                   <Check className={cn("mr-2 h-4 w-4", value === item.value ? "opacity-100" : "opacity-0")} />

@@ -821,6 +821,7 @@ export default function SettingsPage() {
               {testingYelp ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Zap className="h-4 w-4 mr-1" />}
               Test Connection
             </Button>
+          </div>
         </CardContent>
       </Card>
 

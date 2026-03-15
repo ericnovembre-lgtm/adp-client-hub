@@ -513,59 +513,94 @@ async function logAgentAction(supabase: SupabaseClient, action: Record<string, a
   try { await supabase.from("agent_actions").insert(action); } catch (e) { console.error("Failed to log agent action:", e); }
 }
 
-// ─── CLAUDE API AGENT LOOP WITH SSE STREAMING ──────────────────────────────
+// ─── LOVABLE AI GATEWAY AGENT LOOP WITH SSE STREAMING ──────────────────────
 
 async function runAgentLoop(messages: any[], supabase: SupabaseClient, userId: string, apiKey: string): Promise<ReadableStream> {
   const encoder = new TextEncoder();
   return new ReadableStream({
     async start(controller) {
       try {
-        let conversationMessages = messages.length > 1 ? messages.slice(-10) : [{ role: "user" as const, content: messages[messages.length - 1]?.content ?? "" }];
+        const conversationMessages: any[] = [
+          { role: "system", content: SYSTEM_PROMPT },
+          ...(messages.length > 1 ? messages.slice(-10) : [{ role: "user", content: messages[messages.length - 1]?.content ?? "" }]),
+        ];
         let stepCount = 0;
         const maxSteps = 8;
 
         while (stepCount < maxSteps) {
           stepCount++;
-          const response = await fetch("https://api.anthropic.com/v1/messages", {
+          const response = await fetch(AI_GATEWAY_URL, {
             method: "POST",
-            headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-            body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 4096, system: SYSTEM_PROMPT, tools: CRM_TOOLS, messages: conversationMessages }),
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: AI_MODEL,
+              messages: conversationMessages,
+              tools: CRM_TOOLS,
+              max_tokens: 4096,
+            }),
           });
 
           if (!response.ok) {
             const errText = await response.text();
-            console.error("Claude API error:", response.status, errText);
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", error: `Claude API error: ${response.status}` })}\n\n`));
+            console.error("AI Gateway error:", response.status, errText);
+            if (response.status === 429) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", error: "Rate limit exceeded. Please try again in a moment." })}\n\n`));
+            } else if (response.status === 402) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", error: "AI credits exhausted. Please add credits to continue." })}\n\n`));
+            } else {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", error: `AI service error: ${response.status}` })}\n\n`));
+            }
             break;
           }
 
           const result = await response.json();
-          let hasToolUse = false;
-          const toolResults: any[] = [];
+          const message = result.choices?.[0]?.message;
+          if (!message) break;
 
-          for (const block of result.content) {
-            if (block.type === "text") {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "text", content: block.text })}\n\n`));
-            } else if (block.type === "tool_use") {
-              hasToolUse = true;
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "tool_call", tool: block.name, input: block.input, risk: TOOL_RISK[block.name] ?? "low", id: block.id })}\n\n`));
-              try {
-                const toolResult = await executeTool(block.name, block.input, supabase, userId);
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "tool_result", tool: block.name, result: toolResult, id: block.id, success: true })}\n\n`));
-                toolResults.push({ type: "tool_result", tool_use_id: block.id, content: JSON.stringify(toolResult) });
-              } catch (err) {
-                const errorMsg = err instanceof Error ? err.message : String(err);
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "tool_result", tool: block.name, error: errorMsg, id: block.id, success: false })}\n\n`));
-                toolResults.push({ type: "tool_result", tool_use_id: block.id, content: JSON.stringify({ error: errorMsg }), is_error: true });
-              }
-            }
+          const finishReason = result.choices?.[0]?.finish_reason;
+          const toolCalls = message.tool_calls;
+
+          // Emit text content
+          if (message.content) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "text", content: message.content })}\n\n`));
           }
 
-          if (hasToolUse && toolResults.length > 0) {
-            conversationMessages.push({ role: "assistant" as const, content: result.content });
-            conversationMessages.push({ role: "user" as const, content: toolResults });
-          } else { break; }
-          if (result.stop_reason === "end_turn") break;
+          // Handle tool calls
+          if (toolCalls && toolCalls.length > 0) {
+            // Add assistant message with tool_calls to conversation
+            conversationMessages.push(message);
+
+            for (const tc of toolCalls) {
+              const toolName = tc.function.name;
+              let toolInput: Record<string, any>;
+              try {
+                toolInput = JSON.parse(tc.function.arguments);
+              } catch {
+                toolInput = {};
+              }
+
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "tool_call", tool: toolName, input: toolInput, risk: TOOL_RISK[toolName] ?? "low", id: tc.id })}\n\n`));
+
+              try {
+                const toolResult = await executeTool(toolName, toolInput, supabase, userId);
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "tool_result", tool: toolName, result: toolResult, id: tc.id, success: true })}\n\n`));
+                conversationMessages.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(toolResult) });
+              } catch (err) {
+                const errorMsg = err instanceof Error ? err.message : String(err);
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "tool_result", tool: toolName, error: errorMsg, id: tc.id, success: false })}\n\n`));
+                conversationMessages.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify({ error: errorMsg }) });
+              }
+            }
+            // Continue loop to get model's response after tool results
+          } else {
+            // No tool calls — we're done
+            break;
+          }
+
+          if (finishReason === "stop") break;
         }
 
         controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
@@ -592,10 +627,10 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
+    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
 
-    if (!anthropicKey) {
-      return new Response(JSON.stringify({ error: "ANTHROPIC_API_KEY not configured. Set it in Supabase Edge Function Secrets." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (!lovableApiKey) {
+      return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const authClient = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: authHeader } } });
@@ -612,7 +647,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Messages array required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const stream = await runAgentLoop(messages, supabase, user.id, anthropicKey);
+    const stream = await runAgentLoop(messages, supabase, user.id, lovableApiKey);
     return new Response(stream, { headers: { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-cache" } });
   } catch (e) {
     console.error("crm-agent error:", e);

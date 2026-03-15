@@ -496,6 +496,8 @@ export default function SettingsPage() {
   const [testingApollo, setTestingApollo] = useState(false);
   const [yelpKeyConfigured, setYelpKeyConfigured] = useState(false);
   const [testingYelp, setTestingYelp] = useState(false);
+  const [censusKeyConfigured, setCensusKeyConfigured] = useState(false);
+  const [testingCensus, setTestingCensus] = useState(false);
 
   // Discovery
   const [defaultIndustry, setDefaultIndustry] = useState("");

@@ -696,6 +696,16 @@ export default function LeadsPage() {
             <Filter className="h-4 w-4 mr-1" />
             {territoryOnly ? `My Territory (${HEADCOUNT_MIN}–${HEADCOUNT_MAX})` : "All Leads"}
           </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent("agent-panel-message", {
+                detail: { message: "Score all my new and contacted leads and tell me which ones I should prioritize. For each lead, evaluate headcount fit (2-20 territory, 5-15 sweet spot), check industry knockout rules, assess trigger event quality, decision maker seniority, and contact completeness. Show me the results sorted by score." }
+              }));
+            }}
+          >
+            <Sparkles className="h-4 w-4 mr-1" />Score All Leads
+          </Button>
           <Button variant="outline" onClick={() => setImportOpen(true)}>
             <Upload className="h-4 w-4 mr-1" />Import CSV
           </Button>

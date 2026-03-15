@@ -82,7 +82,6 @@ serve(async (req) => {
       if (!jurisdictionCode) continue;
 
       const searchParams = new URLSearchParams({
-        api_token: openCorpApiKey,
         jurisdiction_code: jurisdictionCode,
         order: "incorporation_date",
         per_page: String(Math.min(per_page, 100)),

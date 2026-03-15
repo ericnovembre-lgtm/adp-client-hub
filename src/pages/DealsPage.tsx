@@ -481,7 +481,7 @@ function ListView({
                 <DollarSign className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
                 <p className="font-medium">No deals yet</p>
                 <p className="text-sm mt-1 max-w-md mx-auto">Convert a qualified lead to start tracking your ADP TotalSource pipeline.</p>
-                <Button variant="outline" size="sm" className="mt-4" onClick={openAdd}>
+                <Button variant="outline" size="sm" className="mt-4" onClick={onAdd}>
                   <Plus className="h-4 w-4 mr-1" />Add Deal
                 </Button>
               </TableCell></TableRow>

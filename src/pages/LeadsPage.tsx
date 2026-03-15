@@ -615,7 +615,15 @@ export default function LeadsPage() {
                     <TableCell colSpan={11} className="text-center text-muted-foreground py-12">
                       <Users className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
                       <p className="font-medium">No leads yet</p>
-                      <p className="text-sm mt-1">Start discovering leads to fill your pipeline!</p>
+                      <p className="text-sm mt-1 max-w-md mx-auto">Use AI Discovery to automatically find companies that are a great fit for ADP TotalSource, or add leads manually.</p>
+                      <div className="flex items-center justify-center gap-2 mt-4">
+                        <Button variant="outline" size="sm" onClick={() => navigate("/ai-discovery")}>
+                          <Sparkles className="h-4 w-4 mr-1" />AI Discovery
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={openAdd}>
+                          <Plus className="h-4 w-4 mr-1" />Add Lead
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ) : (

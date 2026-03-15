@@ -478,7 +478,10 @@ function ListView({
               <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-12">
                 <DollarSign className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
                 <p className="font-medium">No deals yet</p>
-                <p className="text-sm mt-1">Create your first deal to track your pipeline!</p>
+                <p className="text-sm mt-1 max-w-md mx-auto">Convert a qualified lead to start tracking your ADP TotalSource pipeline.</p>
+                <Button variant="outline" size="sm" className="mt-4" onClick={openAdd}>
+                  <Plus className="h-4 w-4 mr-1" />Add Deal
+                </Button>
               </TableCell></TableRow>
             ) : (
               deals.map((d) => (

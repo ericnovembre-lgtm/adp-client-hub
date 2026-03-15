@@ -394,7 +394,10 @@ export default function ContactsPage() {
               <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-12">
                 <UserPlus className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
                 <p className="font-medium">No contacts yet</p>
-                <p className="text-sm mt-1">Add your first contact to get started!</p>
+                <p className="text-sm mt-1 max-w-md mx-auto">Add decision makers you're working with on ADP TotalSource opportunities.</p>
+                <Button variant="outline" size="sm" className="mt-4" onClick={openAdd}>
+                  <Plus className="h-4 w-4 mr-1" />Add Contact
+                </Button>
               </TableCell></TableRow>
             ) : (
               filtered.map(c => (

@@ -308,7 +308,10 @@ export default function CompaniesPage() {
         <div className="text-center text-muted-foreground py-16">
           <Building2 className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
           <p className="font-medium">No companies yet</p>
-          <p className="text-sm mt-1">Add your first company to get started!</p>
+          <p className="text-sm mt-1 max-w-md mx-auto">Companies are automatically created when you convert leads, or add them manually.</p>
+          <Button variant="outline" size="sm" className="mt-4" onClick={openAdd}>
+            <Plus className="h-4 w-4 mr-1" />Add Company
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -437,6 +437,7 @@ function ListView({
   onEdit,
   onDelete,
   onClickDeal,
+  onAdd,
 }: {
   deals: Deal[];
   contacts: Pick<Contact, "id" | "first_name" | "last_name">[];
@@ -449,6 +450,7 @@ function ListView({
   onEdit: (d: Deal) => void;
   onDelete: (id: string) => void;
   onClickDeal: (d: Deal) => void;
+  onAdd: () => void;
 }) {
   const contactMap = useMemo(() => new Map(contacts.map((c) => [c.id, `${c.first_name} ${c.last_name}`])), [contacts]);
   const companyMap = useMemo(() => new Map(companies.map((c) => [c.id, c.name])), [companies]);
@@ -478,7 +480,10 @@ function ListView({
               <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-12">
                 <DollarSign className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
                 <p className="font-medium">No deals yet</p>
-                <p className="text-sm mt-1">Create your first deal to track your pipeline!</p>
+                <p className="text-sm mt-1 max-w-md mx-auto">Convert a qualified lead to start tracking your ADP TotalSource pipeline.</p>
+                <Button variant="outline" size="sm" className="mt-4" onClick={onAdd}>
+                  <Plus className="h-4 w-4 mr-1" />Add Deal
+                </Button>
               </TableCell></TableRow>
             ) : (
               deals.map((d) => (
@@ -638,6 +643,7 @@ export default function DealsPage() {
           onEdit={openEdit}
           onDelete={(id) => setDeleteId(id)}
           onClickDeal={(d) => setDetailDeal(d)}
+          onAdd={openAdd}
         />
       )}
 

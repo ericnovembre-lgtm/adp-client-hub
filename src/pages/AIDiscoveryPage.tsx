@@ -263,6 +263,14 @@ export default function AIDiscoveryPage() {
             )}
           </Button>
 
+          {manualDiscover.isIdle && (
+            <div className="rounded-lg border bg-muted/30 p-6 mt-4 text-center text-muted-foreground">
+              <Sparkles className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
+              <p className="font-medium">No AI-discovered leads yet</p>
+              <p className="text-sm mt-1 max-w-md mx-auto">Set your target criteria above and click "Discover Leads" to find companies that match the ADP TotalSource ideal client profile.</p>
+            </div>
+          )}
+
           {manualDiscover.isSuccess && manualDiscover.data && (
             <div className="rounded-lg border bg-muted/30 p-4 mt-4">
               <div className="flex items-center gap-2 mb-2">

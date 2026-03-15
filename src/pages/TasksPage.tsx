@@ -406,7 +406,10 @@ export default function TasksPage() {
             <div className="text-center text-muted-foreground py-12">
               <CheckSquare className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
               <p className="font-medium">No tasks yet</p>
-              <p className="text-sm mt-1">Create your first task to stay organized!</p>
+              <p className="text-sm mt-1 max-w-md mx-auto">Create follow-up tasks to stay on top of your ADP TotalSource opportunities.</p>
+              <Button variant="outline" size="sm" className="mt-4" onClick={openAdd}>
+                <Plus className="h-4 w-4 mr-1" />Add Task
+              </Button>
             </div>
           )}
         </div>

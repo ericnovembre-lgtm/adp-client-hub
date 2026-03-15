@@ -1,29 +1,48 @@
 
 
-## Create CRM Agent Edge Function — Part 1
+## Plan: Persist AI Chat History Between Sessions
 
-### What will be created
+Save chat conversations to the database so they survive page refreshes and sessions.
 
-A new file `supabase/functions/crm-agent/index.ts` containing exactly the code you provided:
+### Database Change
 
-- **Imports**: `serve` from Deno std, `createClient` + `SupabaseClient` from supabase-js
-- **CORS headers**
-- **Territory constants**: MIN 2, MAX 20, "Down Market"
-- **12 CRM tool definitions** for Claude's tool-use API: search_leads, search_deals, search_contacts, search_companies, get_pipeline_stats, get_activity_history, check_knockout_rules, update_lead, update_deal, create_task, log_activity, draft_email
-- **Risk classification map**: low for reads, medium for mutations
-- **System prompt**: Full SavePlus24 agent persona with territory rules, CRM schema, behavior rules, ADP product knowledge, email guidelines, and proactive behavior instructions
+Create a `chat_messages` table:
 
-### Note on API key
-This function calls `https://api.anthropic.com/v1/messages` directly — not the Lovable AI Gateway. You mentioned you will set the `ANTHROPIC_API_KEY` secret after deployment. No secret prompt will be triggered now.
+```sql
+CREATE TABLE public.chat_messages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  role text NOT NULL CHECK (role IN ('user', 'assistant')),
+  content text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
 
-### Config
-Will add `[functions.crm-agent]` with `verify_jwt = false` to `supabase/config.toml` (JWT validation handled in code like the other functions).
+ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
 
-### Files
-| File | Action |
-|------|--------|
-| `supabase/functions/crm-agent/index.ts` | Create with exact Part 1 code |
-| `supabase/config.toml` | Add crm-agent function entry |
+CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
+CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
 
-No other files modified. The `serve()` handler and tool execution logic will come in Part 2.
+CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
+```
+
+### Code Changes — `src/components/AIChatWidget.tsx`
+
+1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
+
+2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
+
+3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
+
+4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
+
+### Data flow
+
+```text
+User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
+Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
+Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
+```
+
+No new hooks file needed — keep the logic inline in the widget since it's self-contained.
 

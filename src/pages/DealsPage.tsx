@@ -490,8 +490,8 @@ function ListView({
                   <TableCell>
                     {d.stage && <Badge className={STAGE_BADGE_COLORS[d.stage as Stage] ?? ""} variant="outline">{STAGE_LABELS[d.stage as Stage] ?? d.stage}</Badge>}
                   </TableCell>
-                  <TableCell>{d.contact_id && contactMap.has(d.contact_id) ? contactMap.get(d.contact_id) : "—"}</TableCell>
-                  <TableCell>{d.company_id && companyMap.has(d.company_id) ? companyMap.get(d.company_id) : "—"}</TableCell>
+                  <TableCell>{d.contact_id && contactMap.has(d.contact_id) ? <Link href="/contacts" className="text-primary hover:underline">{contactMap.get(d.contact_id)}</Link> : "—"}</TableCell>
+                  <TableCell>{d.company_id && companyMap.has(d.company_id) ? <Link href="/companies" className="text-primary hover:underline">{companyMap.get(d.company_id)}</Link> : "—"}</TableCell>
                   <TableCell>{d.expected_close_date ? format(new Date(d.expected_close_date), "MMM d, yyyy") : "—"}</TableCell>
                   <TableCell>{d.created_at ? format(new Date(d.created_at), "MMM d, yyyy") : "—"}</TableCell>
                   <TableCell>

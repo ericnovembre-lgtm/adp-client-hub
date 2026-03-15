@@ -231,7 +231,7 @@ export default function DealDetailSheet({
                 />
               </EditRow>
             ) : (
-              <InfoRow icon={<Building2 className="h-4 w-4" />} label="Company" value={companyName} />
+              <InfoRow icon={<Building2 className="h-4 w-4" />} label="Company" value={companyName ? <Link href="/companies" className="text-primary hover:underline">{companyName}</Link> : undefined} />
             )}
 
             {/* Expected Close Date */}

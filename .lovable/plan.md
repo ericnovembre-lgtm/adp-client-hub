@@ -1,52 +1,48 @@
 
 
-## Plan: Add Inline Editing to DealDetailSheet and ContactDetailSheet
+## Plan: Persist AI Chat History Between Sessions
 
-### Shared Pattern (from LeadDetailSheet)
-- `InfoRow` / `EditRow` helper components
-- `isEditing` state + `editData` partial state
-- Pencil/X/Save icon buttons in header
-- `useEffect` to reset editing on close
-- `set()` helper for field updates
+Save chat conversations to the database so they survive page refreshes and sessions.
 
-### Part A — `src/components/DealDetailSheet.tsx`
+### Database Change
 
-Rewrite to match LeadDetailSheet pattern:
+Create a `chat_messages` table:
 
-- **New imports**: `useState`, `useEffect`, `useUpdateDeal`, `useContacts`, `useCompanies`, `SearchableSelect`, `Input`, `Textarea`, `Select`, `Button`, `Calendar`, `Popover`, `toast`, `logActivity`, icons (`Pencil`, `X`, `Save`, `Loader2`, `Building2`, `User`, `FileText`, `GripVertical`)
-- **Props**: Add optional `onDealUpdated?: () => void` callback
-- **Header**: Edit mode shows `Input` for title; view mode shows `SheetTitle` + Pencil button. Edit mode shows X + Save buttons with loading spinner.
-- **Editable fields**:
-  - Stage → `Select` with `DEAL_STAGES` array
-  - Value → `Input type="number" step="0.01"`
-  - Contact → `SearchableSelect` using `useContacts()` data
-  - Company → `SearchableSelect` using `useCompanies()` data
-  - Expected Close Date → Shadcn `Calendar` in a `Popover`
-  - Notes → `Textarea`
-- **Save handler**: Call `useUpdateDeal().mutateAsync()`. If stage changed from original `deal.stage`, call `logActivity("stage_change", ...)`. Show toast on success/error.
-- **InfoRow/EditRow**: Copy from LeadDetailSheet (identical pattern)
+```sql
+CREATE TABLE public.chat_messages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  role text NOT NULL CHECK (role IN ('user', 'assistant')),
+  content text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
 
-### Part B — `src/components/ContactDetailSheet.tsx`
+ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
 
-Rewrite to match LeadDetailSheet pattern:
+CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
+CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
 
-- **New imports**: `useState`, `useEffect`, `useUpdateContact`, `useCompanies`, `SearchableSelect`, `Input`, `Textarea`, `Select`, `Button`, `toast`, icons (`Pencil`, `X`, `Save`, `Loader2`, `User`)
-- **Props**: Add optional `onContactUpdated?: () => void` callback
-- **Header**: Edit mode shows two `Input` fields for first/last name; view mode shows `SheetTitle` + Pencil button.
-- **Editable fields**:
-  - First Name → `Input`
-  - Last Name → `Input`
-  - Email → `Input type="email"`
-  - Phone → `Input`
-  - Company → `SearchableSelect` using `useCompanies()` (sets both `company` name and `company_id`)
-  - Job Title → `Input`
-  - Status → `Select` with options: lead, prospect, customer, inactive
-  - Notes → `Textarea`
-- **Save handler**: Call `useUpdateContact().mutateAsync()`. Show toast on success/error.
+CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
+```
 
-### Files changed
-- `src/components/DealDetailSheet.tsx` — full rewrite (~180 lines)
-- `src/components/ContactDetailSheet.tsx` — full rewrite (~160 lines)
+### Code Changes — `src/components/AIChatWidget.tsx`
 
-No database changes needed. No new dependencies.
+1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
+
+2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
+
+3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
+
+4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
+
+### Data flow
+
+```text
+User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
+Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
+Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
+```
+
+No new hooks file needed — keep the logic inline in the widget since it's self-contained.
 

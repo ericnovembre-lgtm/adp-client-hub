@@ -1,48 +1,45 @@
 
 
-## Plan: Persist AI Chat History Between Sessions
+## Market Intelligence Feature
 
-Save chat conversations to the database so they survive page refreshes and sessions.
+Six files to create/modify: edge function, new page, route, sidebar nav, settings section, and user settings hook.
 
-### Database Change
+### 1. Edge Function: `supabase/functions/market-intelligence/index.ts`
+Create as specified — queries Census Bureau CBP API for state-level industry data across two years, calculates growth rates, scores PEO opportunity, and generates actionable insights. Add `[functions.market-intelligence]` with `verify_jwt = false` to `supabase/config.toml`.
 
-Create a `chat_messages` table:
+### 2. New Page: `src/pages/MarketIntelligencePage.tsx`
+- **Top**: Purple info banner with BarChart3 icon explaining the feature
+- **Filters**: State checkboxes (top 15 by GDP), industry checkboxes (11 NAICS sectors), year comparison dropdowns (2018-2023), "Analyze Markets" button with TrendingUp icon
+- **Top Opportunities**: Horizontal row of up to 5 Cards with PEO score (color-coded), insight text, action text, and "Find Leads" button linking to AI Discovery
+- **Data Table**: Sortable columns (Industry, State, Establishments, Employees, Growth %, Avg Firm Size, PEO Score). Green/red growth arrows, "In Territory" badge for firm size 2-20. Census data source attribution footer.
 
-```sql
-CREATE TABLE public.chat_messages (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  role text NOT NULL CHECK (role IN ('user', 'assistant')),
-  content text NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
+### 3. Route: `src/App.tsx`
+Add `import MarketIntelligencePage` and route `<Route path="/market-intelligence">`.
 
-ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+### 4. Sidebar: `src/components/AppSidebar.tsx`
+Add `TrendingUp` import and nav item `{ title: "Market Intel", path: "/market-intelligence", icon: TrendingUp }` after AI Discovery.
 
-CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
-CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
-CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
+### 5. Settings: `src/pages/SettingsPage.tsx`
+Add Census API Key section after Yelp section (~line 824) with:
+- Password input + "Connected" / "Not configured" / "Works without key" badges
+- Helper text about free registration
+- Test Connection button
 
-CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
-```
+### 6. Hook: `src/hooks/useUserSettings.ts`
+Add `census_api_key_configured?: boolean` to `UserSettings` interface.
 
-### Code Changes — `src/components/AIChatWidget.tsx`
+### Secret
+Will use `add_secret` tool to request `CENSUS_API_KEY` from user (optional — function works without it).
 
-1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
+### Files
 
-2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
-
-3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
-
-4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
-
-### Data flow
-
-```text
-User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
-Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
-Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
-```
-
-No new hooks file needed — keep the logic inline in the widget since it's self-contained.
+| File | Action |
+|------|--------|
+| `supabase/functions/market-intelligence/index.ts` | Create |
+| `supabase/config.toml` | Add function entry |
+| `src/pages/MarketIntelligencePage.tsx` | Create |
+| `src/App.tsx` | Add route |
+| `src/components/AppSidebar.tsx` | Add nav item |
+| `src/pages/SettingsPage.tsx` | Add Census key section |
+| `src/hooks/useUserSettings.ts` | Add census field |
 

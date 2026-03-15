@@ -13,8 +13,8 @@ interface ReportsFilters {
 function getDateBounds(filters: ReportsFilters) {
   const to = filters.to ?? new Date();
   let from: Date;
-  if (filters.range === "custom" && filters.from) {
-    from = filters.from;
+  if (filters.range === "custom") {
+    from = filters.from ?? startOfDay(subDays(to, 30));
   } else {
     from = startOfDay(subDays(to, Number(filters.range)));
   }

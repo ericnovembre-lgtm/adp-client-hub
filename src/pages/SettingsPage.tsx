@@ -894,7 +894,7 @@ export default function SettingsPage() {
             <Building2 className="h-5 w-5" />
             OpenCorporates API Key
           </CardTitle>
-          <CardDescription>Required for New Business discovery via business registries</CardDescription>
+          <CardDescription>Optional — improves rate limits for New Business discovery</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-2">

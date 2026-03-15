@@ -727,6 +727,9 @@ export default function LeadsPage() {
               <DropdownMenuItem onClick={() => handleBulkStatus("dismissed")}>Dismissed</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <Button variant="outline" size="sm" onClick={() => setBulkConvertOpen(true)} disabled={bulkActionPending}>
+            <ArrowRightLeft className="h-4 w-4 mr-1" />Convert to Deals
+          </Button>
           <Button variant="outline" size="sm" onClick={handleBulkExport} disabled={bulkActionPending}>
             <Download className="h-4 w-4 mr-1" />Export Selected
           </Button>

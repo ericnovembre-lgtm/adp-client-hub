@@ -764,6 +764,7 @@ export default function LeadsPage() {
               <TableHead className="hidden xl:table-cell">AI Pitch</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Eligibility</TableHead>
+              <TableHead>Score</TableHead>
               <TableHead className="w-10" />
             </TableRow>
           </TableHeader>

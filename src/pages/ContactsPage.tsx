@@ -498,6 +498,7 @@ export default function ContactsPage() {
             company_name: emailContact.company ?? "",
           }}
           contactId={emailContact.id}
+          contactEmail={emailContact.email}
         />
       )}
 

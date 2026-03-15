@@ -1,49 +1,40 @@
 
 
-## Lead Enrichment for Registry-Discovered Leads
+## Cleanup Tasks: Delete AIChatWidget + Census NAICS Fallback
 
-Registry leads lack headcount, website, and decision-maker contact info. This plan adds a post-discovery enrichment step using the Apollo API (already configured with `APOLLO_API_KEY`).
+### Assessment of Requested Changes
 
-### Architecture
+**Fix Prompt 4 — Already Done:**
+- The Agent Activity Log section already exists in `SettingsPage.tsx` (lines 346-478) with all requested features: relative time, tool names, risk badges, error tooltips, tokens, latency.
+- `AIChatWidget.tsx` is not imported anywhere — only referenced in `tsconfig.app.tsbuildinfo` (build cache). It just needs to be deleted.
 
-```text
-Registry Discovery (OpenCorporates)
-        │
-        ▼
-   Leads saved (no headcount/contact)
-        │
-        ▼
-   Enrichment step (Apollo People Search)
-        │
-        ▼
-   Update leads with headcount, website,
-   decision maker name/title/email/phone
+**Fix Prompt 5 — Partial:**
+1. **Census NAICS fallback**: `market-intelligence/index.ts` line 219 returns `null` on first failure without retrying with `NAICS2012`. Needs the retry block.
+2. **Constants check**: `HEADCOUNT_MIN=2`, `HEADCOUNT_MAX=20`, `HEADCOUNT_LABEL="Down Market (2–20 employees)"` — already correct.
+3. **Scheduled-discovery "5-150" check**: Already uses "2-20" everywhere — no fix needed.
+
+### Plan
+
+**1. Delete `src/components/AIChatWidget.tsx`**
+Remove the file entirely. No imports to clean up.
+
+**2. Add NAICS2012 fallback in `supabase/functions/market-intelligence/index.ts`**
+In `fetchCBP` (line 218-219), after parsing the initial response, if `data.length < 2`, retry with `NAICS2012` instead of `NAICS2017`:
+
+```typescript
+let data = await response.json();
+
+// Fallback: try NAICS2012 for older years
+if (!data || data.length < 2) {
+  params.delete("NAICS2017");
+  params.set("NAICS2012", naics);
+  const retryUrl = `https://api.census.gov/data/timeseries/cbp?${params}`;
+  const retryResp = await fetch(retryUrl);
+  if (!retryResp.ok) return null;
+  data = await retryResp.json();
+  if (!data || data.length < 2) return null;
+}
 ```
 
-### Changes
-
-**1. `supabase/functions/registry-discovery/index.ts`**
-- After saving all registry leads, add an enrichment pass using Apollo's `organizations/enrich` endpoint
-- For each saved lead, call Apollo with the company name + state to get: headcount, website, industry (refined), and a decision-maker contact via `mixed_people/search`
-- Only enrich if `APOLLO_API_KEY` is present (graceful skip otherwise)
-- Update the lead record with enriched data
-- Log enrichment activity
-- Add enrichment stats to the response (`enriched` count)
-- Rate-limit Apollo calls (200ms delay between)
-
-**2. `src/components/discovery/RegistryDiscoveryTab.tsx`**
-- Show enrichment results in the summary: "Found X, saved Y, enriched Z"
-- Add an "Enriched" badge on leads that received contact info
-- Show decision maker name/email columns in the results table when available
-- Add a note: "Leads enriched via Apollo (headcount + contacts)" when Apollo key is configured, or "Configure Apollo API key in Settings to auto-enrich leads with headcount & contacts" when not
-
-### Technical Detail
-
-The enrichment uses two Apollo endpoints per lead:
-1. `POST /v1/organizations/enrich` with `domain` or `name` — returns headcount, website, industry
-2. `POST /v1/mixed_people/search` with company name + decision-maker titles — returns contact info
-
-Fields updated on the lead: `headcount`, `website`, `industry` (if null), `decision_maker_name`, `decision_maker_title`, `decision_maker_email`, `decision_maker_phone`
-
-Leads outside territory range (2-20 employees) after enrichment get flagged with a warning activity, consistent with existing scoring behavior.
+Then redeploy the `market-intelligence` edge function.
 

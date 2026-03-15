@@ -143,7 +143,11 @@ export default function EmailTemplatesPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setPreviewTemplate(null)}>Close</Button>
             <Button onClick={() => previewTemplate && handleCopy(previewTemplate)}>
-              <Copy className="h-4 w-4 mr-1" /> Copy to Clipboard
+              {copiedId === previewTemplate?.id ? (
+                <><Check className="h-4 w-4 mr-1" /> Copied!</>
+              ) : (
+                <><Copy className="h-4 w-4 mr-1" /> Copy to Clipboard</>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

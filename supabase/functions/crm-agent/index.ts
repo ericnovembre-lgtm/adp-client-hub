@@ -13,184 +13,220 @@ const TERRITORY = { MIN: 2, MAX: 20, LABEL: "Down Market" };
 
 const CRM_TOOLS = [
   {
-    name: "search_leads",
-    description: "Search CRM leads by company name, industry, state, status, or headcount. Returns matching leads. By default filters to the down-market territory (2-20 employees).",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        query: { type: "string", description: "Search company_name, industry, decision_maker_name" },
-        status: { type: "string", enum: ["new", "contacted", "qualified", "converted", "dismissed"] },
-        industry: { type: "string" },
-        state: { type: "string", description: "US state abbreviation" },
-        headcount_min: { type: "number", description: "Min employees. Default 2." },
-        headcount_max: { type: "number", description: "Max employees. Default 20." },
-        include_out_of_territory: { type: "boolean", description: "Include leads outside 2-20 range. Default false." },
-        limit: { type: "number", description: "Max results. Default 10, max 50." },
+    type: "function" as const,
+    function: {
+      name: "search_leads",
+      description: "Search CRM leads by company name, industry, state, status, or headcount. Returns matching leads. By default filters to the down-market territory (2-20 employees).",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Search company_name, industry, decision_maker_name" },
+          status: { type: "string", enum: ["new", "contacted", "qualified", "converted", "dismissed"] },
+          industry: { type: "string" },
+          state: { type: "string", description: "US state abbreviation" },
+          headcount_min: { type: "number", description: "Min employees. Default 2." },
+          headcount_max: { type: "number", description: "Max employees. Default 20." },
+          include_out_of_territory: { type: "boolean", description: "Include leads outside 2-20 range. Default false." },
+          limit: { type: "number", description: "Max results. Default 10, max 50." },
+        },
+        required: ["query"],
       },
-      required: ["query"],
     },
   },
   {
-    name: "search_deals",
-    description: "Search CRM deals by title, stage, value range, or stalled duration. Returns deals with contact/company names.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        query: { type: "string", description: "Search by deal title. Empty string returns all." },
-        stage: { type: "string", enum: ["lead", "qualified", "proposal", "negotiation", "closed_won", "closed_lost"] },
-        min_value: { type: "number" },
-        max_value: { type: "number" },
-        stalled_days: { type: "number", description: "Only return deals with no activity in this many days." },
-        limit: { type: "number", description: "Default 10." },
+    type: "function" as const,
+    function: {
+      name: "search_deals",
+      description: "Search CRM deals by title, stage, value range, or stalled duration. Returns deals with contact/company names.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Search by deal title. Empty string returns all." },
+          stage: { type: "string", enum: ["lead", "qualified", "proposal", "negotiation", "closed_won", "closed_lost"] },
+          min_value: { type: "number" },
+          max_value: { type: "number" },
+          stalled_days: { type: "number", description: "Only return deals with no activity in this many days." },
+          limit: { type: "number", description: "Default 10." },
+        },
+        required: [],
       },
-      required: [],
     },
   },
   {
-    name: "search_contacts",
-    description: "Search CRM contacts by name, email, company, or job title.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        query: { type: "string", description: "Search name, email, company, job_title" },
-        status: { type: "string", enum: ["lead", "prospect", "customer", "inactive"] },
-        company: { type: "string" },
-        limit: { type: "number" },
+    type: "function" as const,
+    function: {
+      name: "search_contacts",
+      description: "Search CRM contacts by name, email, company, or job title.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Search name, email, company, job_title" },
+          status: { type: "string", enum: ["lead", "prospect", "customer", "inactive"] },
+          company: { type: "string" },
+          limit: { type: "number" },
+        },
+        required: ["query"],
       },
-      required: ["query"],
     },
   },
   {
-    name: "search_companies",
-    description: "Search CRM companies by name or industry.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        query: { type: "string" },
-        industry: { type: "string" },
-        min_employees: { type: "number" },
-        max_employees: { type: "number" },
-        limit: { type: "number" },
+    type: "function" as const,
+    function: {
+      name: "search_companies",
+      description: "Search CRM companies by name or industry.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string" },
+          industry: { type: "string" },
+          min_employees: { type: "number" },
+          max_employees: { type: "number" },
+          limit: { type: "number" },
+        },
+        required: ["query"],
       },
-      required: ["query"],
     },
   },
   {
-    name: "get_pipeline_stats",
-    description: "Get aggregate pipeline statistics: deals by stage, revenue, avg deal size, lead counts, overdue tasks.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        period: { type: "string", enum: ["today", "this_week", "this_month", "this_quarter", "all_time"], description: "Default this_month" },
+    type: "function" as const,
+    function: {
+      name: "get_pipeline_stats",
+      description: "Get aggregate pipeline statistics: deals by stage, revenue, avg deal size, lead counts, overdue tasks.",
+      parameters: {
+        type: "object",
+        properties: {
+          period: { type: "string", enum: ["today", "this_week", "this_month", "this_quarter", "all_time"], description: "Default this_month" },
+        },
+        required: [],
       },
-      required: [],
     },
   },
   {
-    name: "get_activity_history",
-    description: "Get recent activities for a specific lead, deal, or contact.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        entity_type: { type: "string", enum: ["lead", "deal", "contact"] },
-        entity_id: { type: "string", description: "UUID of the entity" },
-        limit: { type: "number", description: "Default 20" },
+    type: "function" as const,
+    function: {
+      name: "get_activity_history",
+      description: "Get recent activities for a specific lead, deal, or contact.",
+      parameters: {
+        type: "object",
+        properties: {
+          entity_type: { type: "string", enum: ["lead", "deal", "contact"] },
+          entity_id: { type: "string", description: "UUID of the entity" },
+          limit: { type: "number", description: "Default 20" },
+        },
+        required: ["entity_type", "entity_id"],
       },
-      required: ["entity_type", "entity_id"],
     },
   },
   {
-    name: "check_knockout_rules",
-    description: "Check if an industry is eligible for ADP TotalSource based on WC underwriting knockout rules. Returns tier (clear/bluefield/low_probability/prohibited).",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        industry: { type: "string", description: "Industry to check" },
-        company_name: { type: "string", description: "Optional company name for broader matching" },
+    type: "function" as const,
+    function: {
+      name: "check_knockout_rules",
+      description: "Check if an industry is eligible for ADP TotalSource based on WC underwriting knockout rules. Returns tier (clear/bluefield/low_probability/prohibited).",
+      parameters: {
+        type: "object",
+        properties: {
+          industry: { type: "string", description: "Industry to check" },
+          company_name: { type: "string", description: "Optional company name for broader matching" },
+        },
+        required: ["industry"],
       },
-      required: ["industry"],
     },
   },
   {
-    name: "update_lead",
-    description: "Update an existing lead's status or fields. Logs activity automatically.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        lead_id: { type: "string" },
-        status: { type: "string", enum: ["new", "contacted", "qualified", "converted", "dismissed"] },
-        headcount: { type: "number" },
-        industry: { type: "string" },
-        decision_maker_name: { type: "string" },
-        decision_maker_email: { type: "string" },
-        decision_maker_phone: { type: "string" },
-        decision_maker_title: { type: "string" },
+    type: "function" as const,
+    function: {
+      name: "update_lead",
+      description: "Update an existing lead's status or fields. Logs activity automatically.",
+      parameters: {
+        type: "object",
+        properties: {
+          lead_id: { type: "string" },
+          status: { type: "string", enum: ["new", "contacted", "qualified", "converted", "dismissed"] },
+          headcount: { type: "number" },
+          industry: { type: "string" },
+          decision_maker_name: { type: "string" },
+          decision_maker_email: { type: "string" },
+          decision_maker_phone: { type: "string" },
+          decision_maker_title: { type: "string" },
+        },
+        required: ["lead_id"],
       },
-      required: ["lead_id"],
     },
   },
   {
-    name: "update_deal",
-    description: "Update a deal's stage, value, notes, or expected close date. Logs activity on stage changes.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        deal_id: { type: "string" },
-        stage: { type: "string", enum: ["lead", "qualified", "proposal", "negotiation", "closed_won", "closed_lost"] },
-        value: { type: "number" },
-        notes: { type: "string" },
-        expected_close_date: { type: "string", description: "ISO date" },
+    type: "function" as const,
+    function: {
+      name: "update_deal",
+      description: "Update a deal's stage, value, notes, or expected close date. Logs activity on stage changes.",
+      parameters: {
+        type: "object",
+        properties: {
+          deal_id: { type: "string" },
+          stage: { type: "string", enum: ["lead", "qualified", "proposal", "negotiation", "closed_won", "closed_lost"] },
+          value: { type: "number" },
+          notes: { type: "string" },
+          expected_close_date: { type: "string", description: "ISO date" },
+        },
+        required: ["deal_id"],
       },
-      required: ["deal_id"],
     },
   },
   {
-    name: "create_task",
-    description: "Create a follow-up task linked to a contact or deal.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        title: { type: "string" },
-        description: { type: "string" },
-        due_date: { type: "string", description: "ISO date for when task is due" },
-        priority: { type: "string", enum: ["urgent", "high", "medium", "low"] },
-        contact_id: { type: "string" },
-        deal_id: { type: "string" },
+    type: "function" as const,
+    function: {
+      name: "create_task",
+      description: "Create a follow-up task linked to a contact or deal.",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          description: { type: "string" },
+          due_date: { type: "string", description: "ISO date for when task is due" },
+          priority: { type: "string", enum: ["urgent", "high", "medium", "low"] },
+          contact_id: { type: "string" },
+          deal_id: { type: "string" },
+        },
+        required: ["title", "due_date"],
       },
-      required: ["title", "due_date"],
     },
   },
   {
-    name: "log_activity",
-    description: "Log a sales activity (call, email, meeting, note) against a contact, deal, or lead.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        type: { type: "string", enum: ["call", "email", "meeting", "note"] },
-        description: { type: "string" },
-        contact_id: { type: "string" },
-        deal_id: { type: "string" },
-        lead_id: { type: "string" },
+    type: "function" as const,
+    function: {
+      name: "log_activity",
+      description: "Log a sales activity (call, email, meeting, note) against a contact, deal, or lead.",
+      parameters: {
+        type: "object",
+        properties: {
+          type: { type: "string", enum: ["call", "email", "meeting", "note"] },
+          description: { type: "string" },
+          contact_id: { type: "string" },
+          deal_id: { type: "string" },
+          lead_id: { type: "string" },
+        },
+        required: ["type", "description"],
       },
-      required: ["type", "description"],
     },
   },
   {
-    name: "draft_email",
-    description: "Generate a personalized ADP TotalSource sales email. Returns subject + body text. Does NOT send.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        recipient_name: { type: "string" },
-        recipient_title: { type: "string" },
-        company_name: { type: "string" },
-        industry: { type: "string" },
-        headcount: { type: "number" },
-        trigger_event: { type: "string" },
-        email_type: { type: "string", enum: ["cold_outreach", "follow_up", "proposal", "check_in", "welcome"] },
-        additional_context: { type: "string" },
+    type: "function" as const,
+    function: {
+      name: "draft_email",
+      description: "Generate a personalized ADP TotalSource sales email. Returns subject + body text. Does NOT send.",
+      parameters: {
+        type: "object",
+        properties: {
+          recipient_name: { type: "string" },
+          recipient_title: { type: "string" },
+          company_name: { type: "string" },
+          industry: { type: "string" },
+          headcount: { type: "number" },
+          trigger_event: { type: "string" },
+          email_type: { type: "string", enum: ["cold_outreach", "follow_up", "proposal", "check_in", "welcome"] },
+          additional_context: { type: "string" },
+        },
+        required: ["recipient_name", "company_name", "email_type"],
       },
-      required: ["recipient_name", "company_name", "email_type"],
     },
   },
 ];

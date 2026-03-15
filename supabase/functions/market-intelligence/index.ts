@@ -215,8 +215,18 @@ async function fetchCBP(
       return null;
     }
 
-    const data = await response.json();
-    if (!data || data.length < 2) return null;
+    let data = await response.json();
+
+    // Fallback: try NAICS2012 for older years
+    if (!data || data.length < 2) {
+      params.delete("NAICS2017");
+      params.set("NAICS2012", naics);
+      const retryUrl = `https://api.census.gov/data/timeseries/cbp?${params}`;
+      const retryResp = await fetch(retryUrl);
+      if (!retryResp.ok) return null;
+      data = await retryResp.json();
+      if (!data || data.length < 2) return null;
+    }
 
     const headers = data[0] as string[];
     const row = data[1] as string[];

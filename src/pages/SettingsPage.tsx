@@ -494,6 +494,8 @@ export default function SettingsPage() {
   const [autoQualifyThreshold, setAutoQualifyThreshold] = useState(60);
   const [apolloKeyConfigured, setApolloKeyConfigured] = useState(false);
   const [testingApollo, setTestingApollo] = useState(false);
+  const [yelpKeyConfigured, setYelpKeyConfigured] = useState(false);
+  const [testingYelp, setTestingYelp] = useState(false);
 
   // Discovery
   const [defaultIndustry, setDefaultIndustry] = useState("");

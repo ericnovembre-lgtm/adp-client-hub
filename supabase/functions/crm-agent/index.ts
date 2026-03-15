@@ -443,7 +443,7 @@ async function toolCreateTask(supabase: SupabaseClient, input: Record<string, an
 }
 
 async function toolLogActivity(supabase: SupabaseClient, input: Record<string, any>) {
-  const { data, error } = await supabase.from("activities").insert({ type: input.type, description: input.description, contact_id: input.contact_id ?? null, deal_id: input.deal_id ?? null, lead_id: input.lead_id ?? null }).select().single();
+  const { data, error } = await supabase.from("activities").insert({ type: input.type, description: input.description, contact_id: input.contact_id ?? null, deal_id: input.deal_id ?? null, lead_id: input.lead_id ?? null, user_id: input.__user_id }).select().single();
   if (error) throw new Error(`Log failed: ${error.message}`);
   return { success: true, activity: data };
 }

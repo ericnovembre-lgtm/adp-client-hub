@@ -28,6 +28,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import DraftEmailDialog from "@/components/DraftEmailDialog";
+import { useLeadScores } from "@/hooks/useLeadScores";
 import LeadDetailSheet from "@/components/LeadDetailSheet";
 import { checkKnockoutLocal, type LocalKnockoutResult } from "@/lib/checkKnockoutFromRules";
 import EligibilityBadge from "@/components/EligibilityBadge";

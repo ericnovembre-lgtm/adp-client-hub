@@ -216,7 +216,7 @@ export default function DealDetailSheet({
                 />
               </EditRow>
             ) : (
-              <InfoRow icon={<User className="h-4 w-4" />} label="Contact" value={contactName} />
+              <InfoRow icon={<User className="h-4 w-4" />} label="Contact" value={contactName ? <Link href="/contacts" className="text-primary hover:underline">{contactName}</Link> : undefined} />
             )}
 
             {/* Company */}

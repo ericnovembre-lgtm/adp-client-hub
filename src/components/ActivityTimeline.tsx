@@ -60,11 +60,14 @@ export default function ActivityTimeline({
   const handleAddActivity = async () => {
     if (!activityText.trim()) return;
     try {
-      await createActivity.mutateAsync({
+      const activityPayload = {
         type: activityType,
         description: activityText.trim(),
-        [`${entityType}_id`]: entityId,
-      } as any);
+        contact_id: entityType === "contact" ? entityId : undefined,
+        deal_id: entityType === "deal" ? entityId : undefined,
+        lead_id: entityType === "lead" ? entityId : undefined,
+      };
+      await createActivity.mutateAsync(activityPayload);
       setActivityText("");
       queryClient.invalidateQueries({ queryKey: ["activities", entityType, entityId] });
       toast.success("Activity added");

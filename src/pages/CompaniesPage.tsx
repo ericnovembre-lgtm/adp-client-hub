@@ -57,7 +57,7 @@ function CompanyFormDialog({
       name: company?.name ?? "",
       industry: company?.industry ?? "",
       website: company?.website ?? "",
-      employees: company?.employees ?? ("" as any),
+      employees: company?.employees ?? undefined,
       revenue: company?.revenue ?? "",
       address: company?.address ?? "",
       phone: company?.phone ?? "",

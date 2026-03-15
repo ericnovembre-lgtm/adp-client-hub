@@ -115,7 +115,7 @@ function DealFormDialog({
     resolver: zodResolver(dealSchema),
     defaultValues: {
       title: deal?.title ?? "",
-      value: deal?.value ?? ("" as any),
+      value: deal?.value ?? undefined,
       stage: deal?.stage ?? "lead",
       contact_id: deal?.contact_id ?? "",
       company_id: deal?.company_id ?? "",
@@ -129,7 +129,7 @@ function DealFormDialog({
       const stage = (values.stage as string) || null;
       const isClosed = stage === "closed_won" || stage === "closed_lost";
       const wasClosed = isEdit && (deal.stage === "closed_won" || deal.stage === "closed_lost");
-      const payload: any = {
+      const payload: { title: string; value: number | null; stage: string | null; contact_id: string | null; company_id: string | null; expected_close_date: string | null; notes: string | null; closed_at?: string | null } = {
         title: values.title,
         value: typeof values.value === "number" ? values.value : null,
         stage,
@@ -296,7 +296,7 @@ function KanbanView({
     if (oldStage === newStage) return;
     const isClosed = newStage === "closed_won" || newStage === "closed_lost";
     const wasClosed = oldStage === "closed_won" || oldStage === "closed_lost";
-    const updates: any = { id: deal.id, stage: newStage };
+    const updates: { id: string; stage: string; closed_at?: string | null } = { id: deal.id, stage: newStage };
     if (isClosed && !wasClosed) updates.closed_at = new Date().toISOString();
     else if (!isClosed && wasClosed) updates.closed_at = null;
     try {
@@ -604,7 +604,7 @@ export default function DealsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-2xl font-bold text-foreground">Deals</h1>
         <div className="flex items-center gap-3 flex-wrap">
-          <Tabs value={view} onValueChange={(v) => setView(v as any)}>
+          <Tabs value={view} onValueChange={(v) => setView(v as "kanban" | "list")}>
             <TabsList>
               <TabsTrigger value="kanban">Kanban</TabsTrigger>
               <TabsTrigger value="list">List</TabsTrigger>

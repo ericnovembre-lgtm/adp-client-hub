@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.crm-agent]
 verify_jwt = false
+
+[functions.agent-daily-brief]
+verify_jwt = false

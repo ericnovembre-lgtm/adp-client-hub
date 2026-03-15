@@ -3,191 +3,230 @@ import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const AI_MODEL = "google/gemini-2.5-pro";
 
 const TERRITORY = { MIN: 2, MAX: 20, LABEL: "Down Market" };
 
 const CRM_TOOLS = [
   {
-    name: "search_leads",
-    description: "Search CRM leads by company name, industry, state, status, or headcount. Returns matching leads. By default filters to the down-market territory (2-20 employees).",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        query: { type: "string", description: "Search company_name, industry, decision_maker_name" },
-        status: { type: "string", enum: ["new", "contacted", "qualified", "converted", "dismissed"] },
-        industry: { type: "string" },
-        state: { type: "string", description: "US state abbreviation" },
-        headcount_min: { type: "number", description: "Min employees. Default 2." },
-        headcount_max: { type: "number", description: "Max employees. Default 20." },
-        include_out_of_territory: { type: "boolean", description: "Include leads outside 2-20 range. Default false." },
-        limit: { type: "number", description: "Max results. Default 10, max 50." },
+    type: "function" as const,
+    function: {
+      name: "search_leads",
+      description: "Search CRM leads by company name, industry, state, status, or headcount. Returns matching leads. By default filters to the down-market territory (2-20 employees).",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Search company_name, industry, decision_maker_name" },
+          status: { type: "string", enum: ["new", "contacted", "qualified", "converted", "dismissed"] },
+          industry: { type: "string" },
+          state: { type: "string", description: "US state abbreviation" },
+          headcount_min: { type: "number", description: "Min employees. Default 2." },
+          headcount_max: { type: "number", description: "Max employees. Default 20." },
+          include_out_of_territory: { type: "boolean", description: "Include leads outside 2-20 range. Default false." },
+          limit: { type: "number", description: "Max results. Default 10, max 50." },
+        },
+        required: ["query"],
       },
-      required: ["query"],
     },
   },
   {
-    name: "search_deals",
-    description: "Search CRM deals by title, stage, value range, or stalled duration. Returns deals with contact/company names.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        query: { type: "string", description: "Search by deal title. Empty string returns all." },
-        stage: { type: "string", enum: ["lead", "qualified", "proposal", "negotiation", "closed_won", "closed_lost"] },
-        min_value: { type: "number" },
-        max_value: { type: "number" },
-        stalled_days: { type: "number", description: "Only return deals with no activity in this many days." },
-        limit: { type: "number", description: "Default 10." },
+    type: "function" as const,
+    function: {
+      name: "search_deals",
+      description: "Search CRM deals by title, stage, value range, or stalled duration. Returns deals with contact/company names.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Search by deal title. Empty string returns all." },
+          stage: { type: "string", enum: ["lead", "qualified", "proposal", "negotiation", "closed_won", "closed_lost"] },
+          min_value: { type: "number" },
+          max_value: { type: "number" },
+          stalled_days: { type: "number", description: "Only return deals with no activity in this many days." },
+          limit: { type: "number", description: "Default 10." },
+        },
+        required: [],
       },
-      required: [],
     },
   },
   {
-    name: "search_contacts",
-    description: "Search CRM contacts by name, email, company, or job title.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        query: { type: "string", description: "Search name, email, company, job_title" },
-        status: { type: "string", enum: ["lead", "prospect", "customer", "inactive"] },
-        company: { type: "string" },
-        limit: { type: "number" },
+    type: "function" as const,
+    function: {
+      name: "search_contacts",
+      description: "Search CRM contacts by name, email, company, or job title.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Search name, email, company, job_title" },
+          status: { type: "string", enum: ["lead", "prospect", "customer", "inactive"] },
+          company: { type: "string" },
+          limit: { type: "number" },
+        },
+        required: ["query"],
       },
-      required: ["query"],
     },
   },
   {
-    name: "search_companies",
-    description: "Search CRM companies by name or industry.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        query: { type: "string" },
-        industry: { type: "string" },
-        min_employees: { type: "number" },
-        max_employees: { type: "number" },
-        limit: { type: "number" },
+    type: "function" as const,
+    function: {
+      name: "search_companies",
+      description: "Search CRM companies by name or industry.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string" },
+          industry: { type: "string" },
+          min_employees: { type: "number" },
+          max_employees: { type: "number" },
+          limit: { type: "number" },
+        },
+        required: ["query"],
       },
-      required: ["query"],
     },
   },
   {
-    name: "get_pipeline_stats",
-    description: "Get aggregate pipeline statistics: deals by stage, revenue, avg deal size, lead counts, overdue tasks.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        period: { type: "string", enum: ["today", "this_week", "this_month", "this_quarter", "all_time"], description: "Default this_month" },
+    type: "function" as const,
+    function: {
+      name: "get_pipeline_stats",
+      description: "Get aggregate pipeline statistics: deals by stage, revenue, avg deal size, lead counts, overdue tasks.",
+      parameters: {
+        type: "object",
+        properties: {
+          period: { type: "string", enum: ["today", "this_week", "this_month", "this_quarter", "all_time"], description: "Default this_month" },
+        },
+        required: [],
       },
-      required: [],
     },
   },
   {
-    name: "get_activity_history",
-    description: "Get recent activities for a specific lead, deal, or contact.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        entity_type: { type: "string", enum: ["lead", "deal", "contact"] },
-        entity_id: { type: "string", description: "UUID of the entity" },
-        limit: { type: "number", description: "Default 20" },
+    type: "function" as const,
+    function: {
+      name: "get_activity_history",
+      description: "Get recent activities for a specific lead, deal, or contact.",
+      parameters: {
+        type: "object",
+        properties: {
+          entity_type: { type: "string", enum: ["lead", "deal", "contact"] },
+          entity_id: { type: "string", description: "UUID of the entity" },
+          limit: { type: "number", description: "Default 20" },
+        },
+        required: ["entity_type", "entity_id"],
       },
-      required: ["entity_type", "entity_id"],
     },
   },
   {
-    name: "check_knockout_rules",
-    description: "Check if an industry is eligible for ADP TotalSource based on WC underwriting knockout rules. Returns tier (clear/bluefield/low_probability/prohibited).",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        industry: { type: "string", description: "Industry to check" },
-        company_name: { type: "string", description: "Optional company name for broader matching" },
+    type: "function" as const,
+    function: {
+      name: "check_knockout_rules",
+      description: "Check if an industry is eligible for ADP TotalSource based on WC underwriting knockout rules. Returns tier (clear/bluefield/low_probability/prohibited).",
+      parameters: {
+        type: "object",
+        properties: {
+          industry: { type: "string", description: "Industry to check" },
+          company_name: { type: "string", description: "Optional company name for broader matching" },
+        },
+        required: ["industry"],
       },
-      required: ["industry"],
     },
   },
   {
-    name: "update_lead",
-    description: "Update an existing lead's status or fields. Logs activity automatically.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        lead_id: { type: "string" },
-        status: { type: "string", enum: ["new", "contacted", "qualified", "converted", "dismissed"] },
-        headcount: { type: "number" },
-        industry: { type: "string" },
-        decision_maker_name: { type: "string" },
-        decision_maker_email: { type: "string" },
-        decision_maker_phone: { type: "string" },
-        decision_maker_title: { type: "string" },
+    type: "function" as const,
+    function: {
+      name: "update_lead",
+      description: "Update an existing lead's status or fields. Logs activity automatically.",
+      parameters: {
+        type: "object",
+        properties: {
+          lead_id: { type: "string" },
+          status: { type: "string", enum: ["new", "contacted", "qualified", "converted", "dismissed"] },
+          headcount: { type: "number" },
+          industry: { type: "string" },
+          decision_maker_name: { type: "string" },
+          decision_maker_email: { type: "string" },
+          decision_maker_phone: { type: "string" },
+          decision_maker_title: { type: "string" },
+        },
+        required: ["lead_id"],
       },
-      required: ["lead_id"],
     },
   },
   {
-    name: "update_deal",
-    description: "Update a deal's stage, value, notes, or expected close date. Logs activity on stage changes.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        deal_id: { type: "string" },
-        stage: { type: "string", enum: ["lead", "qualified", "proposal", "negotiation", "closed_won", "closed_lost"] },
-        value: { type: "number" },
-        notes: { type: "string" },
-        expected_close_date: { type: "string", description: "ISO date" },
+    type: "function" as const,
+    function: {
+      name: "update_deal",
+      description: "Update a deal's stage, value, notes, or expected close date. Logs activity on stage changes.",
+      parameters: {
+        type: "object",
+        properties: {
+          deal_id: { type: "string" },
+          stage: { type: "string", enum: ["lead", "qualified", "proposal", "negotiation", "closed_won", "closed_lost"] },
+          value: { type: "number" },
+          notes: { type: "string" },
+          expected_close_date: { type: "string", description: "ISO date" },
+        },
+        required: ["deal_id"],
       },
-      required: ["deal_id"],
     },
   },
   {
-    name: "create_task",
-    description: "Create a follow-up task linked to a contact or deal.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        title: { type: "string" },
-        description: { type: "string" },
-        due_date: { type: "string", description: "ISO date for when task is due" },
-        priority: { type: "string", enum: ["urgent", "high", "medium", "low"] },
-        contact_id: { type: "string" },
-        deal_id: { type: "string" },
+    type: "function" as const,
+    function: {
+      name: "create_task",
+      description: "Create a follow-up task linked to a contact or deal.",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          description: { type: "string" },
+          due_date: { type: "string", description: "ISO date for when task is due" },
+          priority: { type: "string", enum: ["urgent", "high", "medium", "low"] },
+          contact_id: { type: "string" },
+          deal_id: { type: "string" },
+        },
+        required: ["title", "due_date"],
       },
-      required: ["title", "due_date"],
     },
   },
   {
-    name: "log_activity",
-    description: "Log a sales activity (call, email, meeting, note) against a contact, deal, or lead.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        type: { type: "string", enum: ["call", "email", "meeting", "note"] },
-        description: { type: "string" },
-        contact_id: { type: "string" },
-        deal_id: { type: "string" },
-        lead_id: { type: "string" },
+    type: "function" as const,
+    function: {
+      name: "log_activity",
+      description: "Log a sales activity (call, email, meeting, note) against a contact, deal, or lead.",
+      parameters: {
+        type: "object",
+        properties: {
+          type: { type: "string", enum: ["call", "email", "meeting", "note"] },
+          description: { type: "string" },
+          contact_id: { type: "string" },
+          deal_id: { type: "string" },
+          lead_id: { type: "string" },
+        },
+        required: ["type", "description"],
       },
-      required: ["type", "description"],
     },
   },
   {
-    name: "draft_email",
-    description: "Generate a personalized ADP TotalSource sales email. Returns subject + body text. Does NOT send.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        recipient_name: { type: "string" },
-        recipient_title: { type: "string" },
-        company_name: { type: "string" },
-        industry: { type: "string" },
-        headcount: { type: "number" },
-        trigger_event: { type: "string" },
-        email_type: { type: "string", enum: ["cold_outreach", "follow_up", "proposal", "check_in", "welcome"] },
-        additional_context: { type: "string" },
+    type: "function" as const,
+    function: {
+      name: "draft_email",
+      description: "Generate a personalized ADP TotalSource sales email. Returns subject + body text. Does NOT send.",
+      parameters: {
+        type: "object",
+        properties: {
+          recipient_name: { type: "string" },
+          recipient_title: { type: "string" },
+          company_name: { type: "string" },
+          industry: { type: "string" },
+          headcount: { type: "number" },
+          trigger_event: { type: "string" },
+          email_type: { type: "string", enum: ["cold_outreach", "follow_up", "proposal", "check_in", "welcome"] },
+          additional_context: { type: "string" },
+        },
+        required: ["recipient_name", "company_name", "email_type"],
       },
-      required: ["recipient_name", "company_name", "email_type"],
     },
   },
 ];
@@ -278,10 +317,10 @@ async function executeTool(toolName: string, input: Record<string, any>, supabas
       default: throw new Error(`Unknown tool: ${toolName}`);
     }
 
-    await logAgentAction(supabase, { user_id: userId, tool_name: toolName, risk_level: TOOL_RISK[toolName] ?? "low", input_params: input, output_result: result, previous_state: previousState, approval_status: "auto", model: "claude-sonnet-4-20250514", latency_ms: Date.now() - startTime });
+    await logAgentAction(supabase, { user_id: userId, tool_name: toolName, risk_level: TOOL_RISK[toolName] ?? "low", input_params: input, output_result: result, previous_state: previousState, approval_status: "auto", model: AI_MODEL, latency_ms: Date.now() - startTime });
     return result;
   } catch (error) {
-    await logAgentAction(supabase, { user_id: userId, tool_name: toolName, risk_level: TOOL_RISK[toolName] ?? "low", input_params: input, output_result: null, previous_state: previousState, approval_status: "auto", model: "claude-sonnet-4-20250514", latency_ms: Date.now() - startTime, error: error instanceof Error ? error.message : String(error) });
+    await logAgentAction(supabase, { user_id: userId, tool_name: toolName, risk_level: TOOL_RISK[toolName] ?? "low", input_params: input, output_result: null, previous_state: previousState, approval_status: "auto", model: AI_MODEL, latency_ms: Date.now() - startTime, error: error instanceof Error ? error.message : String(error) });
     throw error;
   }
 }
@@ -474,59 +513,94 @@ async function logAgentAction(supabase: SupabaseClient, action: Record<string, a
   try { await supabase.from("agent_actions").insert(action); } catch (e) { console.error("Failed to log agent action:", e); }
 }
 
-// ─── CLAUDE API AGENT LOOP WITH SSE STREAMING ──────────────────────────────
+// ─── LOVABLE AI GATEWAY AGENT LOOP WITH SSE STREAMING ──────────────────────
 
 async function runAgentLoop(messages: any[], supabase: SupabaseClient, userId: string, apiKey: string): Promise<ReadableStream> {
   const encoder = new TextEncoder();
   return new ReadableStream({
     async start(controller) {
       try {
-        let conversationMessages = messages.length > 1 ? messages.slice(-10) : [{ role: "user" as const, content: messages[messages.length - 1]?.content ?? "" }];
+        const conversationMessages: any[] = [
+          { role: "system", content: SYSTEM_PROMPT },
+          ...(messages.length > 1 ? messages.slice(-10) : [{ role: "user", content: messages[messages.length - 1]?.content ?? "" }]),
+        ];
         let stepCount = 0;
         const maxSteps = 8;
 
         while (stepCount < maxSteps) {
           stepCount++;
-          const response = await fetch("https://api.anthropic.com/v1/messages", {
+          const response = await fetch(AI_GATEWAY_URL, {
             method: "POST",
-            headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-            body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 4096, system: SYSTEM_PROMPT, tools: CRM_TOOLS, messages: conversationMessages }),
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: AI_MODEL,
+              messages: conversationMessages,
+              tools: CRM_TOOLS,
+              max_tokens: 4096,
+            }),
           });
 
           if (!response.ok) {
             const errText = await response.text();
-            console.error("Claude API error:", response.status, errText);
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", error: `Claude API error: ${response.status}` })}\n\n`));
+            console.error("AI Gateway error:", response.status, errText);
+            if (response.status === 429) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", error: "Rate limit exceeded. Please try again in a moment." })}\n\n`));
+            } else if (response.status === 402) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", error: "AI credits exhausted. Please add credits to continue." })}\n\n`));
+            } else {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", error: `AI service error: ${response.status}` })}\n\n`));
+            }
             break;
           }
 
           const result = await response.json();
-          let hasToolUse = false;
-          const toolResults: any[] = [];
+          const message = result.choices?.[0]?.message;
+          if (!message) break;
 
-          for (const block of result.content) {
-            if (block.type === "text") {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "text", content: block.text })}\n\n`));
-            } else if (block.type === "tool_use") {
-              hasToolUse = true;
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "tool_call", tool: block.name, input: block.input, risk: TOOL_RISK[block.name] ?? "low", id: block.id })}\n\n`));
-              try {
-                const toolResult = await executeTool(block.name, block.input, supabase, userId);
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "tool_result", tool: block.name, result: toolResult, id: block.id, success: true })}\n\n`));
-                toolResults.push({ type: "tool_result", tool_use_id: block.id, content: JSON.stringify(toolResult) });
-              } catch (err) {
-                const errorMsg = err instanceof Error ? err.message : String(err);
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "tool_result", tool: block.name, error: errorMsg, id: block.id, success: false })}\n\n`));
-                toolResults.push({ type: "tool_result", tool_use_id: block.id, content: JSON.stringify({ error: errorMsg }), is_error: true });
-              }
-            }
+          const finishReason = result.choices?.[0]?.finish_reason;
+          const toolCalls = message.tool_calls;
+
+          // Emit text content
+          if (message.content) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "text", content: message.content })}\n\n`));
           }
 
-          if (hasToolUse && toolResults.length > 0) {
-            conversationMessages.push({ role: "assistant" as const, content: result.content });
-            conversationMessages.push({ role: "user" as const, content: toolResults });
-          } else { break; }
-          if (result.stop_reason === "end_turn") break;
+          // Handle tool calls
+          if (toolCalls && toolCalls.length > 0) {
+            // Add assistant message with tool_calls to conversation
+            conversationMessages.push(message);
+
+            for (const tc of toolCalls) {
+              const toolName = tc.function.name;
+              let toolInput: Record<string, any>;
+              try {
+                toolInput = JSON.parse(tc.function.arguments);
+              } catch {
+                toolInput = {};
+              }
+
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "tool_call", tool: toolName, input: toolInput, risk: TOOL_RISK[toolName] ?? "low", id: tc.id })}\n\n`));
+
+              try {
+                const toolResult = await executeTool(toolName, toolInput, supabase, userId);
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "tool_result", tool: toolName, result: toolResult, id: tc.id, success: true })}\n\n`));
+                conversationMessages.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(toolResult) });
+              } catch (err) {
+                const errorMsg = err instanceof Error ? err.message : String(err);
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "tool_result", tool: toolName, error: errorMsg, id: tc.id, success: false })}\n\n`));
+                conversationMessages.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify({ error: errorMsg }) });
+              }
+            }
+            // Continue loop to get model's response after tool results
+          } else {
+            // No tool calls — we're done
+            break;
+          }
+
+          if (finishReason === "stop") break;
         }
 
         controller.enqueue(encoder.encode(`data: [DONE]\n\n`));
@@ -553,10 +627,10 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
+    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
 
-    if (!anthropicKey) {
-      return new Response(JSON.stringify({ error: "ANTHROPIC_API_KEY not configured. Set it in Supabase Edge Function Secrets." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (!lovableApiKey) {
+      return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const authClient = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: authHeader } } });
@@ -573,7 +647,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Messages array required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const stream = await runAgentLoop(messages, supabase, user.id, anthropicKey);
+    const stream = await runAgentLoop(messages, supabase, user.id, lovableApiKey);
     return new Response(stream, { headers: { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-cache" } });
   } catch (e) {
     console.error("crm-agent error:", e);

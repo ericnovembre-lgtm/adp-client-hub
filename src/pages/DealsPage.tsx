@@ -115,7 +115,7 @@ function DealFormDialog({
     resolver: zodResolver(dealSchema),
     defaultValues: {
       title: deal?.title ?? "",
-      value: deal?.value ?? ("" as any),
+      value: deal?.value ?? undefined,
       stage: deal?.stage ?? "lead",
       contact_id: deal?.contact_id ?? "",
       company_id: deal?.company_id ?? "",

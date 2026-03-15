@@ -1,12 +1,31 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageCircle, X, ArrowLeft, Trash2, Send, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-type Msg = { role: "user" | "assistant"; content: string };
+type Msg = { role: "user" | "assistant"; content: string; timestamp: string };
+
+const STORAGE_KEY = "saveplus24_chat_history";
+const MAX_MESSAGES = 50;
+
+function loadMessages(): Msg[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as Msg[];
+    return parsed.slice(-MAX_MESSAGES);
+  } catch {
+    return [];
+  }
+}
+
+function saveMessages(msgs: Msg[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(msgs.slice(-MAX_MESSAGES)));
+  } catch {}
+}
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 
@@ -89,7 +108,7 @@ async function streamChat({
 
 export default function AIChatWidget() {
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Msg[]>([]);
+  const [messages, setMessages] = useState<Msg[]>(loadMessages);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -105,15 +124,22 @@ export default function AIChatWidget() {
     if (open && inputRef.current) inputRef.current.focus();
   }, [open]);
 
+  // Persist to localStorage whenever messages change
+  useEffect(() => {
+    saveMessages(messages);
+  }, [messages]);
+
   const send = async () => {
     const text = input.trim();
     if (!text || isLoading) return;
     setInput("");
-    const userMsg: Msg = { role: "user", content: text };
+    const now = new Date().toISOString();
+    const userMsg: Msg = { role: "user", content: text, timestamp: now };
     setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
 
     let assistantSoFar = "";
+    const assistantTimestamp = new Date().toISOString();
     const upsert = (chunk: string) => {
       assistantSoFar += chunk;
       setMessages((prev) => {
@@ -121,7 +147,7 @@ export default function AIChatWidget() {
         if (last?.role === "assistant") {
           return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m));
         }
-        return [...prev, { role: "assistant", content: assistantSoFar }];
+        return [...prev, { role: "assistant" as const, content: assistantSoFar, timestamp: assistantTimestamp }];
       });
     };
 
@@ -180,7 +206,7 @@ export default function AIChatWidget() {
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/20"
-                onClick={() => setMessages([])}
+                onClick={() => { setMessages([]); localStorage.removeItem(STORAGE_KEY); }}
                 aria-label="Clear chat"
               >
                 <Trash2 className="h-4 w-4" />

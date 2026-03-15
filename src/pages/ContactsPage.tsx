@@ -22,10 +22,11 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, Pencil, Trash2, Download, Loader2, UserPlus, Mail, CheckSquare, X } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Download, Upload, Loader2, UserPlus, Mail, CheckSquare, X } from "lucide-react";
 import ContactDetailSheet from "@/components/ContactDetailSheet";
 import DraftEmailDialog from "@/components/DraftEmailDialog";
 import CompanyCombobox from "@/components/CompanyCombobox";
+import CSVImportDialog from "@/components/CSVImportDialog";
 
 const contactSchema = z.object({
   first_name: z.string().trim().min(1, "First name is required").max(100, "Max 100 characters"),
@@ -187,6 +188,7 @@ export default function ContactsPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [detailContact, setDetailContact] = useState<Contact | null>(null);
   const [emailContact, setEmailContact] = useState<Contact | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   // Bulk action state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -315,6 +317,9 @@ export default function ContactsPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search contacts…" className="pl-9 w-64" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4 mr-1" />Import CSV
+          </Button>
           <Button variant="outline" onClick={handleExport} disabled={exporting}>
             {exporting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Download className="h-4 w-4 mr-1" />}Export CSV
           </Button>
@@ -489,6 +494,13 @@ export default function ContactsPage() {
           contactId={emailContact.id}
         />
       )}
+
+      <CSVImportDialog
+        entityType="contacts"
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImportComplete={() => setImportOpen(false)}
+      />
     </div>
   );
 }

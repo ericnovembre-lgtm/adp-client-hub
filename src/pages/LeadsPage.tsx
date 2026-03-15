@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Search, MoreHorizontal, Phone, UserCheck, ArrowRightLeft, XCircle, Pencil, Trash2, Download, Loader2, Users, FileText, X, CheckSquare } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Phone, UserCheck, ArrowRightLeft, XCircle, Pencil, Trash2, Download, Upload, Loader2, Users, FileText, X, CheckSquare } from "lucide-react";
 import { useLeads, useCreateLead, useUpdateLead, useDeleteLead } from "@/hooks/useLeads";
 import { useCreateCompany } from "@/hooks/useCompanies";
 import { useCreateContact } from "@/hooks/useContacts";
@@ -30,6 +30,7 @@ import DraftEmailDialog from "@/components/DraftEmailDialog";
 import LeadDetailSheet from "@/components/LeadDetailSheet";
 import { checkKnockoutLocal, type LocalKnockoutResult } from "@/lib/knockoutLocal";
 import EligibilityBadge from "@/components/EligibilityBadge";
+import CSVImportDialog from "@/components/CSVImportDialog";
 
 const leadSchema = z.object({
   company_name: z.string().trim().min(1, "Company name is required").max(200, "Max 200 characters"),
@@ -234,6 +235,7 @@ export default function LeadsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [detailLead, setDetailLead] = useState<Lead | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
   const [bulkActionPending, setBulkActionPending] = useState(false);
 
   // Knockout dialog state
@@ -528,6 +530,9 @@ export default function LeadsPage() {
               className="pl-9"
             />
           </div>
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4 mr-1" />Import CSV
+          </Button>
           <Button variant="outline" onClick={handleExport} disabled={exporting}>
             {exporting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Download className="h-4 w-4 mr-1" />}Export CSV
           </Button>
@@ -887,6 +892,13 @@ export default function LeadsPage() {
         onLeadUpdated={() => setDetailLead(null)}
         onDraftEmail={(lead) => { setDetailLead(null); setEmailLead(lead); }}
         onConvertToDeal={(lead) => { setDetailLead(null); initiateConvert(lead); }}
+      />
+
+      <CSVImportDialog
+        entityType="leads"
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImportComplete={() => setImportOpen(false)}
       />
     </div>
   );

@@ -8,6 +8,7 @@ import type { Company } from "@/types/database";
 import { exportToCSV } from "@/lib/exportCSV";
 import { supabase } from "@/integrations/supabase/client";
 import CompanyDetailSheet from "@/components/CompanyDetailSheet";
+import CSVImportDialog from "@/components/CSVImportDialog";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +20,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Building2, Users, Globe, Phone, DollarSign, Download, Loader2, X } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, Building2, Users, Globe, Phone, DollarSign, Download, Upload, Loader2, X } from "lucide-react";
 
 /* ── Company Form Schema ─────────────────────────── */
 
@@ -155,6 +156,7 @@ export default function CompaniesPage() {
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [detailCompany, setDetailCompany] = useState<Company | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   // Bulk selection
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -269,6 +271,9 @@ export default function CompaniesPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search companies…" className="pl-9 w-64" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4 mr-1" />Import CSV
+          </Button>
           <Button variant="outline" onClick={handleExport} disabled={exporting}>
             {exporting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Download className="h-4 w-4 mr-1" />}Export CSV
           </Button>
@@ -431,6 +436,13 @@ export default function CompaniesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <CSVImportDialog
+        entityType="companies"
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImportComplete={() => setImportOpen(false)}
+      />
     </div>
   );
 }

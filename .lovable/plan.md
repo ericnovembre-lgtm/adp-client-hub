@@ -1,64 +1,48 @@
 
 
-## Plan: CSV Import Dialog
+## Plan: Persist AI Chat History Between Sessions
 
-### 1. Install papaparse
-Papaparse is not currently in the project. Add `papaparse` and `@types/papaparse` as dependencies.
+Save chat conversations to the database so they survive page refreshes and sessions.
 
-### 2. Create `src/components/CSVImportDialog.tsx` (~250 lines)
+### Database Change
 
-A multi-step dialog component with props: `entityType`, `open`, `onOpenChange`, `onImportComplete`.
+Create a `chat_messages` table:
 
-**Step 1 — File Upload:**
-- Drag-and-drop zone + file picker, accepts `.csv` only
-- Parse file with `Papa.parse` (header: true)
-- Store parsed headers and rows in state
+```sql
+CREATE TABLE public.chat_messages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  role text NOT NULL CHECK (role IN ('user', 'assistant')),
+  content text NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
 
-**Step 2 — Preview & Map:**
-- Show first 5 rows in a table
-- For each CSV column header, render a `Select` dropdown to map to a database field (or "Skip")
-- Auto-map: match CSV header to field label/key case-insensitively
-- Field definitions per entity type:
+ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
 
-```text
-leads:    company_name*, decision_maker_name, decision_maker_email,
-          decision_maker_phone, decision_maker_title, headcount,
-          industry, website, state, trigger_event, source
+CREATE POLICY "Users can select own messages" ON public.chat_messages FOR SELECT TO authenticated USING (user_id = auth.uid());
+CREATE POLICY "Users can insert own messages" ON public.chat_messages FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+CREATE POLICY "Users can delete own messages" ON public.chat_messages FOR DELETE TO authenticated USING (user_id = auth.uid());
 
-contacts: first_name*, last_name*, email, phone, company,
-          job_title, status, source, notes
-
-companies: name*, industry, website, employees, revenue, address, phone
+CREATE INDEX idx_chat_messages_user ON public.chat_messages(user_id, created_at);
 ```
 
-**Step 3 — Import:**
-- "Start Import" button
-- Progress bar (shadcn `Progress` component)
-- Insert in batches of 10 via `supabase.from(table).insert(batch)`
-- Validation: skip rows missing required fields, trim all string values
-- For leads: query existing `company_name` values first, warn about duplicates but still import
-- Track success/failed/skipped counts, display summary
-- On complete: invalidate React Query cache via `useQueryClient().invalidateQueries()`, call `onImportComplete()`
+### Code Changes — `src/components/AIChatWidget.tsx`
 
-**Dialog styling:** Match `DraftEmailDialog` — `max-w-2xl max-h-[90vh] overflow-y-auto`
+1. **Load on mount**: Query `chat_messages` ordered by `created_at` when widget opens, populate `messages` state.
 
-### 3. Add "Import CSV" button to 3 pages
+2. **Save on send**: After user sends a message, insert a `user` row. After streaming completes (`onDone`), insert the final `assistant` row.
 
-Each page gets:
-- `import { Upload } from "lucide-react"` 
-- `const [importOpen, setImportOpen] = useState(false)` state
-- A `<Button variant="outline">` with Upload icon, placed before the Export CSV button
-- `<CSVImportDialog>` rendered at bottom
+3. **Clear chat**: When trash button is clicked, delete all rows for the user and clear local state.
 
-**Files modified:**
-- `src/pages/LeadsPage.tsx` — add import button + dialog state + render
-- `src/pages/ContactsPage.tsx` — same
-- `src/pages/CompaniesPage.tsx` — same
+4. Use `useAuth()` to get `user.id` for the queries. If no user, fall back to in-memory only (no persistence).
 
-### Files changed
-- `package.json` — add `papaparse`, `@types/papaparse`
-- `src/components/CSVImportDialog.tsx` — new (~250 lines)
-- `src/pages/LeadsPage.tsx` — add import button + dialog
-- `src/pages/ContactsPage.tsx` — add import button + dialog
-- `src/pages/CompaniesPage.tsx` — add import button + dialog
+### Data flow
+
+```text
+User sends message → insert user msg to DB → stream AI response → on complete, insert assistant msg to DB
+Widget opens → SELECT messages WHERE user_id = auth.uid() ORDER BY created_at → populate state
+Clear button → DELETE FROM chat_messages WHERE user_id = auth.uid() → clear state
+```
+
+No new hooks file needed — keep the logic inline in the widget since it's self-contained.
 

@@ -9,6 +9,7 @@ export interface KnockoutRule {
   wc_codes: string | null;
   conditions: string | null;
   created_at: string | null;
+  user_id: string;
 }
 
 export function useKnockoutRules(tier?: string) {

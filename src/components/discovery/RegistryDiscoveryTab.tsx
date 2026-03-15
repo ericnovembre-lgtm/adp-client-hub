@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Building2, Loader2, CheckCircle, ChevronDown, Info } from "lucide-react";
+import { Building2, Loader2, CheckCircle, ChevronDown, Info, Sparkles } from "lucide-react";
 
 const TOP_STATES = [
   "California", "Texas", "Florida", "New York", "Georgia",
@@ -42,7 +42,6 @@ const TIMEFRAMES = [
 
 export default function RegistryDiscoveryTab() {
   const [selectedStates, setSelectedStates] = useState<string[]>(["California", "Texas", "Florida"]);
-  const [_otherState, _setOtherState] = useState("");
   const [monthsBack, setMonthsBack] = useState("6");
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>(["Construction", "Healthcare", "Restaurant", "Technology", "Real Estate"]);
   const [showOtherStates, setShowOtherStates] = useState(false);
@@ -74,12 +73,16 @@ export default function RegistryDiscoveryTab() {
       return data;
     },
     onSuccess: (data) => {
-      toast.success(`Discovered ${data.saved} new businesses!`);
+      const parts = [`Discovered ${data.saved} new businesses`];
+      if (data.enriched > 0) parts.push(`enriched ${data.enriched}`);
+      toast.success(parts.join(", ") + "!");
     },
     onError: (err: Error) => {
       toast.error(err.message || "Discovery failed");
     },
   });
+
+  const results = discover.data;
 
   return (
     <div className="space-y-6">
@@ -105,10 +108,7 @@ export default function RegistryDiscoveryTab() {
             <div className="flex flex-wrap gap-3">
               {TOP_STATES.map(st => (
                 <label key={st} className="flex items-center gap-1.5 text-sm cursor-pointer">
-                  <Checkbox
-                    checked={selectedStates.includes(st)}
-                    onCheckedChange={() => toggleState(st)}
-                  />
+                  <Checkbox checked={selectedStates.includes(st)} onCheckedChange={() => toggleState(st)} />
                   {st}
                 </label>
               ))}
@@ -124,10 +124,7 @@ export default function RegistryDiscoveryTab() {
                 <div className="flex flex-wrap gap-3 mt-2">
                   {OTHER_STATES.map(st => (
                     <label key={st} className="flex items-center gap-1.5 text-sm cursor-pointer">
-                      <Checkbox
-                        checked={selectedStates.includes(st)}
-                        onCheckedChange={() => toggleState(st)}
-                      />
+                      <Checkbox checked={selectedStates.includes(st)} onCheckedChange={() => toggleState(st)} />
                       {st}
                     </label>
                   ))}
@@ -155,10 +152,7 @@ export default function RegistryDiscoveryTab() {
             <div className="flex flex-wrap gap-3">
               {INDUSTRY_KEYWORDS.map(kw => (
                 <label key={kw} className="flex items-center gap-1.5 text-sm cursor-pointer">
-                  <Checkbox
-                    checked={selectedKeywords.includes(kw)}
-                    onCheckedChange={() => toggleKeyword(kw)}
-                  />
+                  <Checkbox checked={selectedKeywords.includes(kw)} onCheckedChange={() => toggleKeyword(kw)} />
                   {kw}
                 </label>
               ))}
@@ -167,7 +161,7 @@ export default function RegistryDiscoveryTab() {
 
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Info className="h-3.5 w-3.5" />
-            Headcount not available from registry data — leads will be enriched after import
+            Headcount not available from registry data — leads will be enriched via Apollo after import if API key is configured
           </div>
 
           <Button
@@ -176,27 +170,34 @@ export default function RegistryDiscoveryTab() {
             className="w-full sm:w-auto"
           >
             {discover.isPending
-              ? <><Loader2 className="h-4 w-4 animate-spin" /> Discovering...</>
+              ? <><Loader2 className="h-4 w-4 animate-spin" /> Discovering &amp; Enriching...</>
               : <><Building2 className="h-4 w-4" /> Discover New Businesses</>
             }
           </Button>
 
           {/* Results */}
-          {discover.isSuccess && discover.data && (
+          {discover.isSuccess && results && (
             <div className="space-y-4 mt-4">
               <div className="rounded-lg border bg-muted/30 p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                   <span className="text-sm font-medium text-foreground">
-                    Found {discover.data.found} new businesses, saved {discover.data.saved}
-                    {discover.data.skipped_duplicate > 0 && `, ${discover.data.skipped_duplicate} duplicates skipped`}
-                    {discover.data.errors > 0 && `, ${discover.data.errors} errors`}
+                    Found {results.found} new businesses, saved {results.saved}
+                    {results.enriched > 0 && `, enriched ${results.enriched} with contacts`}
+                    {results.skipped_duplicate > 0 && `, ${results.skipped_duplicate} duplicates skipped`}
+                    {results.errors > 0 && `, ${results.errors} errors`}
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground">Leads added to your Leads page with source "business_registry"</p>
+                <p className="text-xs text-muted-foreground">
+                  Leads added to your Leads page with source "business_registry"
+                  {results.enrichment_available
+                    ? " • Leads enriched via Apollo (headcount + contacts)"
+                    : " • Configure Apollo API key in Settings to auto-enrich leads with headcount & contacts"
+                  }
+                </p>
               </div>
 
-              {discover.data.leads?.length > 0 && (
+              {results.leads?.length > 0 && (
                 <div className="rounded-md border overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -204,13 +205,14 @@ export default function RegistryDiscoveryTab() {
                         <TableHead>Company Name</TableHead>
                         <TableHead>State</TableHead>
                         <TableHead>Incorporation Date</TableHead>
-                        <TableHead>Company Type</TableHead>
                         <TableHead>Inferred Industry</TableHead>
+                        <TableHead>Decision Maker</TableHead>
+                        <TableHead>Email</TableHead>
                         <TableHead>Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {discover.data.leads.map((lead: any) => (
+                      {results.leads.map((lead: any) => (
                         <TableRow key={lead.id}>
                           <TableCell className="font-medium">{lead.company_name}</TableCell>
                           <TableCell>{lead.state}</TableCell>
@@ -219,7 +221,6 @@ export default function RegistryDiscoveryTab() {
                               ? new Date(lead.incorporation_date).toLocaleDateString()
                               : "—"}
                           </TableCell>
-                          <TableCell>{lead.company_type ?? "—"}</TableCell>
                           <TableCell>
                             {lead.industry
                               ? <Badge variant="secondary">{lead.industry}</Badge>
@@ -227,7 +228,24 @@ export default function RegistryDiscoveryTab() {
                             }
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline" className="text-green-700 dark:text-green-400 border-green-500/30">New</Badge>
+                            {lead.decision_maker_name ?? <span className="text-muted-foreground">—</span>}
+                          </TableCell>
+                          <TableCell>
+                            {lead.decision_maker_email
+                              ? <span className="text-xs">{lead.decision_maker_email}</span>
+                              : <span className="text-muted-foreground">—</span>
+                            }
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1.5">
+                              <Badge variant="outline" className="text-green-700 dark:text-green-400 border-green-500/30">New</Badge>
+                              {lead.enriched && (
+                                <Badge variant="secondary" className="gap-1 text-xs">
+                                  <Sparkles className="h-3 w-3" />
+                                  Enriched
+                                </Badge>
+                              )}
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}

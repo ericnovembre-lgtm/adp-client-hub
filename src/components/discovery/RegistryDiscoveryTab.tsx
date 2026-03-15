@@ -76,7 +76,7 @@ export default function RegistryDiscoveryTab() {
           states: selectedStates,
           months_back: Number(monthsBack),
           industry_keywords: selectedKeywords.map(k => k.toLowerCase()),
-          per_page: 30,
+          per_page: Number(perPage),
         },
       });
       if (error) throw error;

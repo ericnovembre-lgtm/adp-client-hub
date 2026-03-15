@@ -498,6 +498,8 @@ export default function SettingsPage() {
   const [testingYelp, setTestingYelp] = useState(false);
   const [censusKeyConfigured, setCensusKeyConfigured] = useState(false);
   const [testingCensus, setTestingCensus] = useState(false);
+  const [openCorpKeyConfigured, setOpenCorpKeyConfigured] = useState(false);
+  const [testingOpenCorp, setTestingOpenCorp] = useState(false);
 
   // Discovery
   const [defaultIndustry, setDefaultIndustry] = useState("");

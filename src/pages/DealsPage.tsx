@@ -129,7 +129,7 @@ function DealFormDialog({
       const stage = (values.stage as string) || null;
       const isClosed = stage === "closed_won" || stage === "closed_lost";
       const wasClosed = isEdit && (deal.stage === "closed_won" || deal.stage === "closed_lost");
-      const payload: Record<string, unknown> = {
+      const payload: { title: string; value: number | null; stage: string | null; contact_id: string | null; company_id: string | null; expected_close_date: string | null; notes: string | null; closed_at?: string | null } = {
         title: values.title,
         value: typeof values.value === "number" ? values.value : null,
         stage,

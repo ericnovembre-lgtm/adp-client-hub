@@ -328,8 +328,9 @@ function KnockoutRulesSection() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              <AlertDialogCancel disabled={deleteRule.isPending}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete} disabled={deleteRule.isPending} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                {deleteRule.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
                 Delete
               </AlertDialogAction>
             </AlertDialogFooter>

@@ -455,8 +455,11 @@ export default function ContactsPage() {
             <AlertDialogDescription>This action cannot be undone. Are you sure?</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+            <AlertDialogCancel disabled={deleteContact.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleteContact.isPending} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleteContact.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+              Delete
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -471,8 +474,8 @@ export default function ContactsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogCancel disabled={bulkActionPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} disabled={bulkActionPending} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               {bulkActionPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
               Delete All
             </AlertDialogAction>

@@ -60,8 +60,8 @@ serve(async (req) => {
     const {
       states = ["California", "Texas", "Florida"],
       months_back = 6,
-      per_page = 30,
-      industry_keywords = PEO_FRIENDLY_KEYWORDS.slice(0, 5),
+      per_page = 100,
+      industry_keywords = [],
     } = body;
 
     const sinceDate = new Date();

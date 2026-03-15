@@ -1,49 +1,49 @@
 
 
-# Add user_id Scoping to email_send_log and knockout_rules
+## Lead Enrichment for Registry-Discovered Leads
 
-## Overview
+Registry leads lack headcount, website, and decision-maker contact info. This plan adds a post-discovery enrichment step using the Apollo API (already configured with `APOLLO_API_KEY`).
 
-Add `user_id` column and RLS policies to the two remaining unscoped tables, ensuring full multi-tenant data isolation.
+### Architecture
 
-## Important Design Note
+```text
+Registry Discovery (OpenCorporates)
+        │
+        ▼
+   Leads saved (no headcount/contact)
+        │
+        ▼
+   Enrichment step (Apollo People Search)
+        │
+        ▼
+   Update leads with headcount, website,
+   decision maker name/title/email/phone
+```
 
-**knockout_rules** currently acts as shared compliance data (all users see all rules). Adding `user_id` scoping means each user will manage their own set of knockout rules. If you'd prefer knockout rules to remain shared/global, let me know and I'll scope only `email_send_log`.
+### Changes
 
-## Database Migration
+**1. `supabase/functions/registry-discovery/index.ts`**
+- After saving all registry leads, add an enrichment pass using Apollo's `organizations/enrich` endpoint
+- For each saved lead, call Apollo with the company name + state to get: headcount, website, industry (refined), and a decision-maker contact via `mixed_people/search`
+- Only enrich if `APOLLO_API_KEY` is present (graceful skip otherwise)
+- Update the lead record with enriched data
+- Log enrichment activity
+- Add enrichment stats to the response (`enriched` count)
+- Rate-limit Apollo calls (200ms delay between)
 
-Single migration that:
+**2. `src/components/discovery/RegistryDiscoveryTab.tsx`**
+- Show enrichment results in the summary: "Found X, saved Y, enriched Z"
+- Add an "Enriched" badge on leads that received contact info
+- Show decision maker name/email columns in the results table when available
+- Add a note: "Leads enriched via Apollo (headcount + contacts)" when Apollo key is configured, or "Configure Apollo API key in Settings to auto-enrich leads with headcount & contacts" when not
 
-1. **email_send_log**: Add `user_id uuid NOT NULL` column, backfill existing rows to current user, create index, drop old permissive RLS policies, add scoped `auth.uid() = user_id` policies for SELECT/INSERT.
+### Technical Detail
 
-2. **knockout_rules**: Add `user_id uuid NOT NULL` column, backfill existing rows to current user, create index, drop all 4 old permissive RLS policies, add scoped `auth.uid() = user_id` policies for SELECT/INSERT/UPDATE/DELETE.
+The enrichment uses two Apollo endpoints per lead:
+1. `POST /v1/organizations/enrich` with `domain` or `name` — returns headcount, website, industry
+2. `POST /v1/mixed_people/search` with company name + decision-maker titles — returns contact info
 
-## Frontend Changes
+Fields updated on the lead: `headcount`, `website`, `industry` (if null), `decision_maker_name`, `decision_maker_title`, `decision_maker_email`, `decision_maker_phone`
 
-**`src/hooks/useKnockoutRules.ts`**
-- `useCreateKnockoutRule`: inject `user_id` from auth session into insert payload.
-- `KnockoutRule` interface: add `user_id` field.
-
-**`src/lib/checkKnockoutFromDB.ts`**
-- No change needed — RLS will automatically scope the query to the authenticated user's rules.
-
-**`src/components/EmailHistory.tsx`**
-- No change needed — queries filter by `contact_id` and RLS handles scoping.
-
-## Edge Function Changes
-
-**`supabase/functions/send-crm-email/index.ts`**
-- Add `user_id: userId` to both `email_send_log` insert calls (success and failure paths). The `userId` is already extracted from the JWT.
-
-**`supabase/functions/crm-agent/index.ts`**
-- `toolCheckKnockoutRules`: uses service role client so it bypasses RLS. Add `.eq("user_id", input.__user_id)` filter to scope the query, or leave unscoped if rules should be globally readable by the agent. Will add the filter for consistency.
-
-## Summary of Files Changed
-
-| File | Change |
-|------|--------|
-| Migration SQL | Add columns, backfill, indexes, RLS policies |
-| `src/hooks/useKnockoutRules.ts` | Inject `user_id` on insert, update interface |
-| `supabase/functions/send-crm-email/index.ts` | Add `user_id` to inserts |
-| `supabase/functions/crm-agent/index.ts` | Filter knockout rules by `user_id` |
+Leads outside territory range (2-20 employees) after enrichment get flagged with a warning activity, consistent with existing scoring behavior.
 

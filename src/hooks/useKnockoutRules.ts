@@ -9,6 +9,7 @@ export interface KnockoutRule {
   wc_codes: string | null;
   conditions: string | null;
   created_at: string | null;
+  user_id: string;
 }
 
 export function useKnockoutRules(tier?: string) {
@@ -38,7 +39,9 @@ export function useCreateKnockoutRule() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (rule: { industry_name: string; tier: string; wc_codes?: string | null; conditions?: string | null }) => {
-      const { data, error } = await supabase.from("knockout_rules").insert(rule).select().single();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const { data, error } = await supabase.from("knockout_rules").insert({ ...rule, user_id: user.id }).select().single();
       if (error) throw error;
       return data;
     },

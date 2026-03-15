@@ -352,6 +352,7 @@ export type Database = {
           recipient_email: string
           status: string | null
           subject: string | null
+          user_id: string
         }
         Insert: {
           contact_id?: string | null
@@ -361,6 +362,7 @@ export type Database = {
           recipient_email: string
           status?: string | null
           subject?: string | null
+          user_id: string
         }
         Update: {
           contact_id?: string | null
@@ -370,6 +372,7 @@ export type Database = {
           recipient_email?: string
           status?: string | null
           subject?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -404,6 +407,7 @@ export type Database = {
           id: string
           industry_name: string
           tier: string
+          user_id: string
           wc_codes: string | null
         }
         Insert: {
@@ -412,6 +416,7 @@ export type Database = {
           id?: string
           industry_name: string
           tier: string
+          user_id: string
           wc_codes?: string | null
         }
         Update: {
@@ -420,6 +425,7 @@ export type Database = {
           id?: string
           industry_name?: string
           tier?: string
+          user_id?: string
           wc_codes?: string | null
         }
         Relationships: []

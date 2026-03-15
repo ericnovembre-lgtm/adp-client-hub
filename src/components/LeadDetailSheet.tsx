@@ -10,6 +10,7 @@ import EligibilityBadge from "@/components/EligibilityBadge";
 import ActivityTimeline from "@/components/ActivityTimeline";
 import { toast } from "sonner";
 
+import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -21,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Building2, User, Mail, Phone, Globe, MapPin, Users, Briefcase,
   Zap, Clock, Sparkles, Tag, Pencil, X, Save, Loader2, FileText, ArrowRightLeft, Target,
-  RefreshCw, CheckCircle2, AlertTriangle,
+  RefreshCw, CheckCircle2, AlertTriangle, SearchCheck,
 } from "lucide-react";
 import { useLeadScore, type ScoreFactor } from "@/hooks/useLeadScores";
 import { Progress } from "@/components/ui/progress";
@@ -164,8 +165,9 @@ export default function LeadDetailSheet({
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<Partial<Lead>>({});
+  const [isEnriching, setIsEnriching] = useState(false);
   const updateLead = useUpdateLead();
-  const queryClient = useQueryClient();
+  const _queryClient = useQueryClient();
   const { data: knockoutRules = [] } = useKnockoutRules();
 
   const knockoutResult = useMemo(() => {
@@ -218,6 +220,33 @@ export default function LeadDetailSheet({
 
   const set = (field: keyof Lead, value: string | number | null) =>
     setEditData((prev) => ({ ...prev, [field]: value }));
+
+  const needsEnrichment = !lead.headcount || !lead.decision_maker_email;
+
+  const handleEnrich = async () => {
+    setIsEnriching(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("enrich-lead", {
+        body: { lead_id: lead.id },
+      });
+      if (error) throw error;
+      if (data?.error === "apollo_not_configured") {
+        toast.error("Apollo API key is not configured. Go to Settings to add it.");
+        return;
+      }
+      if (data?.error) throw new Error(data.error);
+      if (data.enriched_count > 0) {
+        toast.success(`Enriched: ${data.enriched_fields.join(", ")}`);
+        onLeadUpdated?.();
+      } else {
+        toast.info("No additional data found in Apollo for this lead.");
+      }
+    } catch {
+      toast.error("Failed to enrich lead");
+    } finally {
+      setIsEnriching(false);
+    }
+  };
 
   const editHeadcount = editData.headcount;
   const headcountOutOfTerritory = isEditing && editHeadcount != null && editHeadcount > 0 &&
@@ -437,10 +466,21 @@ export default function LeadDetailSheet({
           <LeadScoreSection leadId={lead.id} lead={lead} />
 
           {/* Action Buttons */}
-          {!isEditing && (onDraftEmail || onConvertToDeal) && (
+          {!isEditing && (onDraftEmail || onConvertToDeal || needsEnrichment) && (
             <>
               <Separator />
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
+                {needsEnrichment && (
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={handleEnrich}
+                    disabled={isEnriching}
+                  >
+                    {isEnriching ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <SearchCheck className="h-4 w-4 mr-2" />}
+                    {isEnriching ? "Enriching…" : "Enrich Lead"}
+                  </Button>
+                )}
                 {onDraftEmail && (
                   <Button
                     variant="outline"

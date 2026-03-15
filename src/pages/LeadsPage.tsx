@@ -842,6 +842,24 @@ export default function LeadsPage() {
                         <TableCell>
                           <EligibilityBadge tier={ko.tier} message={ko.message} />
                         </TableCell>
+                        <TableCell>
+                          {(() => {
+                            const ls = leadScores.get(lead.id);
+                            if (!ls) return <Badge variant="outline">—</Badge>;
+                            const gradeColor: Record<string, string> = {
+                              A: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300",
+                              B: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
+                              C: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
+                              D: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+                            };
+                            return (
+                              <div className="flex items-center gap-1.5">
+                                <Badge variant="outline" className={gradeColor[ls.grade] ?? ""}>{ls.grade}</Badge>
+                                <span className="text-xs text-muted-foreground">{ls.score}</span>
+                              </div>
+                            );
+                          })()}
+                        </TableCell>
                         <TableCell onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu modal={false}>
                             <DropdownMenuTrigger asChild>

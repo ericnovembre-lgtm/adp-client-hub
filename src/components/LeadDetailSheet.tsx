@@ -341,6 +341,9 @@ export default function LeadDetailSheet({
             </>
           )}
 
+          {/* Lead Score */}
+          <LeadScoreSection leadId={lead.id} />
+
           {/* Action Buttons */}
           {!isEditing && (onDraftEmail || onConvertToDeal) && (
             <>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { EMAIL_TEMPLATES, fillTemplate, type EmailTemplate } from "@/lib/emailTemplates";
 import { logActivity } from "@/lib/logActivity";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,7 +29,6 @@ export default function DraftEmailDialog({ open, onOpenChange, mergeFields, cont
   const [selectedTemplateId, setSelectedTemplateId] = useState(EMAIL_TEMPLATES[0].id);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
-  const [initialized, setInitialized] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -48,15 +47,12 @@ export default function DraftEmailDialog({ open, onOpenChange, mergeFields, cont
     setBody(fillTemplate(tpl.body, allFields));
   };
 
-  // Initialize on first open
-  if (open && !initialized) {
-    applyTemplate(EMAIL_TEMPLATES[0].id);
-    setInitialized(true);
-  }
-  if (!open && initialized) {
-    setInitialized(false);
-    setCopied(false);
-  }
+  useEffect(() => {
+    if (open) {
+      applyTemplate(EMAIL_TEMPLATES[0].id);
+      setCopied(false);
+    }
+  }, [open]);
 
   const handleCustomizeWithAI = async () => {
     setAiLoading(true);

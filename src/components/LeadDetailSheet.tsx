@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { Lead } from "@/types/database";
 import { useUpdateLead } from "@/hooks/useLeads";
 import { useKnockoutRules } from "@/hooks/useKnockoutRules";
-import { checkKnockoutLocal } from "@/lib/knockoutLocal";
+import { checkKnockoutLocal } from "@/lib/checkKnockoutFromRules";
 import { LEAD_STATUS_COLORS_DETAIL } from "@/lib/constants";
 import EligibilityBadge from "@/components/EligibilityBadge";
 import ActivityTimeline from "@/components/ActivityTimeline";

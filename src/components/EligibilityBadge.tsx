@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ShieldCheck, ShieldQuestion, ShieldAlert, ShieldX } from "lucide-react";
-import type { LocalKnockoutResult } from "@/lib/knockoutLocal";
+import type { LocalKnockoutResult } from "@/lib/checkKnockoutFromRules";
 
 export default function EligibilityBadge({ tier, message }: { tier: LocalKnockoutResult['tier']; message: string }) {
   const config = {

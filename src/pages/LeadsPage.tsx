@@ -29,7 +29,7 @@ import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import DraftEmailDialog from "@/components/DraftEmailDialog";
 import LeadDetailSheet from "@/components/LeadDetailSheet";
-import { checkKnockoutLocal, type LocalKnockoutResult } from "@/lib/knockoutLocal";
+import { checkKnockoutLocal, type LocalKnockoutResult } from "@/lib/checkKnockoutFromRules";
 import EligibilityBadge from "@/components/EligibilityBadge";
 import CSVImportDialog from "@/components/CSVImportDialog";
 

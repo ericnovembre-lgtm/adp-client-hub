@@ -437,6 +437,7 @@ function ListView({
   onEdit,
   onDelete,
   onClickDeal,
+  onAdd,
 }: {
   deals: Deal[];
   contacts: Pick<Contact, "id" | "first_name" | "last_name">[];
@@ -449,6 +450,7 @@ function ListView({
   onEdit: (d: Deal) => void;
   onDelete: (id: string) => void;
   onClickDeal: (d: Deal) => void;
+  onAdd: () => void;
 }) {
   const contactMap = useMemo(() => new Map(contacts.map((c) => [c.id, `${c.first_name} ${c.last_name}`])), [contacts]);
   const companyMap = useMemo(() => new Map(companies.map((c) => [c.id, c.name])), [companies]);

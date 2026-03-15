@@ -252,6 +252,8 @@ After answering the user's question, if you notice relevant patterns, briefly me
 Keep proactive suggestions to one sentence. Don't be pushy.`;
 
 async function executeTool(toolName: string, input: Record<string, any>, supabase: SupabaseClient, userId: string): Promise<any> {
+  // Inject userId into input for tools that insert data
+  input.__user_id = userId;
   const startTime = Date.now();
   let result: any;
   let previousState: any = null;

@@ -156,7 +156,7 @@ serve(async (req) => {
 
         const { data: newLead, error: insertErr } = await supabase
           .from("leads")
-          .insert(leadData)
+          .insert({ ...leadData, user_id: userId })
           .select()
           .single();
 

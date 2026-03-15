@@ -164,22 +164,36 @@ export default function RegistryDiscoveryTab() {
             </Collapsible>
           </div>
 
-          {/* Timeframe */}
-          <div className="space-y-2 max-w-xs">
-            <Label>Incorporated within</Label>
-            <Select value={monthsBack} onValueChange={setMonthsBack}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {TIMEFRAMES.map(t => (
-                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Timeframe & Results per state */}
+          <div className="flex flex-wrap gap-4">
+            <div className="space-y-2 max-w-xs">
+              <Label>Incorporated within</Label>
+              <Select value={monthsBack} onValueChange={setMonthsBack}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {TIMEFRAMES.map(t => (
+                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 max-w-xs">
+              <Label>Results per state</Label>
+              <Select value={perPage} onValueChange={setPerPage}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {PER_PAGE_OPTIONS.map(o => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          {/* Industry Keywords */}
+          {/* Industry Classification */}
           <div className="space-y-2">
-            <Label>Industry Keywords</Label>
+            <Label>Industry Classification</Label>
+            <p className="text-xs text-muted-foreground">Tag discovered leads by industry (does not limit results)</p>
             <div className="flex flex-wrap gap-3">
               {INDUSTRY_KEYWORDS.map(kw => (
                 <label key={kw} className="flex items-center gap-1.5 text-sm cursor-pointer">

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import IntentDiscoveryTab from "@/components/discovery/IntentDiscoveryTab";
 import YelpDiscoveryTab from "@/components/discovery/YelpDiscoveryTab";
+import RegistryDiscoveryTab from "@/components/discovery/RegistryDiscoveryTab";
 
 const US_STATES = [
   "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",

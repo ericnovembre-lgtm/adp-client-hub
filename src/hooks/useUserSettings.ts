@@ -25,6 +25,7 @@ export interface UserSettings {
   apollo_api_key_configured?: boolean;
   yelp_api_key_configured?: boolean;
   census_api_key_configured?: boolean;
+  opencorporates_api_key_configured?: boolean;
 }
 
 export function useUserSettings() {

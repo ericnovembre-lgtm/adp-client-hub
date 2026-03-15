@@ -431,7 +431,7 @@ async function toolUpdateDeal(supabase: SupabaseClient, input: Record<string, an
   const { data, error } = await supabase.from("deals").update(cleanUpdates).eq("id", deal_id).select().single();
   if (error) throw new Error(`Update failed: ${error.message}`);
   if (cleanUpdates.stage && cleanUpdates.stage !== oldStage) {
-    await supabase.from("activities").insert({ type: "stage_change", description: `Deal stage changed from ${oldStage} to ${cleanUpdates.stage} via AI Agent`, deal_id });
+    await supabase.from("activities").insert({ type: "stage_change", description: `Deal stage changed from ${oldStage} to ${cleanUpdates.stage} via AI Agent`, deal_id, user_id: input.__user_id });
   }
   return { success: true, updated_deal: data, changes: cleanUpdates };
 }

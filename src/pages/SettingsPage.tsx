@@ -901,7 +901,7 @@ export default function SettingsPage() {
             <Input type="password" placeholder="Enter your OpenCorporates API key" disabled className="max-w-md" />
             {openCorpKeyConfigured
               ? <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-300"><CheckCircle2 className="h-3 w-3 mr-1" />Connected</Badge>
-              : <Badge variant="outline"><XCircle className="h-3 w-3 mr-1" />Not configured</Badge>
+              : <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border-blue-300"><Info className="h-3 w-3 mr-1" />Works without key</Badge>
             }
           </div>
           <p className="text-xs text-muted-foreground">

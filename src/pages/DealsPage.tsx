@@ -560,11 +560,16 @@ export default function DealsPage() {
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [detailDeal, setDetailDeal] = useState<Deal | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
 
   // Kanban uses all deals; list uses paginated
   const allDealsQuery = useAllDeals();
   const paginatedDealsQuery = useDeals({ page, limit: 25 });
   const deleteDeal = useDeleteDeal();
+  const updateDeal = useUpdateDeal();
   const { data: contacts } = useAllContacts();
   const { data: companies } = useAllCompanies();
 
@@ -591,6 +596,72 @@ export default function DealsPage() {
   const [exporting, setExporting] = useState(false);
   const contactMap = useMemo(() => new Map((contacts ?? []).map((c) => [c.id, `${c.first_name} ${c.last_name}`])), [contacts]);
   const companyMap = useMemo(() => new Map((companies ?? []).map((c) => [c.id, c.name])), [companies]);
+
+  // Selection handlers
+  const handleSelectToggle = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const handleSelectAll = (ids: string[], checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => checked ? next.add(id) : next.delete(id));
+      return next;
+    });
+  };
+
+  // Bulk stage update
+  const handleBulkStageUpdate = async (stage: Stage) => {
+    setBulkUpdating(true);
+    try {
+      const isClosed = stage === "closed_won" || stage === "closed_lost";
+      await Promise.all(
+        Array.from(selectedIds).map((id) => {
+          const updates: any = { id, stage };
+          if (isClosed) updates.closed_at = new Date().toISOString();
+          return updateDeal.mutateAsync(updates);
+        })
+      );
+      toast.success(`${selectedIds.size} deal(s) updated to ${STAGE_LABELS[stage]}`);
+      setSelectedIds(new Set());
+    } catch (e: any) {
+      toast.error(e.message ?? "Bulk update failed");
+    }
+    setBulkUpdating(false);
+  };
+
+  // Bulk delete
+  const handleBulkDelete = async () => {
+    setBulkDeleting(true);
+    try {
+      await Promise.all(Array.from(selectedIds).map((id) => deleteDeal.mutateAsync(id)));
+      toast.success(`${selectedIds.size} deal(s) deleted`);
+      setSelectedIds(new Set());
+    } catch (e: any) {
+      toast.error(e.message ?? "Bulk delete failed");
+    }
+    setBulkDeleting(false);
+    setBulkDeleteOpen(false);
+  };
+
+  // Bulk export
+  const handleBulkExport = () => {
+    const allDeals = (view === "kanban" ? allDealsQuery.data : paginatedDealsQuery.data?.data) ?? [];
+    const selected = allDeals.filter((d) => selectedIds.has(d.id));
+    exportToCSV(selected, "deals-selected", [
+      { header: "Title", accessor: (r) => r.title },
+      { header: "Value", accessor: (r) => r.value },
+      { header: "Stage", accessor: (r) => r.stage },
+      { header: "Contact", accessor: (r) => r.contact_id ? contactMap.get(r.contact_id) ?? "" : "" },
+      { header: "Company", accessor: (r) => r.company_id ? companyMap.get(r.company_id) ?? "" : "" },
+      { header: "Expected Close Date", accessor: (r) => r.expected_close_date ? new Date(r.expected_close_date).toLocaleDateString() : "" },
+      { header: "Created Date", accessor: (r) => r.created_at ? new Date(r.created_at).toLocaleDateString() : "" },
+    ]);
+    toast.success(`Exported ${selected.length} deal(s)`);
+  };
 
   const handleExport = async () => {
     setExporting(true);

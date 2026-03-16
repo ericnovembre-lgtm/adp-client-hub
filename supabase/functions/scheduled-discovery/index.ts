@@ -106,18 +106,20 @@ serve(async (req) => {
     criteria += ` Employee count: ${headcount_min || 2}-${headcount_max || 20}. All leads MUST have headcount between 2 and 20.`;
 
     // Call AI
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${lovableApiKey}`,
+        "x-api-key": anthropicApiKey,
+        "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "claude-sonnet-4-20250514",
+        system: DISCOVERY_PROMPT,
         messages: [
-          { role: "system", content: DISCOVERY_PROMPT },
           { role: "user", content: criteria },
         ],
+        max_tokens: 4096,
       }),
     });
 

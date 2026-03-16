@@ -253,6 +253,7 @@ export default function LeadsPage() {
   const [bulkActionPending, setBulkActionPending] = useState(false);
   const [territoryOnly, setTerritoryOnly] = useState(true);
   const [sourceFilter, setSourceFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [bulkConvertOpen, setBulkConvertOpen] = useState(false);
 
   // Knockout dialog state

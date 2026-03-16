@@ -134,6 +134,7 @@ function KnockoutRulesSection() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<KnockoutRule | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [csvImportOpen, setCsvImportOpen] = useState(false);
 
   const tierCounts = useMemo(() => {
     const counts = { prohibited: 0, low_probability: 0, bluefield: 0 };

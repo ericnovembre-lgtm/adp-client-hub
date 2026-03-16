@@ -71,9 +71,9 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+    const anthropicApiKey = Deno.env.get("ANTHROPIC_API_KEY");
 
-    if (!lovableApiKey) throw new Error("LOVABLE_API_KEY not configured");
+    if (!anthropicApiKey) throw new Error("ANTHROPIC_API_KEY not configured");
 
     // Authenticate caller
     const authHeader = req.headers.get("authorization");
@@ -106,18 +106,20 @@ serve(async (req) => {
     criteria += ` Employee count: ${headcount_min || 2}-${headcount_max || 20}. All leads MUST have headcount between 2 and 20.`;
 
     // Call AI
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${lovableApiKey}`,
+        "x-api-key": anthropicApiKey,
+        "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "claude-sonnet-4-20250514",
+        system: DISCOVERY_PROMPT,
         messages: [
-          { role: "system", content: DISCOVERY_PROMPT },
           { role: "user", content: criteria },
         ],
+        max_tokens: 4096,
       }),
     });
 
@@ -128,7 +130,7 @@ serve(async (req) => {
     }
 
     const aiData = await aiResponse.json();
-    const content = aiData.choices?.[0]?.message?.content ?? "[]";
+    const content = aiData.content?.[0]?.text ?? "[]";
 
     // Parse JSON (handle markdown code blocks)
     let rawJson = content.trim();

@@ -1,37 +1,49 @@
 
 
-# Integrate ADP TotalSource Benefits Knowledge
+## Lead Enrichment for Registry-Discovered Leads
 
-## Overview
-Create a new benefits knowledge base file and integrate it into the three edge functions (crm-agent, ai-chat, scheduled-discovery) and frontend product knowledge.
+Registry leads lack headcount, website, and decision-maker contact info. This plan adds a post-discovery enrichment step using the Apollo API (already configured with `APOLLO_API_KEY`).
 
-## Files to Create
+### Architecture
 
-### 1. `src/lib/adpBenefitsKnowledge.ts`
-New file with two exports:
-- `ADP_BENEFITS_KNOWLEDGE` — full benefits knowledge string (~400 lines covering state availability, carriers, renewal rates, benchmarks, competitor intelligence, exception process, selling points)
-- `BENEFITS_KNOWLEDGE_SUMMARY` — compact summary for lighter prompts
+```text
+Registry Discovery (OpenCorporates)
+        │
+        ▼
+   Leads saved (no headcount/contact)
+        │
+        ▼
+   Enrichment step (Apollo People Search)
+        │
+        ▼
+   Update leads with headcount, website,
+   decision maker name/title/email/phone
+```
 
-Content as specified in the user's request.
+### Changes
 
-## Files to Modify
+**1. `supabase/functions/registry-discovery/index.ts`**
+- After saving all registry leads, add an enrichment pass using Apollo's `organizations/enrich` endpoint
+- For each saved lead, call Apollo with the company name + state to get: headcount, website, industry (refined), and a decision-maker contact via `mixed_people/search`
+- Only enrich if `APOLLO_API_KEY` is present (graceful skip otherwise)
+- Update the lead record with enriched data
+- Log enrichment activity
+- Add enrichment stats to the response (`enriched` count)
+- Rate-limit Apollo calls (200ms delay between)
 
-### 2. `supabase/functions/crm-agent/index.ts`
-- **Lines 232-252**: Append benefits knowledge section to `SYSTEM_PROMPT` after the existing product knowledge block. Add a new `ADP TOTALSOURCE BENEFITS KNOWLEDGE` section with the full benefits content inline (edge functions can't import from `src/lib`). Include guidance on when/how to use benefits info (state verification, PRIME requirements, competitor win-backs, fast-pass process).
+**2. `src/components/discovery/RegistryDiscoveryTab.tsx`**
+- Show enrichment results in the summary: "Found X, saved Y, enriched Z"
+- Add an "Enriched" badge on leads that received contact info
+- Show decision maker name/email columns in the results table when available
+- Add a note: "Leads enriched via Apollo (headcount + contacts)" when Apollo key is configured, or "Configure Apollo API key in Settings to auto-enrich leads with headcount & contacts" when not
 
-### 3. `supabase/functions/ai-chat/index.ts`
-- **Lines ~25-26 area** (after existing CORE SERVICES in SYSTEM_PROMPT): Append the `BENEFITS_KNOWLEDGE_SUMMARY` content inline, plus instructions for answering benefits questions (state-specific info, renewal positioning, MLR metrics, program eligibility).
+### Technical Detail
 
-### 4. `supabase/functions/scheduled-discovery/index.ts`
-- **Lines ~60-65 area** (in DISCOVERY_PROMPT, after AI PITCH SUMMARY GUIDANCE): Append benefits summary content for discovery context, plus discovery question examples for benefits-related opportunities.
+The enrichment uses two Apollo endpoints per lead:
+1. `POST /v1/organizations/enrich` with `domain` or `name` — returns headcount, website, industry
+2. `POST /v1/mixed_people/search` with company name + decision-maker titles — returns contact info
 
-### 5. `src/lib/adpProductKnowledge.ts`
-- **Line 568**: Add `benefits` property to the `ADP_PRODUCT_KNOWLEDGE` object with `keyPoints` (state availability, carriers, renewal context, network strength, MLR, competitor focus).
-- **Line 570**: Import and use `ADP_BENEFITS_KNOWLEDGE` and `BENEFITS_KNOWLEDGE_SUMMARY` from the new file, include summary in `getProductKnowledgeForAI()` return.
+Fields updated on the lead: `headcount`, `website`, `industry` (if null), `decision_maker_name`, `decision_maker_title`, `decision_maker_email`, `decision_maker_phone`
 
-## Technical Notes
-- Edge functions cannot import from `src/lib/`, so benefits knowledge must be inlined in each function's prompt string.
-- The full benefits text is ~12KB; `crm-agent` gets the full version, `ai-chat` and `scheduled-discovery` get the summary to keep token usage reasonable.
-- Knowledge version should update to `2026-03-15-v1` across all files to reflect the new content.
-- No database or schema changes required.
+Leads outside territory range (2-20 employees) after enrichment get flagged with a warning activity, consistent with existing scoring behavior.
 

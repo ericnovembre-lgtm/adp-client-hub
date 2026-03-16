@@ -1,4 +1,8 @@
-export const KNOWLEDGE_VERSION = "2026-03-14-v1";
+import { ADP_BENEFITS_KNOWLEDGE, BENEFITS_KNOWLEDGE_SUMMARY } from './adpBenefitsKnowledge';
+
+export { ADP_BENEFITS_KNOWLEDGE, BENEFITS_KNOWLEDGE_SUMMARY };
+
+export const KNOWLEDGE_VERSION = "2026-03-15-v1";
 
 export const ADP_PRODUCT_KNOWLEDGE = {
   // === COMPANY OVERVIEW ===
@@ -564,12 +568,23 @@ export const ADP_PRODUCT_KNOWLEDGE = {
       geography: "US-based with potential for global expansion",
       painLevel: "Spending too much time on HR admin, compliance concerns, or benefits gaps"
     }
+  },
+  benefits: {
+    keyPoints: {
+      stateAvailability: 'PRIME (2+ EEs, $65-75K wage), Standard TS (10+ EEs), TS Select (fast, no underwriting)',
+      carriers: ['Aetna', 'Anthem/BCBS/BCN', 'UnitedHealth (UHC)', 'Kaiser (CA)', 'Medica (MN)'],
+      renewalContext: '11-13% medical inflation; ADP achieves 10-11% in competitive markets',
+      networkStrength: '98.2% in-network utilization vs. industry 95-97%',
+      mlrTargeting: '88% MLR (admin costs) vs. industry 80-85%',
+      competitorFocus: '11 major PEOs with specific win strategies documented'
+    }
   }
 };
 
 export function getProductKnowledgeForAI(): string {
   return `
 ADP TotalSource is the nation's largest IRS-Certified PEO supporting 742,000+ client employees. Key facts:
+- Benefits: State-by-state availability (PRIME, Standard TS, TS Select), carriers (Aetna, Anthem, UHC, Kaiser, Medica), OE2026 renewal rates 10-13%, 98.2% in-network, 88% MLR target
 - 27.2% annual ROI from cost savings alone
 - Only 4% of PEOs are IRS-Certified
 - Clients reduce weekly HR admin from days to under an hour

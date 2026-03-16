@@ -7,7 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const KNOWLEDGE_VERSION = "2026-03-14-v1";
+const KNOWLEDGE_VERSION = "2026-03-15-v1";
 
 // NOTE: Product knowledge below mirrors src/lib/adpProductKnowledge.ts and supabase/functions/ai-chat/index.ts — keep in sync when updating.
 const DISCOVERY_PROMPT = `You are an expert B2B lead generation AI for ADP TotalSource PEO services. Generate realistic prospective company leads that are ideal TotalSource prospects.
@@ -57,6 +57,13 @@ Return a JSON array of exactly 5 lead objects. Each must have:
 - trigger_event (string, 1-2 sentence description of why they need PEO now)
 - trigger_type (string, one of: funding_raised, hiring_surge, multi_state_expansion, compliance_change, competitor_peo_renewal, retirement_mandate, safety_incident, international_growth, latent_need)
 - ai_pitch_summary (string, 2-3 sentences referencing specific ADP TotalSource capabilities relevant to this lead's trigger and industry)
+
+BENEFITS DISCOVERY CONTEXT:
+ADP TotalSource offers state-specific benefits programs (PRIME, Standard TS, TS Select) with carriers including Aetna, Anthem/BCBS, UHC, Kaiser (CA), Medica (MN). OE2026 renewal rates: 10-13% inflation — ADP achieves 10-11% in best markets. Healthcare benchmarks: 98.2% in-network, 88% MLR target. When generating leads, consider benefits-related triggers:
+- Companies facing 15%+ renewal increases (position ADP's competitive rates)
+- Groups with limited carrier options (highlight multi-carrier access)
+- Businesses seeking simplified benefits administration (recommend TS Select)
+- Companies expanding to new states (multi-state benefits consistency)
 
 Return ONLY the JSON array, no markdown or extra text.
 

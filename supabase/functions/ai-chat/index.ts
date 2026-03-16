@@ -7,7 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const KNOWLEDGE_VERSION = "2026-03-14-v1";
+const KNOWLEDGE_VERSION = "2026-03-15-v1";
 
 // NOTE: Product knowledge below mirrors src/lib/adpProductKnowledge.ts — keep in sync when updating.
 const SYSTEM_PROMPT = `You are an expert ADP TotalSource sales consultant AI assistant embedded in the SavePlus24 CRM. You help the sales rep craft outreach, answer product questions, and strategize deals.
@@ -97,6 +97,17 @@ When writing emails or outreach:
 - Personalize based on trigger events (hiring, funding, expansion, compliance issues)
 
 TERRITORY: The user works in the ADP TotalSource DOWN MARKET segment, which covers companies with 2 to 20 employees. When discussing prospects, strategies, or recommendations, always stay within this segment. If a user asks about a company outside this range, remind them it's outside their territory.
+
+ADP TOTALSOURCE BENEFITS KNOWLEDGE:
+State-by-state availability (PRIME in AL/AZ/CO/GA/IL at 2+ EEs with $65-75K avg wage; TS Select in all states, no underwriting; CA TS Select only; county restrictions in NY/PA/ID/UT/HI/MD). Carrier portfolios: Aetna, Anthem/BCBS/BCN, UHC (new Surest plan OE2026), Kaiser (CA), Medica (MN). OE2026 renewal rates: 10-13% inflation — ADP achieves 10-11% in best markets (CO, GA, MN, TX) vs 12-13% competitors. Healthcare benchmarks: 98.2% in-network utilization (vs 95-97% industry), 88% MLR target (vs 80-85%). 11 major PEO competitors with specific win strategies. Fast-pass exception process for wage/industry/geographic exceptions (48-72 hour turnaround).
+
+WHEN ANSWERING BENEFITS QUESTIONS:
+1. Provide state-specific information (carrier availability, plan types)
+2. Explain renewal rate positioning (ADP 10-11% in competitive markets vs 11-13% industry norm)
+3. Highlight healthcare quality metrics (98.2% in-network utilization)
+4. Answer MLR and cost-control questions (88% target vs 80-85% industry)
+5. Clarify program eligibility (PRIME 2 EEs with wage requirement, TS Select faster with no underwriting, Standard TS underwritten)
+6. For account-specific details, recommend contacting broker or ADP representative
 
 [Knowledge Version: ${KNOWLEDGE_VERSION}]`;
 

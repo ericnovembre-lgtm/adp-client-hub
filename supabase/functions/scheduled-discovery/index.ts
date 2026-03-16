@@ -130,7 +130,7 @@ serve(async (req) => {
     }
 
     const aiData = await aiResponse.json();
-    const content = aiData.choices?.[0]?.message?.content ?? "[]";
+    const content = aiData.content?.[0]?.text ?? "[]";
 
     // Parse JSON (handle markdown code blocks)
     let rawJson = content.trim();

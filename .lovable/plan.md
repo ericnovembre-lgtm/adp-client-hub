@@ -1,49 +1,33 @@
 
 
-## Lead Enrichment for Registry-Discovered Leads
+# Make knockout_rules Shared/Global (Revert User Scoping)
 
-Registry leads lack headcount, website, and decision-maker contact info. This plan adds a post-discovery enrichment step using the Apollo API (already configured with `APOLLO_API_KEY`).
+## Overview
 
-### Architecture
+The previous migration added `user_id` scoping to both `email_send_log` and `knockout_rules`. The `email_send_log` scoping is correct, but knockout rules should be shared compliance data visible to all users. This plan reverts knockout_rules to global access.
 
-```text
-Registry Discovery (OpenCorporates)
-        │
-        ▼
-   Leads saved (no headcount/contact)
-        │
-        ▼
-   Enrichment step (Apollo People Search)
-        │
-        ▼
-   Update leads with headcount, website,
-   decision maker name/title/email/phone
-```
+## Database Migration
 
-### Changes
+Replace the 4 user-scoped RLS policies on `knockout_rules` with global policies:
 
-**1. `supabase/functions/registry-discovery/index.ts`**
-- After saving all registry leads, add an enrichment pass using Apollo's `organizations/enrich` endpoint
-- For each saved lead, call Apollo with the company name + state to get: headcount, website, industry (refined), and a decision-maker contact via `mixed_people/search`
-- Only enrich if `APOLLO_API_KEY` is present (graceful skip otherwise)
-- Update the lead record with enriched data
-- Log enrichment activity
-- Add enrichment stats to the response (`enriched` count)
-- Rate-limit Apollo calls (200ms delay between)
+- **SELECT**: All authenticated users can read all rules (`true`)
+- **INSERT**: Authenticated users can insert (keep `user_id` column for audit/ownership, but don't restrict reads)
+- **UPDATE**: Users can update their own rules (`auth.uid() = user_id`)
+- **DELETE**: Users can delete their own rules (`auth.uid() = user_id`)
 
-**2. `src/components/discovery/RegistryDiscoveryTab.tsx`**
-- Show enrichment results in the summary: "Found X, saved Y, enriched Z"
-- Add an "Enriched" badge on leads that received contact info
-- Show decision maker name/email columns in the results table when available
-- Add a note: "Leads enriched via Apollo (headcount + contacts)" when Apollo key is configured, or "Configure Apollo API key in Settings to auto-enrich leads with headcount & contacts" when not
+## Code Changes
 
-### Technical Detail
+**`supabase/functions/crm-agent/index.ts`** (line 395)
+- Remove `.eq("user_id", input.__user_id)` filter from `toolCheckKnockoutRules` so the agent sees all knockout rules globally
 
-The enrichment uses two Apollo endpoints per lead:
-1. `POST /v1/organizations/enrich` with `domain` or `name` — returns headcount, website, industry
-2. `POST /v1/mixed_people/search` with company name + decision-maker titles — returns contact info
+**`src/hooks/useKnockoutRules.ts`** — No changes needed (the query already fetches without user_id filter; RLS will now return all rules)
 
-Fields updated on the lead: `headcount`, `website`, `industry` (if null), `decision_maker_name`, `decision_maker_title`, `decision_maker_email`, `decision_maker_phone`
+**`src/lib/checkKnockoutFromDB.ts`** — No changes needed (same reason)
 
-Leads outside territory range (2-20 employees) after enrichment get flagged with a warning activity, consistent with existing scoring behavior.
+## Files Changed
+
+| File | Change |
+|------|--------|
+| Migration SQL | Replace SELECT RLS policy with permissive `true` for authenticated |
+| `supabase/functions/crm-agent/index.ts` | Remove `.eq("user_id", ...)` filter on knockout_rules query |
 

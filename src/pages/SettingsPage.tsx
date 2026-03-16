@@ -347,6 +347,9 @@ function KnockoutRulesSection() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* CSV Import Dialog */}
+        <KnockoutCSVImportDialog open={csvImportOpen} onOpenChange={setCsvImportOpen} />
       </CardContent>
     </Card>
   );

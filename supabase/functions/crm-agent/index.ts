@@ -392,7 +392,7 @@ async function toolGetActivityHistory(supabase: SupabaseClient, input: Record<st
 }
 
 async function toolCheckKnockoutRules(supabase: SupabaseClient, input: Record<string, any>) {
-  const { data: rules, error } = await supabase.from("knockout_rules").select("*").eq("user_id", input.__user_id);
+  const { data: rules, error } = await supabase.from("knockout_rules").select("*");
   if (error) return { tier: "clear", message: "Unable to check knockout rules", matched: [] };
   const searchText = [input.industry, input.company_name].filter(Boolean).join(" ").toLowerCase();
   const matched = (rules ?? []).filter((rule: any) => {

@@ -58,6 +58,13 @@ Return a JSON array of exactly 5 lead objects. Each must have:
 - trigger_type (string, one of: funding_raised, hiring_surge, multi_state_expansion, compliance_change, competitor_peo_renewal, retirement_mandate, safety_incident, international_growth, latent_need)
 - ai_pitch_summary (string, 2-3 sentences referencing specific ADP TotalSource capabilities relevant to this lead's trigger and industry)
 
+BENEFITS DISCOVERY CONTEXT:
+ADP TotalSource offers state-specific benefits programs (PRIME, Standard TS, TS Select) with carriers including Aetna, Anthem/BCBS, UHC, Kaiser (CA), Medica (MN). OE2026 renewal rates: 10-13% inflation — ADP achieves 10-11% in best markets. Healthcare benchmarks: 98.2% in-network, 88% MLR target. When generating leads, consider benefits-related triggers:
+- Companies facing 15%+ renewal increases (position ADP's competitive rates)
+- Groups with limited carrier options (highlight multi-carrier access)
+- Businesses seeking simplified benefits administration (recommend TS Select)
+- Companies expanding to new states (multi-state benefits consistency)
+
 Return ONLY the JSON array, no markdown or extra text.
 
 [Knowledge Version: ${KNOWLEDGE_VERSION}]`;

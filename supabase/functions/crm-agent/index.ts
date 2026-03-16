@@ -249,7 +249,31 @@ After answering the user's question, if you notice relevant patterns, briefly me
 - Stalled deals with no activity
 - Leads outside territory
 - Overdue tasks
-Keep proactive suggestions to one sentence. Don't be pushy.`;
+Keep proactive suggestions to one sentence. Don't be pushy.
+
+ADP TOTALSOURCE BENEFITS KNOWLEDGE:
+
+MARKET AVAILABILITY: PRIME available at 2+ EEs in AL, AZ, CO, GA, IL (avg wage $65-75K required). Standard TS at 10+ EEs. TS Select (no underwriting) available in all states. CA: TS Select only (no PRIME). HI: Refer to TS Field. ID: Exception basis only (10+ EEs). MD: TS Select any size, Standard TS 60+ EEs. MI/MN: Restrictions apply. NV, NM, OK, OR, UT, NY, PA: County restrictions — verify with underwriting. TX: All programs, no major restrictions.
+
+CARRIERS (OE2026): Aetna (PPO/HMO/POS, new Choice POS II, 12% rate trend) in AL/AZ/CO/GA/IL/TX. Anthem/BCBS/BCN (PPO dominant, 11% trend) in CA/CO/GA/IL/MI/MN/TX. UHC (PPO/HMO/HRA, new Surest plan, 13% trend) in AL/AZ/CO/GA/IL/NV/OR/TX. Kaiser (CA HMO only, 10% trend). Medica (MN only, 9% trend — lowest). Dental: Delta Dental primary ($4-12/mo), Cigna secondary. Vision: VSP primary ($3-8/mo), Eyemed secondary.
+
+RENEWAL RATES (OE2026): Best markets 10-11% (CO, GA, MN, TX). Standard 11-12% (AL, AZ, IL, CA). High 12-13%+ (MI, NY, NV). Plan terminations: Aetna PPO phasing out in MI; Aetna standard plans ending in MN. New plans: UHC Surest, Aetna Choice POS II.
+
+HEALTHCARE BENCHMARKS: 98.2% in-network utilization (vs industry 95-97%), 88% MLR target (vs 80-85%), 86.8% pharmacy utilization, 82% established PCP, 28% CDHP adoption (vs 23% national), 87% vaccine compliance. HSA benchmarks: Single avg $750, Family avg $4,500.
+
+BENEFITS COMPETITOR INTELLIGENCE (11 PEOs): BBSI — limited benefits flex, win with TS flexibility. Paychex — limited customization, win with TS Select simplicity. Insperity — high costs/rigid structures, win with 15-25% savings. CoAdvantage — limited multi-state, win with consistency. Amplify HR — limited scale, win with carrier breadth. NextEP — carrier restrictions, win with superior options. Oasis — limited leverage, win with volume discounts. Engage/TriZetto — complex admin, win with simplified TS. Frank Crum — limited tech, win with modern platform. G&A Partners — benefits secondary, win with expertise focus. GMS — restricted portfolio, win with broader access.
+
+FAST-PASS EXCEPTION PROCESS: For wage/industry/geographic/health exceptions. Submit via ADP benefits portal with 3 months payroll + census + justification. Review in 48-72 hours. Outcomes: approved, approved with conditions, or denied (escalate to underwriting VP).
+
+BENEFITS SELLING POINTS: (1) 98.2% in-network vs 95-97% industry. (2) 88% MLR = $12 admin per $100 vs $15-20 industry. (3) Multi-carrier access (Aetna, Anthem, UHC, Kaiser, Medica). (4) TS Select: no underwriting, 30-day implementation. (5) Best-market renewals 10-11% vs 12-13% competitors. (6) Transparent rate tracking and claims reporting.
+
+WHEN ANSWERING BENEFITS QUESTIONS:
+1. Always verify state availability before recommending programs
+2. Confirm wage requirements for PRIME ($65-75K average)
+3. Reference healthcare benchmarks (98.2% in-network, 88% MLR) as selling points
+4. For competitor questions, reference specific win-back strategies
+5. For complex situations (wage/geographic/health exceptions), recommend fast-pass process
+6. County restrictions in NY, PA, ID, UT, HI, MD — recommend broker/field team consultation`;
 
 async function executeTool(toolName: string, input: Record<string, any>, supabase: SupabaseClient, userId: string): Promise<any> {
   // Inject userId into input for tools that insert data

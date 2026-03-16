@@ -580,6 +580,7 @@ export const ADP_PRODUCT_KNOWLEDGE = {
 export function getProductKnowledgeForAI(): string {
   return `
 ADP TotalSource is the nation's largest IRS-Certified PEO supporting 742,000+ client employees. Key facts:
+- Benefits: State-by-state availability (PRIME, Standard TS, TS Select), carriers (Aetna, Anthem, UHC, Kaiser, Medica), OE2026 renewal rates 10-13%, 98.2% in-network, 88% MLR target
 - 27.2% annual ROI from cost savings alone
 - Only 4% of PEOs are IRS-Certified
 - Clients reduce weekly HR admin from days to under an hour

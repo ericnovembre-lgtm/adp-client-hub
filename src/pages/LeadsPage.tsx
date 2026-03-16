@@ -842,6 +842,17 @@ export default function LeadsPage() {
                           />
                         </TableCell>
                         <TableCell className="font-medium">{lead.company_name}</TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          {(() => {
+                            const src = lead.source;
+                            const config = src === "auto_discovery"
+                              ? { label: "AI Discovery", className: "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700" }
+                              : src === "csv_import"
+                              ? { label: "CSV Import", className: "bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-700" }
+                              : { label: "Manual", className: "bg-muted text-muted-foreground border-border" };
+                            return <Badge variant="outline" className={config.className}>{config.label}</Badge>;
+                          })()}
+                        </TableCell>
                         <TableCell>
                           <div>{lead.decision_maker_name ?? "—"}</div>
                           {lead.decision_maker_title && (

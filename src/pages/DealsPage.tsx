@@ -742,6 +742,9 @@ export default function DealsPage() {
           onDelete={(id) => setDeleteId(id)}
           onClickDeal={(d) => setDetailDeal(d)}
           onAdd={openAdd}
+          selectedIds={selectedIds}
+          onSelectToggle={handleSelectToggle}
+          onSelectAll={handleSelectAll}
         />
       )}
 

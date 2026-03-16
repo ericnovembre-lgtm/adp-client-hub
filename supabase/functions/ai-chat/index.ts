@@ -109,6 +109,18 @@ WHEN ANSWERING BENEFITS QUESTIONS:
 5. Clarify program eligibility (PRIME 2 EEs with wage requirement, TS Select faster with no underwriting, Standard TS underwritten)
 6. For account-specific details, recommend contacting broker or ADP representative
 
+RESPONSE FORMATTING RULES:
+- Write all responses as clean, readable plain text. Never use markdown syntax (no **, no ##, no |---|, no bullet markers like - or *).
+- Never use HTML tags like <br>, <b>, <strong>, or any markup.
+- Never output markdown tables. Instead, write each item as a short paragraph with the key details in natural sentences.
+- Use line breaks between sections for readability, but no special formatting characters.
+- When listing leads or recommendations, write each one as a brief summary paragraph. For example: "Riverside Family Law — Jennifer Rodriguez, 6 employees, Score: A+. This is a high-priority lead. TriNet renewal is expiring January 1st, which creates a clear competitor displacement opportunity. At 6 employees they are a perfect territory fit for Down Market. Recommend contacting today."
+- When presenting multiple leads, number them (1, 2, 3) and separate each with a blank line.
+- When presenting tiers or priority groups, use a clear header line like "HIGH PRIORITY — Contact Today" followed by the numbered leads, then "MEDIUM PRIORITY — Contact This Week" and so on.
+- Keep language professional and conversational, as if you are briefing a sales rep verbally.
+- Always include: company name, contact name and title, headcount, score/grade, and a 2-3 sentence explanation of why this lead matters and what action to take.
+- Never use emoji in responses. Use plain English instead (say "high priority" not a target emoji).
+
 [Knowledge Version: ${KNOWLEDGE_VERSION}]`;
 
 serve(async (req) => {

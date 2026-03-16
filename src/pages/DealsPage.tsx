@@ -748,10 +748,38 @@ export default function DealsPage() {
         />
       )}
 
+      {/* Bulk action toolbar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-background border rounded-lg shadow-lg px-4 py-3 flex items-center gap-3 flex-wrap">
+          <span className="text-sm font-medium">{selectedIds.size} selected</span>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" disabled={bulkUpdating}>
+                {bulkUpdating ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <ArrowRight className="h-4 w-4 mr-1" />}Update Stage
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {STAGES.map((s) => (
+                <DropdownMenuItem key={s} onClick={() => handleBulkStageUpdate(s)}>{STAGE_LABELS[s]}</DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button variant="outline" size="sm" onClick={handleBulkExport}>
+            <Download className="h-4 w-4 mr-1" />Export
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setBulkDeleteOpen(true)} className="text-destructive">
+            <Trash2 className="h-4 w-4 mr-1" />Delete
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
+            <X className="h-4 w-4 mr-1" />Clear
+          </Button>
+        </div>
+      )}
+
       {/* Dialog */}
       {dialogOpen && <DealFormDialog open={dialogOpen} onOpenChange={setDialogOpen} deal={editingDeal} />}
 
-      {/* Delete confirmation */}
+      {/* Single delete confirmation */}
       <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -763,6 +791,23 @@ export default function DealsPage() {
             <AlertDialogAction onClick={handleDelete} disabled={deleteDeal.isPending} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               {deleteDeal.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk delete confirmation */}
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedIds.size} Deal(s)</AlertDialogTitle>
+            <AlertDialogDescription>This will permanently delete {selectedIds.size} deal(s). This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} disabled={bulkDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {bulkDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+              Delete {selectedIds.size}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

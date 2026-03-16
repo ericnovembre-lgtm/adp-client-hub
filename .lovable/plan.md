@@ -1,49 +1,44 @@
 
 
-## Lead Enrichment for Registry-Discovered Leads
+## Add "Copy Email Only" Button to Agent Responses
 
-Registry leads lack headcount, website, and decision-maker contact info. This plan adds a post-discovery enrichment step using the Apollo API (already configured with `APOLLO_API_KEY`).
+### What
+Add a second copy button (mail icon) next to the existing copy-all button on assistant messages that contain an email draft. This button extracts only the Subject + Body portion, skipping strategy explanations.
 
-### Architecture
+### How
 
+**File: `src/components/AgentPanel.tsx`**
+
+1. Add an `extractEmail` utility function that parses assistant message text to find the email portion using these heuristics:
+   - Look for "SUBJECT:" (case-insensitive) as the start marker
+   - Capture everything from "SUBJECT:" until hitting a section header like "STRATEGY", "WHY THIS WORKS", "KEY POINTS", "NOTES", or end of text
+   - Return `null` if no email pattern found
+
+2. Add a `CopyEmailButton` component (mail icon) similar to `CopyButton`:
+   - Only rendered when `extractEmail(msg.content)` returns non-null
+   - Positioned next to the existing copy button (e.g. `right-8` vs `right-1`)
+   - Uses `Mail` icon (already imported), swaps to `Check` on success
+   - Tooltip or toast says "Email copied!"
+
+3. Update `MessageBubble` to render both buttons when an email is detected:
+   - Existing `CopyButton` (copies full response) stays at `right-1`
+   - New `CopyEmailButton` at `right-8`, only shown when email content exists
+
+### Parsing Logic
 ```text
-Registry Discovery (OpenCorporates)
-        │
-        ▼
-   Leads saved (no headcount/contact)
-        │
-        ▼
-   Enrichment step (Apollo People Search)
-        │
-        ▼
-   Update leads with headcount, website,
-   decision maker name/title/email/phone
+Response text structure (typical):
+  "SUBJECT: ...
+   Hi [Name],
+   [body paragraphs]
+
+   STRATEGY / WHY THIS WORKS / NOTES:
+   [explanation paragraphs]"
+
+extractEmail() grabs from "SUBJECT" to the strategy section break.
 ```
 
-### Changes
-
-**1. `supabase/functions/registry-discovery/index.ts`**
-- After saving all registry leads, add an enrichment pass using Apollo's `organizations/enrich` endpoint
-- For each saved lead, call Apollo with the company name + state to get: headcount, website, industry (refined), and a decision-maker contact via `mixed_people/search`
-- Only enrich if `APOLLO_API_KEY` is present (graceful skip otherwise)
-- Update the lead record with enriched data
-- Log enrichment activity
-- Add enrichment stats to the response (`enriched` count)
-- Rate-limit Apollo calls (200ms delay between)
-
-**2. `src/components/discovery/RegistryDiscoveryTab.tsx`**
-- Show enrichment results in the summary: "Found X, saved Y, enriched Z"
-- Add an "Enriched" badge on leads that received contact info
-- Show decision maker name/email columns in the results table when available
-- Add a note: "Leads enriched via Apollo (headcount + contacts)" when Apollo key is configured, or "Configure Apollo API key in Settings to auto-enrich leads with headcount & contacts" when not
-
-### Technical Detail
-
-The enrichment uses two Apollo endpoints per lead:
-1. `POST /v1/organizations/enrich` with `domain` or `name` — returns headcount, website, industry
-2. `POST /v1/mixed_people/search` with company name + decision-maker titles — returns contact info
-
-Fields updated on the lead: `headcount`, `website`, `industry` (if null), `decision_maker_name`, `decision_maker_title`, `decision_maker_email`, `decision_maker_phone`
-
-Leads outside territory range (2-20 employees) after enrichment get flagged with a warning activity, consistent with existing scoring behavior.
+### Design
+- Mail icon button, same ghost styling as existing copy button
+- Both buttons visible on hover, mail icon on left, copy-all on right
+- Only mail button appears when email content is detected; copy-all always shown
 

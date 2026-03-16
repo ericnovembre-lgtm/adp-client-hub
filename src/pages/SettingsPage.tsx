@@ -19,9 +19,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Loader2, Save, Download, Database, Info, Plus, Search, Pencil, Trash2, ShieldX, Bot, CheckCircle2, XCircle, Zap, BarChart3, Building2 } from "lucide-react";
+import { Loader2, Save, Download, Database, Info, Plus, Search, Pencil, Trash2, ShieldX, Bot, CheckCircle2, XCircle, Zap, BarChart3, Building2, Upload } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import KnockoutCSVImportDialog from "@/components/KnockoutCSVImportDialog";
 
 const US_STATES = [
   "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",
@@ -133,6 +134,7 @@ function KnockoutRulesSection() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<KnockoutRule | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [csvImportOpen, setCsvImportOpen] = useState(false);
 
   const tierCounts = useMemo(() => {
     const counts = { prohibited: 0, low_probability: 0, bluefield: 0 };
@@ -232,6 +234,9 @@ function KnockoutRulesSection() {
               className="pl-9"
             />
           </div>
+          <Button size="sm" variant="outline" onClick={() => setCsvImportOpen(true)}>
+            <Upload className="h-4 w-4 mr-1" /> Import CSV
+          </Button>
           <Button size="sm" onClick={() => { setEditingRule(null); setDialogOpen(true); }}>
             <Plus className="h-4 w-4 mr-1" /> Add Rule
           </Button>
@@ -342,6 +347,9 @@ function KnockoutRulesSection() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* CSV Import Dialog */}
+        <KnockoutCSVImportDialog open={csvImportOpen} onOpenChange={setCsvImportOpen} />
       </CardContent>
     </Card>
   );

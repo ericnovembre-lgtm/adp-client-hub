@@ -253,6 +253,7 @@ export default function LeadsPage() {
   const [bulkActionPending, setBulkActionPending] = useState(false);
   const [territoryOnly, setTerritoryOnly] = useState(true);
   const [sourceFilter, setSourceFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [bulkConvertOpen, setBulkConvertOpen] = useState(false);
 
   // Knockout dialog state
@@ -296,8 +297,11 @@ export default function LeadsPage() {
         filtered = filtered.filter(l => l.source === sourceFilter);
       }
     }
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(l => l.status === statusFilter);
+    }
     return filtered;
-  }, [allLeads, territoryOnly, sourceFilter]);
+  }, [allLeads, territoryOnly, sourceFilter, statusFilter]);
 
   // Pre-compute knockout results for all visible leads
   const knockoutMap = useMemo(() => {
@@ -716,6 +720,19 @@ export default function LeadsPage() {
               <SelectItem value="auto_discovery">Auto Discovery</SelectItem>
               <SelectItem value="csv_import">CSV Import</SelectItem>
               <SelectItem value="manual">Manual</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+            <SelectTrigger className="w-[160px] h-9 shrink-0">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="new">New</SelectItem>
+              <SelectItem value="contacted">Contacted</SelectItem>
+              <SelectItem value="qualified">Qualified</SelectItem>
+              <SelectItem value="converted">Converted</SelectItem>
+              <SelectItem value="dismissed">Dismissed</SelectItem>
             </SelectContent>
           </Select>
           <Button

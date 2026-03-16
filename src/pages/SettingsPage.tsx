@@ -284,6 +284,9 @@ function KnockoutRulesSection() {
                       <TableCell className="hidden lg:table-cell text-muted-foreground text-xs max-w-[250px] truncate">
                         {rule.conditions || "—"}
                       </TableCell>
+                      <TableCell className="hidden xl:table-cell text-muted-foreground text-xs">
+                        {rule.created_by_name || "—"}
+                      </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
                           <Button

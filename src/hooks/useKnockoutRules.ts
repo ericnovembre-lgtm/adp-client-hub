@@ -10,6 +10,7 @@ export interface KnockoutRule {
   conditions: string | null;
   created_at: string | null;
   user_id: string;
+  created_by_name?: string;
 }
 
 export function useKnockoutRules(tier?: string) {
@@ -22,7 +23,24 @@ export function useKnockoutRules(tier?: string) {
       }
       const { data, error } = await query;
       if (error) throw error;
-      return data as KnockoutRule[];
+      const rules = data as KnockoutRule[];
+
+      // Batch-fetch creator names
+      const userIds = [...new Set(rules.map(r => r.user_id))];
+      if (userIds.length > 0) {
+        const { data: users } = await supabase
+          .from("users")
+          .select("id, name, username, email")
+          .in("id", userIds);
+        const userMap = new Map(
+          (users ?? []).map(u => [u.id, u.name || u.username || u.email || "Unknown"])
+        );
+        for (const rule of rules) {
+          rule.created_by_name = userMap.get(rule.user_id) ?? "Unknown";
+        }
+      }
+
+      return rules;
     },
   });
 }

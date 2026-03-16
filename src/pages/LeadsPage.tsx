@@ -297,8 +297,11 @@ export default function LeadsPage() {
         filtered = filtered.filter(l => l.source === sourceFilter);
       }
     }
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(l => l.status === statusFilter);
+    }
     return filtered;
-  }, [allLeads, territoryOnly, sourceFilter]);
+  }, [allLeads, territoryOnly, sourceFilter, statusFilter]);
 
   // Pre-compute knockout results for all visible leads
   const knockoutMap = useMemo(() => {

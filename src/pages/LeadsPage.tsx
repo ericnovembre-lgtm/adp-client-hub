@@ -707,6 +707,17 @@ export default function LeadsPage() {
             <Filter className="h-4 w-4 mr-1" />
             {territoryOnly ? `My Territory (${HEADCOUNT_MIN}–${HEADCOUNT_MAX})` : "All Leads"}
           </Button>
+          <Select value={sourceFilter} onValueChange={(v) => { setSourceFilter(v); setPage(1); }}>
+            <SelectTrigger className="w-[160px] h-9 shrink-0">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sources</SelectItem>
+              <SelectItem value="auto_discovery">Auto Discovery</SelectItem>
+              <SelectItem value="csv_import">CSV Import</SelectItem>
+              <SelectItem value="manual">Manual</SelectItem>
+            </SelectContent>
+          </Select>
           <Button
             variant="outline"
             onClick={() => {

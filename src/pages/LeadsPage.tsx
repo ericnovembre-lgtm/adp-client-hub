@@ -789,6 +789,7 @@ export default function LeadsPage() {
                 />
               </TableHead>
               <TableHead>Company Name</TableHead>
+              <TableHead className="hidden sm:table-cell">Source</TableHead>
               <TableHead>Decision Maker</TableHead>
               <TableHead className="hidden md:table-cell">Headcount</TableHead>
               <TableHead className="hidden lg:table-cell">Industry</TableHead>
@@ -805,7 +806,7 @@ export default function LeadsPage() {
             {isLoading
               ? Array.from({ length: 8 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 12 }).map((_, j) => (
+                    {Array.from({ length: 13 }).map((_, j) => (
                       <TableCell key={j}>
                         <Skeleton className="h-4 w-full" />
                       </TableCell>
@@ -814,7 +815,7 @@ export default function LeadsPage() {
                 ))
               : leads.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={12} className="text-center text-muted-foreground py-12">
+                    <TableCell colSpan={13} className="text-center text-muted-foreground py-12">
                       <Users className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
                       <p className="font-medium">No leads yet</p>
                       <p className="text-sm mt-1 max-w-md mx-auto">Use AI Discovery to automatically find companies that are a great fit for ADP TotalSource, or add leads manually.</p>
@@ -841,6 +842,17 @@ export default function LeadsPage() {
                           />
                         </TableCell>
                         <TableCell className="font-medium">{lead.company_name}</TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          {(() => {
+                            const src = lead.source;
+                            const config = src === "auto_discovery"
+                              ? { label: "AI Discovery", className: "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700" }
+                              : src === "csv_import"
+                              ? { label: "CSV Import", className: "bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-700" }
+                              : { label: "Manual", className: "bg-muted text-muted-foreground border-border" };
+                            return <Badge variant="outline" className={config.className}>{config.label}</Badge>;
+                          })()}
+                        </TableCell>
                         <TableCell>
                           <div>{lead.decision_maker_name ?? "—"}</div>
                           {lead.decision_maker_title && (

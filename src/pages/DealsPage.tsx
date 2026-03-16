@@ -452,6 +452,9 @@ function ListView({
   onDelete,
   onClickDeal,
   onAdd,
+  selectedIds,
+  onSelectToggle,
+  onSelectAll,
 }: {
   deals: Deal[];
   contacts: Pick<Contact, "id" | "first_name" | "last_name">[];
@@ -465,9 +468,13 @@ function ListView({
   onDelete: (id: string) => void;
   onClickDeal: (d: Deal) => void;
   onAdd: () => void;
+  selectedIds: Set<string>;
+  onSelectToggle: (id: string) => void;
+  onSelectAll: (ids: string[], checked: boolean) => void;
 }) {
   const contactMap = useMemo(() => new Map(contacts.map((c) => [c.id, `${c.first_name} ${c.last_name}`])), [contacts]);
   const companyMap = useMemo(() => new Map(companies.map((c) => [c.id, c.name])), [companies]);
+  const allSelected = deals.length > 0 && deals.every((d) => selectedIds.has(d.id));
 
   return (
     <>
@@ -475,6 +482,9 @@ function ListView({
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">
+                <Checkbox checked={allSelected} onCheckedChange={(checked) => onSelectAll(deals.map((d) => d.id), !!checked)} />
+              </TableHead>
               <TableHead>Title</TableHead>
               <TableHead>Value</TableHead>
               <TableHead>Stage</TableHead>
@@ -488,10 +498,10 @@ function ListView({
           <TableBody>
             {isLoading ? (
               Array.from({ length: 8 }).map((_, i) => (
-                <TableRow key={i}>{Array.from({ length: 8 }).map((_, j) => <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>)}</TableRow>
+                <TableRow key={i}>{Array.from({ length: 9 }).map((_, j) => <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>)}</TableRow>
               ))
             ) : deals.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-12">
+              <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-12">
                 <DollarSign className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
                 <p className="font-medium">No deals yet</p>
                 <p className="text-sm mt-1 max-w-md mx-auto">Convert a qualified lead to start tracking your ADP TotalSource pipeline.</p>
@@ -501,7 +511,10 @@ function ListView({
               </TableCell></TableRow>
             ) : (
               deals.map((d) => (
-                <TableRow key={d.id}>
+                <TableRow key={d.id} className={cn(selectedIds.has(d.id) && "bg-muted/50")}>
+                  <TableCell>
+                    <Checkbox checked={selectedIds.has(d.id)} onCheckedChange={() => onSelectToggle(d.id)} />
+                  </TableCell>
                   <TableCell className="font-medium">
                     <button onClick={() => onClickDeal(d)} className="text-primary hover:underline text-left">{d.title}</button>
                   </TableCell>

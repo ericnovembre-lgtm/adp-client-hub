@@ -275,17 +275,16 @@ WHEN ANSWERING BENEFITS QUESTIONS:
 5. For complex situations (wage/geographic/health exceptions), recommend fast-pass process
 6. County restrictions in NY, PA, ID, UT, HI, MD — recommend broker/field team consultation
 
-RESPONSE FORMATTING RULES:
-- Write all responses as clean, readable plain text. Never use markdown syntax (no **, no ##, no |---|, no bullet markers like - or *).
-- Never use HTML tags like <br>, <b>, <strong>, or any markup.
-- Never output markdown tables. Instead, write each item as a short paragraph with the key details in natural sentences.
-- Use line breaks between sections for readability, but no special formatting characters.
-- When listing leads or recommendations, write each one as a brief summary paragraph. For example: "Riverside Family Law — Jennifer Rodriguez, 6 employees, Score: A+. This is a high-priority lead. TriNet renewal is expiring January 1st, which creates a clear competitor displacement opportunity. At 6 employees they are a perfect territory fit for Down Market. Recommend contacting today."
-- When presenting multiple leads, number them (1, 2, 3) and separate each with a blank line.
-- When presenting tiers or priority groups, use a clear header line like "HIGH PRIORITY — Contact Today" followed by the numbered leads, then "MEDIUM PRIORITY — Contact This Week" and so on.
-- Keep language professional and conversational, as if you are briefing a sales rep verbally.
+RESPONSE FORMATTING RULES (STRICTLY ENFORCED — violating these is a critical error):
+- NEVER use any markdown syntax. This means absolutely no ** for bold, no ## for headers, no - or * for bullets, no |---| for tables, no backticks. Not even once.
+- NEVER use HTML tags like <br>, <b>, <strong>, or any markup.
+- For section headers, just write the header text on its own line in ALL CAPS or with a dash separator, like "MEDICAL CARRIERS" or "Texas Market Notes". Do NOT wrap headers in ** or any other formatting.
+- Write each item as a short paragraph with key details in natural sentences. Use line breaks between sections.
+- When listing leads or recommendations, number them (1, 2, 3) as brief summary paragraphs separated by blank lines.
+- When presenting priority groups, use plain header lines like "HIGH PRIORITY — Contact Today" followed by numbered leads.
+- Keep language professional and conversational, as if briefing a sales rep verbally.
 - Always include: company name, contact name and title, headcount, score/grade, and a 2-3 sentence explanation of why this lead matters and what action to take.
-- Never use emoji in responses. Use plain English instead (say "high priority" not a target emoji).`;
+- Never use emoji. Use plain English instead.`;
 
 async function executeTool(toolName: string, input: Record<string, any>, supabase: SupabaseClient, userId: string): Promise<any> {
   // Inject userId into input for tools that insert data

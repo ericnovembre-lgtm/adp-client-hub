@@ -70,11 +70,29 @@ function ToolCallCard({ tc }: { tc: AgentToolCall }) {
   );
 }
 
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    toast.success("Copied!");
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <button
+      onClick={handleCopy}
+      className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md bg-background/80 hover:bg-accent text-muted-foreground"
+    >
+      {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+    </button>
+  );
+}
+
 function MessageBubble({ msg }: { msg: AgentMessage }) {
   if (msg.role === "user") {
     return (
       <div className="flex justify-end">
-        <div className="bg-blue-600 text-white rounded-2xl rounded-br-sm px-4 py-2 max-w-[80%] text-sm whitespace-pre-wrap">
+        <div className="bg-primary text-primary-foreground rounded-2xl rounded-br-sm px-4 py-2 max-w-[80%] text-sm whitespace-pre-wrap">
           {msg.content}
         </div>
       </div>
@@ -85,8 +103,11 @@ function MessageBubble({ msg }: { msg: AgentMessage }) {
     <div className="flex justify-start">
       <div className="max-w-[85%] space-y-2">
         {msg.content && (
-          <div className="bg-muted text-foreground rounded-2xl rounded-bl-sm px-4 py-2 text-sm whitespace-pre-wrap">
-            {msg.content}
+          <div className="relative group">
+            <div className="bg-muted text-foreground rounded-2xl rounded-bl-sm px-4 py-2 text-sm whitespace-pre-wrap">
+              {msg.content}
+            </div>
+            <CopyButton text={msg.content} />
           </div>
         )}
         {msg.toolCalls?.map((tc, i) => (

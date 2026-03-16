@@ -252,6 +252,7 @@ export default function LeadsPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [bulkActionPending, setBulkActionPending] = useState(false);
   const [territoryOnly, setTerritoryOnly] = useState(true);
+  const [sourceFilter, setSourceFilter] = useState("all");
   const [bulkConvertOpen, setBulkConvertOpen] = useState(false);
 
   // Knockout dialog state
@@ -282,11 +283,21 @@ export default function LeadsPage() {
 
   const allLeads = data?.data ?? [];
 
-  // Territory filter (client-side)
+  // Territory + source filter (client-side)
   const leads = useMemo(() => {
-    if (!territoryOnly) return allLeads;
-    return allLeads.filter(l => l.headcount == null || isInTerritory(l.headcount));
-  }, [allLeads, territoryOnly]);
+    let filtered = allLeads;
+    if (territoryOnly) {
+      filtered = filtered.filter(l => l.headcount == null || isInTerritory(l.headcount));
+    }
+    if (sourceFilter !== "all") {
+      if (sourceFilter === "manual") {
+        filtered = filtered.filter(l => !l.source || l.source === "");
+      } else {
+        filtered = filtered.filter(l => l.source === sourceFilter);
+      }
+    }
+    return filtered;
+  }, [allLeads, territoryOnly, sourceFilter]);
 
   // Pre-compute knockout results for all visible leads
   const knockoutMap = useMemo(() => {
@@ -696,6 +707,17 @@ export default function LeadsPage() {
             <Filter className="h-4 w-4 mr-1" />
             {territoryOnly ? `My Territory (${HEADCOUNT_MIN}–${HEADCOUNT_MAX})` : "All Leads"}
           </Button>
+          <Select value={sourceFilter} onValueChange={(v) => { setSourceFilter(v); setPage(1); }}>
+            <SelectTrigger className="w-[160px] h-9 shrink-0">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sources</SelectItem>
+              <SelectItem value="auto_discovery">Auto Discovery</SelectItem>
+              <SelectItem value="csv_import">CSV Import</SelectItem>
+              <SelectItem value="manual">Manual</SelectItem>
+            </SelectContent>
+          </Select>
           <Button
             variant="outline"
             onClick={() => {

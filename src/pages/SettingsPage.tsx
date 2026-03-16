@@ -254,14 +254,14 @@ function KnockoutRulesSection() {
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 5 }).map((_, j) => (
+                    {Array.from({ length: 6 }).map((_, j) => (
                       <TableCell key={j}><div className="h-4 bg-muted animate-pulse rounded" /></TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : filteredRules.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                     No knockout rules found
                   </TableCell>
                 </TableRow>

@@ -1,49 +1,22 @@
 
 
-## Lead Enrichment for Registry-Discovered Leads
+# Fix send-crm-email Edge Function
 
-Registry leads lack headcount, website, and decision-maker contact info. This plan adds a post-discovery enrichment step using the Apollo API (already configured with `APOLLO_API_KEY`).
+## Overview
+Two bugs: broken auth method (`getClaims` doesn't exist) and email sending via a Lovable-only endpoint. Fix auth to use `getUser()` and switch email delivery to Resend API.
 
-### Architecture
+## Changes
 
-```text
-Registry Discovery (OpenCorporates)
-        │
-        ▼
-   Leads saved (no headcount/contact)
-        │
-        ▼
-   Enrichment step (Apollo People Search)
-        │
-        ▼
-   Update leads with headcount, website,
-   decision maker name/title/email/phone
-```
+### `supabase/functions/send-crm-email/index.ts`
 
-### Changes
+1. **Fix auth (lines 29-38)**: Replace `getClaims(token)` with `supabaseAuth.auth.getUser()` — the standard method that validates the JWT from the Authorization header automatically.
 
-**1. `supabase/functions/registry-discovery/index.ts`**
-- After saving all registry leads, add an enrichment pass using Apollo's `organizations/enrich` endpoint
-- For each saved lead, call Apollo with the company name + state to get: headcount, website, industry (refined), and a decision-maker contact via `mixed_people/search`
-- Only enrich if `APOLLO_API_KEY` is present (graceful skip otherwise)
-- Update the lead record with enriched data
-- Log enrichment activity
-- Add enrichment stats to the response (`enriched` count)
-- Rate-limit Apollo calls (200ms delay between)
+2. **Fix email sending (lines 81-102)**: Replace the `api.lovable.dev/v1/email/send` call with Resend API (`https://api.resend.com/emails`). Uses `RESEND_API_KEY` secret and optional `FROM_EMAIL` env var (defaults to `noreply@resend.dev` for testing).
 
-**2. `src/components/discovery/RegistryDiscoveryTab.tsx`**
-- Show enrichment results in the summary: "Found X, saved Y, enriched Z"
-- Add an "Enriched" badge on leads that received contact info
-- Show decision maker name/email columns in the results table when available
-- Add a note: "Leads enriched via Apollo (headcount + contacts)" when Apollo key is configured, or "Configure Apollo API key in Settings to auto-enrich leads with headcount & contacts" when not
+### Secret needed: `RESEND_API_KEY`
+- Sign up at resend.com (free tier: 100 emails/day, no credit card)
+- Get API key from dashboard
+- Will prompt you to add it as an Edge Function secret
 
-### Technical Detail
-
-The enrichment uses two Apollo endpoints per lead:
-1. `POST /v1/organizations/enrich` with `domain` or `name` — returns headcount, website, industry
-2. `POST /v1/mixed_people/search` with company name + decision-maker titles — returns contact info
-
-Fields updated on the lead: `headcount`, `website`, `industry` (if null), `decision_maker_name`, `decision_maker_title`, `decision_maker_email`, `decision_maker_phone`
-
-Leads outside territory range (2-20 employees) after enrichment get flagged with a warning activity, consistent with existing scoring behavior.
+No frontend changes needed.
 

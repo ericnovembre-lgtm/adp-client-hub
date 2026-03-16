@@ -2,7 +2,9 @@ import { useState, useRef, useEffect } from "react";
 import {
   Bot, Sparkles, RotateCcw, ArrowUp, Search, BarChart3,
   ShieldCheck, Pencil, Plus, FileText, Mail, Wrench, ChevronDown,
+  Copy, Check,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";

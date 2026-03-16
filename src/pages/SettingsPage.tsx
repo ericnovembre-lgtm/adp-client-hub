@@ -246,6 +246,7 @@ function KnockoutRulesSection() {
                 <TableHead>Tier</TableHead>
                 <TableHead className="hidden md:table-cell">WC Codes</TableHead>
                 <TableHead className="hidden lg:table-cell">Conditions</TableHead>
+                <TableHead className="hidden xl:table-cell">Created by</TableHead>
                 <TableHead className="w-20" />
               </TableRow>
             </TableHeader>
@@ -253,14 +254,14 @@ function KnockoutRulesSection() {
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 5 }).map((_, j) => (
+                    {Array.from({ length: 6 }).map((_, j) => (
                       <TableCell key={j}><div className="h-4 bg-muted animate-pulse rounded" /></TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : filteredRules.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                     No knockout rules found
                   </TableCell>
                 </TableRow>
@@ -282,6 +283,9 @@ function KnockoutRulesSection() {
                       </TableCell>
                       <TableCell className="hidden lg:table-cell text-muted-foreground text-xs max-w-[250px] truncate">
                         {rule.conditions || "—"}
+                      </TableCell>
+                      <TableCell className="hidden xl:table-cell text-muted-foreground text-xs">
+                        {rule.created_by_name || "—"}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">

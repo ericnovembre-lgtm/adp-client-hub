@@ -34,7 +34,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, Pencil, Trash2, MoreHorizontal, CalendarIcon, DollarSign, ArrowRight, Download, Loader2, GripVertical } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, MoreHorizontal, CalendarIcon, DollarSign, ArrowRight, Download, Loader2, GripVertical, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import DealDetailSheet from "@/components/DealDetailSheet";
 
@@ -451,6 +452,9 @@ function ListView({
   onDelete,
   onClickDeal,
   onAdd,
+  selectedIds,
+  onSelectToggle,
+  onSelectAll,
 }: {
   deals: Deal[];
   contacts: Pick<Contact, "id" | "first_name" | "last_name">[];
@@ -464,9 +468,13 @@ function ListView({
   onDelete: (id: string) => void;
   onClickDeal: (d: Deal) => void;
   onAdd: () => void;
+  selectedIds: Set<string>;
+  onSelectToggle: (id: string) => void;
+  onSelectAll: (ids: string[], checked: boolean) => void;
 }) {
   const contactMap = useMemo(() => new Map(contacts.map((c) => [c.id, `${c.first_name} ${c.last_name}`])), [contacts]);
   const companyMap = useMemo(() => new Map(companies.map((c) => [c.id, c.name])), [companies]);
+  const allSelected = deals.length > 0 && deals.every((d) => selectedIds.has(d.id));
 
   return (
     <>
@@ -474,6 +482,9 @@ function ListView({
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">
+                <Checkbox checked={allSelected} onCheckedChange={(checked) => onSelectAll(deals.map((d) => d.id), !!checked)} />
+              </TableHead>
               <TableHead>Title</TableHead>
               <TableHead>Value</TableHead>
               <TableHead>Stage</TableHead>
@@ -487,10 +498,10 @@ function ListView({
           <TableBody>
             {isLoading ? (
               Array.from({ length: 8 }).map((_, i) => (
-                <TableRow key={i}>{Array.from({ length: 8 }).map((_, j) => <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>)}</TableRow>
+                <TableRow key={i}>{Array.from({ length: 9 }).map((_, j) => <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>)}</TableRow>
               ))
             ) : deals.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-12">
+              <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-12">
                 <DollarSign className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
                 <p className="font-medium">No deals yet</p>
                 <p className="text-sm mt-1 max-w-md mx-auto">Convert a qualified lead to start tracking your ADP TotalSource pipeline.</p>
@@ -500,7 +511,10 @@ function ListView({
               </TableCell></TableRow>
             ) : (
               deals.map((d) => (
-                <TableRow key={d.id}>
+                <TableRow key={d.id} className={cn(selectedIds.has(d.id) && "bg-muted/50")}>
+                  <TableCell>
+                    <Checkbox checked={selectedIds.has(d.id)} onCheckedChange={() => onSelectToggle(d.id)} />
+                  </TableCell>
                   <TableCell className="font-medium">
                     <button onClick={() => onClickDeal(d)} className="text-primary hover:underline text-left">{d.title}</button>
                   </TableCell>
@@ -546,11 +560,16 @@ export default function DealsPage() {
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [detailDeal, setDetailDeal] = useState<Deal | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
 
   // Kanban uses all deals; list uses paginated
   const allDealsQuery = useAllDeals();
   const paginatedDealsQuery = useDeals({ page, limit: 25 });
   const deleteDeal = useDeleteDeal();
+  const updateDeal = useUpdateDeal();
   const { data: contacts } = useAllContacts();
   const { data: companies } = useAllCompanies();
 
@@ -577,6 +596,72 @@ export default function DealsPage() {
   const [exporting, setExporting] = useState(false);
   const contactMap = useMemo(() => new Map((contacts ?? []).map((c) => [c.id, `${c.first_name} ${c.last_name}`])), [contacts]);
   const companyMap = useMemo(() => new Map((companies ?? []).map((c) => [c.id, c.name])), [companies]);
+
+  // Selection handlers
+  const handleSelectToggle = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const handleSelectAll = (ids: string[], checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => checked ? next.add(id) : next.delete(id));
+      return next;
+    });
+  };
+
+  // Bulk stage update
+  const handleBulkStageUpdate = async (stage: Stage) => {
+    setBulkUpdating(true);
+    try {
+      const isClosed = stage === "closed_won" || stage === "closed_lost";
+      await Promise.all(
+        Array.from(selectedIds).map((id) => {
+          const updates: any = { id, stage };
+          if (isClosed) updates.closed_at = new Date().toISOString();
+          return updateDeal.mutateAsync(updates);
+        })
+      );
+      toast.success(`${selectedIds.size} deal(s) updated to ${STAGE_LABELS[stage]}`);
+      setSelectedIds(new Set());
+    } catch (e: any) {
+      toast.error(e.message ?? "Bulk update failed");
+    }
+    setBulkUpdating(false);
+  };
+
+  // Bulk delete
+  const handleBulkDelete = async () => {
+    setBulkDeleting(true);
+    try {
+      await Promise.all(Array.from(selectedIds).map((id) => deleteDeal.mutateAsync(id)));
+      toast.success(`${selectedIds.size} deal(s) deleted`);
+      setSelectedIds(new Set());
+    } catch (e: any) {
+      toast.error(e.message ?? "Bulk delete failed");
+    }
+    setBulkDeleting(false);
+    setBulkDeleteOpen(false);
+  };
+
+  // Bulk export
+  const handleBulkExport = () => {
+    const allDeals = (view === "kanban" ? allDealsQuery.data : paginatedDealsQuery.data?.data) ?? [];
+    const selected = allDeals.filter((d) => selectedIds.has(d.id));
+    exportToCSV(selected, "deals-selected", [
+      { header: "Title", accessor: (r) => r.title },
+      { header: "Value", accessor: (r) => r.value },
+      { header: "Stage", accessor: (r) => r.stage },
+      { header: "Contact", accessor: (r) => r.contact_id ? contactMap.get(r.contact_id) ?? "" : "" },
+      { header: "Company", accessor: (r) => r.company_id ? companyMap.get(r.company_id) ?? "" : "" },
+      { header: "Expected Close Date", accessor: (r) => r.expected_close_date ? new Date(r.expected_close_date).toLocaleDateString() : "" },
+      { header: "Created Date", accessor: (r) => r.created_at ? new Date(r.created_at).toLocaleDateString() : "" },
+    ]);
+    toast.success(`Exported ${selected.length} deal(s)`);
+  };
 
   const handleExport = async () => {
     setExporting(true);
@@ -657,13 +742,44 @@ export default function DealsPage() {
           onDelete={(id) => setDeleteId(id)}
           onClickDeal={(d) => setDetailDeal(d)}
           onAdd={openAdd}
+          selectedIds={selectedIds}
+          onSelectToggle={handleSelectToggle}
+          onSelectAll={handleSelectAll}
         />
+      )}
+
+      {/* Bulk action toolbar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-background border rounded-lg shadow-lg px-4 py-3 flex items-center gap-3 flex-wrap">
+          <span className="text-sm font-medium">{selectedIds.size} selected</span>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" disabled={bulkUpdating}>
+                {bulkUpdating ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <ArrowRight className="h-4 w-4 mr-1" />}Update Stage
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {STAGES.map((s) => (
+                <DropdownMenuItem key={s} onClick={() => handleBulkStageUpdate(s)}>{STAGE_LABELS[s]}</DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button variant="outline" size="sm" onClick={handleBulkExport}>
+            <Download className="h-4 w-4 mr-1" />Export
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setBulkDeleteOpen(true)} className="text-destructive">
+            <Trash2 className="h-4 w-4 mr-1" />Delete
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
+            <X className="h-4 w-4 mr-1" />Clear
+          </Button>
+        </div>
       )}
 
       {/* Dialog */}
       {dialogOpen && <DealFormDialog open={dialogOpen} onOpenChange={setDialogOpen} deal={editingDeal} />}
 
-      {/* Delete confirmation */}
+      {/* Single delete confirmation */}
       <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -675,6 +791,23 @@ export default function DealsPage() {
             <AlertDialogAction onClick={handleDelete} disabled={deleteDeal.isPending} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               {deleteDeal.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk delete confirmation */}
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedIds.size} Deal(s)</AlertDialogTitle>
+            <AlertDialogDescription>This will permanently delete {selectedIds.size} deal(s). This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} disabled={bulkDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {bulkDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+              Delete {selectedIds.size}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

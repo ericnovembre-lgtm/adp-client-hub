@@ -137,6 +137,7 @@ function MessageBubble({ msg }: { msg: AgentMessage }) {
             <div className="bg-muted text-foreground rounded-2xl rounded-bl-sm px-4 py-2 text-sm whitespace-pre-wrap">
               {msg.content}
             </div>
+            <CopyEmailButton text={msg.content} />
             <CopyButton text={msg.content} />
           </div>
         )}

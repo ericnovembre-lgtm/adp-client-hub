@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useAgentChat, AgentMessage, AgentToolCall } from "@/hooks/useAgentChat";
 import { useAgentRecommendations } from "@/hooks/useAgentRecommendations";
@@ -89,12 +90,17 @@ function CopyButton({ text }: { text: string }) {
     setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <button
-      onClick={handleCopy}
-      className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md bg-background/80 hover:bg-accent text-muted-foreground"
-    >
-      {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          onClick={handleCopy}
+          className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md bg-background/80 hover:bg-accent text-muted-foreground"
+        >
+          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top"><p>Copy full response</p></TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -109,12 +115,17 @@ function CopyEmailButton({ text }: { text: string }) {
     setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <button
-      onClick={handleCopy}
-      className="absolute top-1 right-8 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md bg-background/80 hover:bg-accent text-muted-foreground"
-    >
-      {copied ? <Check className="h-3.5 w-3.5" /> : <Mail className="h-3.5 w-3.5" />}
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          onClick={handleCopy}
+          className="absolute top-1 right-8 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md bg-background/80 hover:bg-accent text-muted-foreground"
+        >
+          {copied ? <Check className="h-3.5 w-3.5" /> : <Mail className="h-3.5 w-3.5" />}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top"><p>Copy email only</p></TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -137,8 +148,10 @@ function MessageBubble({ msg }: { msg: AgentMessage }) {
             <div className="bg-muted text-foreground rounded-2xl rounded-bl-sm px-4 py-2 text-sm whitespace-pre-wrap">
               {msg.content}
             </div>
-            <CopyEmailButton text={msg.content} />
-            <CopyButton text={msg.content} />
+            <TooltipProvider delayDuration={300}>
+              <CopyEmailButton text={msg.content} />
+              <CopyButton text={msg.content} />
+            </TooltipProvider>
           </div>
         )}
         {msg.toolCalls?.map((tc, i) => (

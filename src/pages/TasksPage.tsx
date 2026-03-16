@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCreateTask, useUpdateTask, useDeleteTask } from "@/hooks/useTasks";
 import { logActivity } from "@/lib/logActivity";
-import { format, isToday, isBefore, isAfter, startOfDay, differenceInDays, formatDistanceToNow } from "date-fns";
+import { exportToCSV } from "@/lib/exportCSV";
+import { format, isToday, isBefore, startOfDay, differenceInDays } from "date-fns";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,7 +26,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Plus, Search, Pencil, Trash2, CalendarIcon, ChevronDown, ChevronRight, CheckSquare, Loader2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Plus, Search, Pencil, Trash2, CalendarIcon, ChevronDown, ChevronRight, CheckSquare, Loader2, Download, X, ArrowRight } from "lucide-react";
 
 // ── Constants ──
 const PRIORITY_COLORS: Record<string, string> = {
@@ -37,6 +39,9 @@ const PRIORITY_COLORS: Record<string, string> = {
 
 const STATUS_FILTERS = ["all", "pending", "in_progress", "completed"] as const;
 const STATUS_LABELS: Record<string, string> = { all: "All", pending: "Pending", in_progress: "In Progress", completed: "Completed" };
+const PRIORITY_OPTIONS = ["low", "medium", "high", "urgent"] as const;
+const PRIORITY_LABELS: Record<string, string> = { low: "Low", medium: "Medium", high: "High", urgent: "Urgent" };
+const STATUS_OPTIONS = ["pending", "in_progress", "completed"] as const;
 
 // ── Lookups ──
 function useAllContacts() {
@@ -83,8 +88,6 @@ function relativeDue(dateStr: string): string {
   if (diff < 0) return `${Math.abs(diff)} days overdue`;
   return `In ${diff} days`;
 }
-
-
 
 // ── Schema ──
 const taskSchema = z.object({
@@ -225,7 +228,7 @@ function TaskFormDialog({ open, onOpenChange, task }: { open: boolean; onOpenCha
 
 // ── Task Group Section ──
 function TaskGroup({
-  title, accent, tasks, contactMap, dealMap, defaultOpen, onToggle, onEdit, onDelete,
+  title, accent, tasks, contactMap, dealMap, defaultOpen, onToggle, onEdit, onDelete, selectedIds, onSelect,
 }: {
   title: string;
   accent: string;
@@ -236,6 +239,8 @@ function TaskGroup({
   onToggle: (task: Task) => void;
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
+  selectedIds: Set<string>;
+  onSelect: (id: string) => void;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   if (tasks.length === 0) return null;
@@ -252,7 +257,12 @@ function TaskGroup({
       <CollapsibleContent>
         <div className="space-y-1 mt-1">
           {tasks.map((t) => (
-            <div key={t.id} className="flex items-center gap-3 px-4 py-2.5 rounded-md hover:bg-muted/30 transition-colors group">
+            <div key={t.id} className={cn("flex items-center gap-3 px-4 py-2.5 rounded-md hover:bg-muted/30 transition-colors group", selectedIds.has(t.id) && "bg-muted/50")}>
+              <Checkbox
+                checked={selectedIds.has(t.id)}
+                onCheckedChange={() => onSelect(t.id)}
+                className="shrink-0"
+              />
               <Checkbox
                 checked={t.status === "completed"}
                 onCheckedChange={() => onToggle(t)}
@@ -296,6 +306,10 @@ export default function TasksPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
 
   const { data: tasks, isLoading } = useAllTasks();
   const { data: contacts } = useAllContacts();
@@ -368,6 +382,73 @@ export default function TasksPage() {
   const openEdit = (t: Task) => { setEditingTask(t); setDialogOpen(true); };
   const openAdd = () => { setEditingTask(null); setDialogOpen(true); };
 
+  // Selection
+  const handleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  // Bulk status update
+  const handleBulkStatusUpdate = async (status: string) => {
+    setBulkUpdating(true);
+    try {
+      await Promise.all(Array.from(selectedIds).map((id) => updateTask.mutateAsync({ id, status })));
+      toast.success(`${selectedIds.size} task(s) updated to ${STATUS_LABELS[status]}`);
+      setSelectedIds(new Set());
+    } catch (e: any) {
+      toast.error(e.message ?? "Bulk update failed");
+    }
+    setBulkUpdating(false);
+  };
+
+  // Bulk priority update
+  const handleBulkPriorityUpdate = async (priority: string) => {
+    setBulkUpdating(true);
+    try {
+      await Promise.all(Array.from(selectedIds).map((id) => updateTask.mutateAsync({ id, priority })));
+      toast.success(`${selectedIds.size} task(s) updated to ${PRIORITY_LABELS[priority]} priority`);
+      setSelectedIds(new Set());
+    } catch (e: any) {
+      toast.error(e.message ?? "Bulk update failed");
+    }
+    setBulkUpdating(false);
+  };
+
+  // Bulk delete
+  const handleBulkDelete = async () => {
+    setBulkDeleting(true);
+    try {
+      await Promise.all(Array.from(selectedIds).map((id) => deleteTask.mutateAsync(id)));
+      toast.success(`${selectedIds.size} task(s) deleted`);
+      setSelectedIds(new Set());
+    } catch (e: any) {
+      toast.error(e.message ?? "Bulk delete failed");
+    }
+    setBulkDeleting(false);
+    setBulkDeleteOpen(false);
+  };
+
+  // Bulk export
+  const handleBulkExport = () => {
+    const allTasks = tasks ?? [];
+    const selected = allTasks.filter((t) => selectedIds.has(t.id));
+    exportToCSV(selected, "tasks-selected", [
+      { header: "Title", accessor: (r) => r.title },
+      { header: "Description", accessor: (r) => r.description },
+      { header: "Status", accessor: (r) => r.status },
+      { header: "Priority", accessor: (r) => r.priority },
+      { header: "Due Date", accessor: (r) => r.due_date ? new Date(r.due_date).toLocaleDateString() : "" },
+      { header: "Contact", accessor: (r) => r.contact_id ? contactMap.get(r.contact_id) ?? "" : "" },
+      { header: "Deal", accessor: (r) => r.deal_id ? dealMap.get(r.deal_id) ?? "" : "" },
+    ]);
+    toast.success(`Exported ${selected.length} task(s)`);
+  };
+
+  const groupProps = { contactMap, dealMap, onToggle: handleToggle, onEdit: openEdit, onDelete: (id: string) => setDeleteId(id), selectedIds, onSelect: handleSelect };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -398,10 +479,10 @@ export default function TasksPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          <TaskGroup title="Overdue" accent="border-l-red-500" tasks={overdue} contactMap={contactMap} dealMap={dealMap} defaultOpen onToggle={handleToggle} onEdit={openEdit} onDelete={(id) => setDeleteId(id)} />
-          <TaskGroup title="Due Today" accent="border-l-yellow-500" tasks={dueToday} contactMap={contactMap} dealMap={dealMap} defaultOpen onToggle={handleToggle} onEdit={openEdit} onDelete={(id) => setDeleteId(id)} />
-          <TaskGroup title="Upcoming" accent="border-l-blue-500" tasks={upcoming} contactMap={contactMap} dealMap={dealMap} defaultOpen onToggle={handleToggle} onEdit={openEdit} onDelete={(id) => setDeleteId(id)} />
-          <TaskGroup title="Completed" accent="border-l-emerald-500" tasks={completed} contactMap={contactMap} dealMap={dealMap} defaultOpen={false} onToggle={handleToggle} onEdit={openEdit} onDelete={(id) => setDeleteId(id)} />
+          <TaskGroup title="Overdue" accent="border-l-red-500" tasks={overdue} defaultOpen {...groupProps} />
+          <TaskGroup title="Due Today" accent="border-l-yellow-500" tasks={dueToday} defaultOpen {...groupProps} />
+          <TaskGroup title="Upcoming" accent="border-l-blue-500" tasks={upcoming} defaultOpen {...groupProps} />
+          <TaskGroup title="Completed" accent="border-l-emerald-500" tasks={completed} defaultOpen={false} {...groupProps} />
           {filtered.length === 0 && (
             <div className="text-center text-muted-foreground py-12">
               <CheckSquare className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
@@ -415,8 +496,47 @@ export default function TasksPage() {
         </div>
       )}
 
+      {/* Bulk action toolbar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-background border rounded-lg shadow-lg px-4 py-3 flex items-center gap-3 flex-wrap">
+          <span className="text-sm font-medium">{selectedIds.size} selected</span>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" disabled={bulkUpdating}>
+                {bulkUpdating ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <ArrowRight className="h-4 w-4 mr-1" />}Status
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {STATUS_OPTIONS.map((s) => (
+                <DropdownMenuItem key={s} onClick={() => handleBulkStatusUpdate(s)}>{STATUS_LABELS[s]}</DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" disabled={bulkUpdating}>Priority</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {PRIORITY_OPTIONS.map((p) => (
+                <DropdownMenuItem key={p} onClick={() => handleBulkPriorityUpdate(p)}>{PRIORITY_LABELS[p]}</DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button variant="outline" size="sm" onClick={handleBulkExport}>
+            <Download className="h-4 w-4 mr-1" />Export
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setBulkDeleteOpen(true)} className="text-destructive">
+            <Trash2 className="h-4 w-4 mr-1" />Delete
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
+            <X className="h-4 w-4 mr-1" />Clear
+          </Button>
+        </div>
+      )}
+
       {dialogOpen && <TaskFormDialog open={dialogOpen} onOpenChange={setDialogOpen} task={editingTask} />}
 
+      {/* Single delete */}
       <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -428,6 +548,23 @@ export default function TasksPage() {
             <AlertDialogAction onClick={handleDelete} disabled={deleteTask.isPending} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               {deleteTask.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk delete */}
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedIds.size} Task(s)</AlertDialogTitle>
+            <AlertDialogDescription>This will permanently delete {selectedIds.size} task(s). This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} disabled={bulkDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {bulkDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+              Delete {selectedIds.size}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

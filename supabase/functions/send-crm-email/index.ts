@@ -77,24 +77,27 @@ Deno.serve(async (req) => {
     }
 
     // Use Lovable API to send email
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
-    if (!lovableApiKey) {
-      throw new Error("LOVABLE_API_KEY not configured");
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      throw new Error("RESEND_API_KEY not configured. Sign up at resend.com and add your API key to Edge Function Secrets.");
     }
 
+    const fromEmail = Deno.env.get("FROM_EMAIL") || "noreply@resend.dev";
+
     const sendResponse = await fetch(
-      "https://api.lovable.dev/v1/email/send",
+      "https://api.resend.com/emails",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${lovableApiKey}`,
+          Authorization: `Bearer ${resendApiKey}`,
         },
         body: JSON.stringify({
-          to,
+          from: fromEmail,
+          to: [to],
           subject,
           html: trackedBody,
-          message_id: messageId,
+          headers: { "X-Message-Id": messageId },
         }),
       }
     );

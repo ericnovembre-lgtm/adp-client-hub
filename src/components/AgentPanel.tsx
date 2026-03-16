@@ -70,6 +70,16 @@ function ToolCallCard({ tc }: { tc: AgentToolCall }) {
   );
 }
 
+function extractEmail(text: string): string | null {
+  const match = text.match(/subject\s*:/i);
+  if (!match || match.index === undefined) return null;
+  const start = match.index;
+  const endPattern = /\n\s*(?:STRATEGY|WHY THIS WORKS|KEY POINTS|NOTES|---)\s*[:\n]/i;
+  const rest = text.slice(start);
+  const endMatch = rest.match(endPattern);
+  return (endMatch ? rest.slice(0, endMatch.index) : rest).trim() || null;
+}
+
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
@@ -84,6 +94,26 @@ function CopyButton({ text }: { text: string }) {
       className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md bg-background/80 hover:bg-accent text-muted-foreground"
     >
       {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+    </button>
+  );
+}
+
+function CopyEmailButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  const emailText = extractEmail(text);
+  if (!emailText) return null;
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(emailText);
+    setCopied(true);
+    toast.success("Email copied!");
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <button
+      onClick={handleCopy}
+      className="absolute top-1 right-8 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md bg-background/80 hover:bg-accent text-muted-foreground"
+    >
+      {copied ? <Check className="h-3.5 w-3.5" /> : <Mail className="h-3.5 w-3.5" />}
     </button>
   );
 }

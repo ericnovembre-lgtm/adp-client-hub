@@ -246,6 +246,7 @@ function KnockoutRulesSection() {
                 <TableHead>Tier</TableHead>
                 <TableHead className="hidden md:table-cell">WC Codes</TableHead>
                 <TableHead className="hidden lg:table-cell">Conditions</TableHead>
+                <TableHead className="hidden xl:table-cell">Created by</TableHead>
                 <TableHead className="w-20" />
               </TableRow>
             </TableHeader>

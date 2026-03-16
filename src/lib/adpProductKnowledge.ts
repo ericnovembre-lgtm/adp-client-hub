@@ -564,6 +564,16 @@ export const ADP_PRODUCT_KNOWLEDGE = {
       geography: "US-based with potential for global expansion",
       painLevel: "Spending too much time on HR admin, compliance concerns, or benefits gaps"
     }
+  },
+  benefits: {
+    keyPoints: {
+      stateAvailability: 'PRIME (2+ EEs, $65-75K wage), Standard TS (10+ EEs), TS Select (fast, no underwriting)',
+      carriers: ['Aetna', 'Anthem/BCBS/BCN', 'UnitedHealth (UHC)', 'Kaiser (CA)', 'Medica (MN)'],
+      renewalContext: '11-13% medical inflation; ADP achieves 10-11% in competitive markets',
+      networkStrength: '98.2% in-network utilization vs. industry 95-97%',
+      mlrTargeting: '88% MLR (admin costs) vs. industry 80-85%',
+      competitorFocus: '11 major PEOs with specific win strategies documented'
+    }
   }
 };
 

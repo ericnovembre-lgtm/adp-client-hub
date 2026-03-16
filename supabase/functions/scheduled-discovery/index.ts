@@ -7,7 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const KNOWLEDGE_VERSION = "2026-03-14-v1";
+const KNOWLEDGE_VERSION = "2026-03-15-v1";
 
 // NOTE: Product knowledge below mirrors src/lib/adpProductKnowledge.ts and supabase/functions/ai-chat/index.ts — keep in sync when updating.
 const DISCOVERY_PROMPT = `You are an expert B2B lead generation AI for ADP TotalSource PEO services. Generate realistic prospective company leads that are ideal TotalSource prospects.

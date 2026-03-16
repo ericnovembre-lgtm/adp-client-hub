@@ -789,6 +789,7 @@ export default function LeadsPage() {
                 />
               </TableHead>
               <TableHead>Company Name</TableHead>
+              <TableHead className="hidden sm:table-cell">Source</TableHead>
               <TableHead>Decision Maker</TableHead>
               <TableHead className="hidden md:table-cell">Headcount</TableHead>
               <TableHead className="hidden lg:table-cell">Industry</TableHead>

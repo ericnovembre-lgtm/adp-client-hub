@@ -283,11 +283,21 @@ export default function LeadsPage() {
 
   const allLeads = data?.data ?? [];
 
-  // Territory filter (client-side)
+  // Territory + source filter (client-side)
   const leads = useMemo(() => {
-    if (!territoryOnly) return allLeads;
-    return allLeads.filter(l => l.headcount == null || isInTerritory(l.headcount));
-  }, [allLeads, territoryOnly]);
+    let filtered = allLeads;
+    if (territoryOnly) {
+      filtered = filtered.filter(l => l.headcount == null || isInTerritory(l.headcount));
+    }
+    if (sourceFilter !== "all") {
+      if (sourceFilter === "manual") {
+        filtered = filtered.filter(l => !l.source || l.source === "");
+      } else {
+        filtered = filtered.filter(l => l.source === sourceFilter);
+      }
+    }
+    return filtered;
+  }, [allLeads, territoryOnly, sourceFilter]);
 
   // Pre-compute knockout results for all visible leads
   const knockoutMap = useMemo(() => {

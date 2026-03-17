@@ -199,37 +199,38 @@ serve(async (req) => {
         try {
           while (true) {
             const { done, value } = await reader.read();
-            if (done) break;
+            if (done) {
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+              controller.close();
+              break;
+            }
             buffer += decoder.decode(value, { stream: true });
             const lines = buffer.split("\n");
             buffer = lines.pop() || "";
             for (const line of lines) {
               if (!line.startsWith("data: ")) continue;
               const data = line.slice(6).trim();
-              if (data === "[DONE]") {
-                controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-                continue;
-              }
+              if (data === "[DONE]") continue;
               try {
                 const event = JSON.parse(data);
-                if (event.type === "content_block_delta" && event.delta?.type === "text_delta") {
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: event.delta.text } }] })}\n\n`));
-                } else if (event.type === "message_stop") {
-                  controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+                if (event.type === "content_block_delta" && event.delta?.text) {
+                  const openaiChunk = {
+                    choices: [{ delta: { content: event.delta.text } }],
+                  };
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(openaiChunk)}\n\n`));
                 }
               } catch {}
             }
           }
         } catch (err) {
-          console.error("Stream processing error:", err);
-        } finally {
+          console.error("Stream transform error:", err);
           controller.close();
         }
       },
     });
 
     return new Response(stream, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-cache" },
+      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
     console.error("ai-chat error:", e);

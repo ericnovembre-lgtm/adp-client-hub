@@ -164,10 +164,13 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
-        system: SYSTEM_PROMPT,
-        messages: messages,
         max_tokens: 4096,
         stream: true,
+        system: SYSTEM_PROMPT,
+        messages: messages.map((m: { role: string; content: string }) => ({
+          role: m.role,
+          content: m.content,
+        })),
       }),
     });
 

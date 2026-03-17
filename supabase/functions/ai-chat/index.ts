@@ -153,7 +153,7 @@ serve(async (req) => {
 
     const { messages } = await req.json();
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured. Get your key from console.anthropic.com and add it to Edge Function Secrets.");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",

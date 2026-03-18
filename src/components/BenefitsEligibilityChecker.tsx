@@ -56,7 +56,7 @@ function checkEligibility(headcount: number, state: string): EligibilityResult {
       const info = kb.stateCarriers[k as keyof typeof kb.stateCarriers];
       info.medical.forEach((c) => allCarriers.add(c));
       if (!info.prime) primeAllowed = false;
-      if (info.note) result.notes.push(info.note);
+      if ("note" in info && info.note) result.notes.push(info.note);
     });
     result.carriers = Array.from(allCarriers);
 

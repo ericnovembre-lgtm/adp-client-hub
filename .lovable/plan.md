@@ -1,49 +1,31 @@
 
 
-## Lead Enrichment for Registry-Discovered Leads
+## Replace Benefits Knowledge Base and Update System Prompts
 
-Registry leads lack headcount, website, and decision-maker contact info. This plan adds a post-discovery enrichment step using the Apollo API (already configured with `APOLLO_API_KEY`).
+### 1. Rewrite `src/lib/adpBenefitsKnowledge.ts`
 
-### Architecture
+Replace the entire file content with a new `ADP_BENEFITS_KNOWLEDGE` constant containing the 6 sections specified:
 
-```text
-Registry Discovery (OpenCorporates)
-        │
-        ▼
-   Leads saved (no headcount/contact)
-        │
-        ▼
-   Enrichment step (Apollo People Search)
-        │
-        ▼
-   Update leads with headcount, website,
-   decision maker name/title/email/phone
+- State availability (all 50 states + DC, 28 primary markets listed)
+- Carrier portfolio by state (FL, TX, CA, NY, IL with specific carriers; ancillary lines)
+- OE2026 renewal rates (national averages, state-specific rates, dental/vision)
+- PRIME underwriting rules (6 specific rules including metro wage adjustments)
+- Healthcare utilization benchmarks (MLR, in-network, pharmacy, preventive, ER)
+- Competitor intelligence (vs Rippling, TriNet, Paychex, Insperity, Justworks with specific talking points)
+
+Also export `BENEFITS_KNOWLEDGE_SUMMARY` (condensed version for quick reference).
+
+### 2. Append note to `supabase/functions/ai-chat/index.ts` SYSTEM_PROMPT
+
+At line 132 (after "Never use emoji" line, before the Knowledge Version line), add:
+
+```
+BENEFITS DEEP DIVE: For detailed benefits questions (carrier availability by state, renewal rates, PRIME underwriting rules, or competitor comparisons), reference the benefits knowledge base in src/lib/adpBenefitsKnowledge.ts.
 ```
 
-### Changes
+### 3. Append note to `supabase/functions/scheduled-discovery/index.ts` DISCOVERY_PROMPT
 
-**1. `supabase/functions/registry-discovery/index.ts`**
-- After saving all registry leads, add an enrichment pass using Apollo's `organizations/enrich` endpoint
-- For each saved lead, call Apollo with the company name + state to get: headcount, website, industry (refined), and a decision-maker contact via `mixed_people/search`
-- Only enrich if `APOLLO_API_KEY` is present (graceful skip otherwise)
-- Update the lead record with enriched data
-- Log enrichment activity
-- Add enrichment stats to the response (`enriched` count)
-- Rate-limit Apollo calls (200ms delay between)
+At line 79 (after "Return ONLY the JSON array" line, before the Knowledge Version line), add the same benefits deep-dive note.
 
-**2. `src/components/discovery/RegistryDiscoveryTab.tsx`**
-- Show enrichment results in the summary: "Found X, saved Y, enriched Z"
-- Add an "Enriched" badge on leads that received contact info
-- Show decision maker name/email columns in the results table when available
-- Add a note: "Leads enriched via Apollo (headcount + contacts)" when Apollo key is configured, or "Configure Apollo API key in Settings to auto-enrich leads with headcount & contacts" when not
-
-### Technical Detail
-
-The enrichment uses two Apollo endpoints per lead:
-1. `POST /v1/organizations/enrich` with `domain` or `name` — returns headcount, website, industry
-2. `POST /v1/mixed_people/search` with company name + decision-maker titles — returns contact info
-
-Fields updated on the lead: `headcount`, `website`, `industry` (if null), `decision_maker_name`, `decision_maker_title`, `decision_maker_email`, `decision_maker_phone`
-
-Leads outside territory range (2-20 employees) after enrichment get flagged with a warning activity, consistent with existing scoring behavior.
+No existing content is removed or modified -- all changes are additive.
 

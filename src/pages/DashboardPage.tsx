@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { HEADCOUNT_MIN, HEADCOUNT_MAX } from "@/lib/constants";
 import DailyBriefWidget from "@/components/DailyBriefWidget";
+import BenefitsEligibilityChecker from "@/components/BenefitsEligibilityChecker";
 
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v);

@@ -107,7 +107,7 @@ PRIME is the streamlined underwriting program for groups of 2-9 benefit-eligible
 1. Minimum 2 benefit-eligible employees must be enrolled in a health plan
 2. 50% minimum participation rate for health plans (e.g., 3 of 6 eligible employees must enroll)
 3. No COBRA-only groups — at least 2 active employees must be enrolled
-4. Average wage guideline: $65,000 nationally; $75,000 in high-cost metro areas (NYC, Washington DC, San Francisco Bay Area)
+4. Average wage guideline: $65,000
 5. Age and gender neutral rating — community-rated pricing in applicable states (NY, NJ, VT, MA, etc.)
 6. Must be an active, operating business — no shell companies, holding companies with no active employees, or businesses formed solely for benefits access
 

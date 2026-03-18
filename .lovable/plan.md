@@ -1,31 +1,49 @@
 
 
-# Replace Benefits Knowledge Base with Structured Data + Update AI Prompts
+## Lead Enrichment for Registry-Discovered Leads
 
-## Summary
-Replace the existing string-based `adpBenefitsKnowledge.ts` with the user's structured TypeScript object format, including the restored `$75K high-cost metro` wage rule. Then append the detailed benefits knowledge paragraph to both AI system prompts.
+Registry leads lack headcount, website, and decision-maker contact info. This plan adds a post-discovery enrichment step using the Apollo API (already configured with `APOLLO_API_KEY`).
 
-## Changes
+### Architecture
 
-### 1. Rewrite `src/lib/adpBenefitsKnowledge.ts`
-- Replace the entire file with the user's structured object export containing: `BENEFITS_KNOWLEDGE_VERSION`, `ADP_BENEFITS_KNOWLEDGE` (object with `prime`, `standardQuoting`, `stateCarriers`, `tsNotAvailable`, `dental`, `quotingRequirements` sections)
-- Wage rule: `$65K standard`, `$75K high-cost metro (NYC, DC, SF)`
-- Remove the old `BENEFITS_KNOWLEDGE_SUMMARY` string export (replaced by the structured object)
+```text
+Registry Discovery (OpenCorporates)
+        │
+        ▼
+   Leads saved (no headcount/contact)
+        │
+        ▼
+   Enrichment step (Apollo People Search)
+        │
+        ▼
+   Update leads with headcount, website,
+   decision maker name/title/email/phone
+```
 
-### 2. Update `supabase/functions/ai-chat/index.ts`
-- Replace line 134 (`BENEFITS DEEP DIVE: ...`) with the full benefits knowledge paragraph provided by the user (PRIME rules, standard groups, state carrier map, TS unavailable states, dental rules, benefits version tag)
-- This is additive — no existing content is removed, only the single reference line is replaced with the expanded text
+### Changes
 
-### 3. Update `supabase/functions/scheduled-discovery/index.ts`
-- Replace line 81 (`BENEFITS DEEP DIVE: ...`) with the same full benefits knowledge paragraph
-- Same additive approach
+**1. `supabase/functions/registry-discovery/index.ts`**
+- After saving all registry leads, add an enrichment pass using Apollo's `organizations/enrich` endpoint
+- For each saved lead, call Apollo with the company name + state to get: headcount, website, industry (refined), and a decision-maker contact via `mixed_people/search`
+- Only enrich if `APOLLO_API_KEY` is present (graceful skip otherwise)
+- Update the lead record with enriched data
+- Log enrichment activity
+- Add enrichment stats to the response (`enriched` count)
+- Rate-limit Apollo calls (200ms delay between)
 
-### 4. Revert wage references in other files
-Since we're restoring $75K metro, update the previously modified files:
-- **`src/lib/adpProductKnowledge.ts`**: Change `'PRIME (2+ EEs, $65K avg wage)'` back to `'PRIME (2+ EEs, $65-75K wage)'`
-- **`supabase/functions/crm-agent/index.ts`**: Change `"avg wage $65K required"` back to `"avg wage $65-75K required"`
-- **`supabase/functions/ai-chat/index.ts`** lines 113/120: Restore `$65-75K` references in the existing benefits summary section
+**2. `src/components/discovery/RegistryDiscoveryTab.tsx`**
+- Show enrichment results in the summary: "Found X, saved Y, enriched Z"
+- Add an "Enriched" badge on leads that received contact info
+- Show decision maker name/email columns in the results table when available
+- Add a note: "Leads enriched via Apollo (headcount + contacts)" when Apollo key is configured, or "Configure Apollo API key in Settings to auto-enrich leads with headcount & contacts" when not
 
-### Note
-The existing OE2026 rates, competitor intelligence, and healthcare benchmarks sections in the ai-chat prompt remain untouched. Only the BENEFITS DEEP DIVE reference line is replaced with expanded content.
+### Technical Detail
+
+The enrichment uses two Apollo endpoints per lead:
+1. `POST /v1/organizations/enrich` with `domain` or `name` — returns headcount, website, industry
+2. `POST /v1/mixed_people/search` with company name + decision-maker titles — returns contact info
+
+Fields updated on the lead: `headcount`, `website`, `industry` (if null), `decision_maker_name`, `decision_maker_title`, `decision_maker_email`, `decision_maker_phone`
+
+Leads outside territory range (2-20 employees) after enrichment get flagged with a warning activity, consistent with existing scoring behavior.
 

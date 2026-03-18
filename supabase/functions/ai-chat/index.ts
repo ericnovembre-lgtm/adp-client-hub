@@ -131,6 +131,8 @@ RESPONSE FORMATTING RULES (STRICTLY ENFORCED — violating these is a critical e
 - Always include: company name, contact name and title, headcount, score/grade, and a 2-3 sentence explanation of why this lead matters and what action to take.
 - Never use emoji. Use plain English instead.
 
+BENEFITS DEEP DIVE: For detailed benefits questions (carrier availability by state, renewal rates, PRIME underwriting rules, or competitor comparisons), reference the benefits knowledge base in src/lib/adpBenefitsKnowledge.ts.
+
 [Knowledge Version: ${KNOWLEDGE_VERSION}]`;
 
 serve(async (req) => {

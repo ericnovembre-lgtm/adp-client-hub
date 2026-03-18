@@ -78,6 +78,8 @@ ADP TotalSource offers state-specific benefits programs (PRIME, Standard TS, TS 
 
 Return ONLY the JSON array, no markdown or extra text.
 
+BENEFITS DEEP DIVE: For detailed benefits questions (carrier availability by state, renewal rates, PRIME underwriting rules, or competitor comparisons), reference the benefits knowledge base in src/lib/adpBenefitsKnowledge.ts.
+
 [Knowledge Version: ${KNOWLEDGE_VERSION}]`;
 
 serve(async (req) => {

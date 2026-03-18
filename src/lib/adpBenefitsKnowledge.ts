@@ -112,7 +112,7 @@ PRIME is the streamlined underwriting program for groups of 2-9 benefit-eligible
 6. Must be an active, operating business — no shell companies, holding companies with no active employees, or businesses formed solely for benefits access
 
 ### PRIME Fast-Pass Exception Process
-- For groups that meet most criteria but fall slightly outside (e.g., average wage $58K-$64K), submit a fast-pass exception request
+- For groups that meet most criteria but fall slightly outside the $65K wage threshold, submit a fast-pass exception request
 - Required documentation: last 3 months payroll, employee census, justification statement
 - Turnaround: 48-72 hours for determination
 - Approval rates: approximately 65% of exception requests are approved or approved with conditions

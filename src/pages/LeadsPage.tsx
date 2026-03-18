@@ -41,7 +41,7 @@ const leadSchema = z.object({
   decision_maker_email: z.string().trim().email("Invalid email format").max(255).optional().or(z.literal("")),
   decision_maker_phone: z.string().max(30).optional(),
   decision_maker_title: z.string().max(200).optional(),
-  headcount: z.coerce.number().int().min(0, "Must be 0 or more").optional().or(z.literal(0)),
+  headcount: z.coerce.number().int().min(HEADCOUNT_MIN, `Minimum ${HEADCOUNT_MIN} employees`).max(HEADCOUNT_MAX, `Maximum ${HEADCOUNT_MAX} employees`).optional(),
   industry: z.string().max(200).optional(),
   website: z.string().max(500).optional(),
   state: z.string().max(50).optional(),

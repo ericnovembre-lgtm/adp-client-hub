@@ -78,7 +78,18 @@ ADP TotalSource offers state-specific benefits programs (PRIME, Standard TS, TS 
 
 Return ONLY the JSON array, no markdown or extra text.
 
-BENEFITS DEEP DIVE: For detailed benefits questions (carrier availability by state, renewal rates, PRIME underwriting rules, or competitor comparisons), reference the benefits knowledge base in src/lib/adpBenefitsKnowledge.ts.
+BENEFITS KNOWLEDGE (FY2026 — Revised 2/20/2026):
+PRIME Groups (2-9 benefit-eligible EEs): Min 2 enrolled on health, 50% participation, no COBRA, ASI <= 1.45, avg wage $65K ($75K in NYC/DC/SF). PRIME excluded in HI, ID, MD, MN, WA, OR. Carrier plan limits: UHC max 5, Aetna max 4, Kaiser CA/CO max 3, BCBSTX max 6, Oxford max 3, Anthem National max 4. No slice business in CA & CO for PRIME.
+
+Standard Groups (10+ eligible): Min 5 enrolled in medical, 50% participation, COBRA exposure <10%. Exceptions: WA/OR require 7 enrolled and 75% participation; HI allows ASI up to 1.75; MD requires 60 EEs enrolled; IL has Under 50/51-149/Over 150 tiers.
+
+State Medical Carriers: AZ/FL/IL/IA/KS/LA/MO/NC/NE/OK/SC/TN: Aetna + UHC. TX: Aetna + BCBSTX. GA/IN/KY/WI: Anthem + UHC. OH: Aetna + Anthem. NV: Anthem + UHC. CO: Aetna + UHC + Kaiser. N-CA: Aetna + UHC + Kaiser + Anthem. S-CA: Aetna + Anthem + Kaiser. MI: BCBSM/BCN + UHC. MN: Medica + UHC. HI: HMSA + Kaiser. ID: Aetna + Regence. OR: Regence + Kaiser. WA: Asuris + Kaiser + Regence. UT: UHC only. AR: UHC only.
+
+TS Not Available: MT, WY, SD, ND, NM, WV, VT, ME, AK, AL, MS.
+
+Dental (all states): Aetna, Delta, Guardian. Under 100 eligible = 2 plans; 100+ = 3 plans. Cannot offer both 5000 and 3500 max plans (Aetna/Delta). Guardian PPO 1650 & 1200 cannot be combined. Passive equivalents must be given to TX/LA incidentals.
+
+[Benefits Knowledge Version: 2026-03-18-v3]
 
 [Knowledge Version: ${KNOWLEDGE_VERSION}]`;
 

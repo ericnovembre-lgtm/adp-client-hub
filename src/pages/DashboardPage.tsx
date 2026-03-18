@@ -263,7 +263,9 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Auto-Discovery Status */}
+      {/* Benefits Eligibility Checker + Auto-Discovery */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <BenefitsEligibilityChecker />
       <Card className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate("/ai-discovery")}>
         <CardContent className="p-4 flex items-center gap-4">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">

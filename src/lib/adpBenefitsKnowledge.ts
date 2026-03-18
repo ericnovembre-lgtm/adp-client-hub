@@ -107,12 +107,12 @@ PRIME is the streamlined underwriting program for groups of 2-9 benefit-eligible
 1. Minimum 2 benefit-eligible employees must be enrolled in a health plan
 2. 50% minimum participation rate for health plans (e.g., 3 of 6 eligible employees must enroll)
 3. No COBRA-only groups — at least 2 active employees must be enrolled
-4. Average wage guideline: $65,000 nationally; $75,000 in high-cost metro areas (NYC, Washington DC, San Francisco Bay Area)
+4. Average wage guideline: $65,000
 5. Age and gender neutral rating — community-rated pricing in applicable states (NY, NJ, VT, MA, etc.)
 6. Must be an active, operating business — no shell companies, holding companies with no active employees, or businesses formed solely for benefits access
 
 ### PRIME Fast-Pass Exception Process
-- For groups that meet most criteria but fall slightly outside (e.g., average wage $58K-$64K), submit a fast-pass exception request
+- For groups that meet most criteria but fall slightly outside the $65K wage threshold, submit a fast-pass exception request
 - Required documentation: last 3 months payroll, employee census, justification statement
 - Turnaround: 48-72 hours for determination
 - Approval rates: approximately 65% of exception requests are approved or approved with conditions
@@ -190,5 +190,5 @@ PRIME is the streamlined underwriting program for groups of 2-9 benefit-eligible
  * Export condensed summary for quick reference in system prompts
  */
 export const BENEFITS_KNOWLEDGE_SUMMARY = `
-ADP TotalSource Benefits Knowledge: Available in all 50 states + DC with 28 primary markets. Medical carriers include Aetna, BCBS (state-specific affiliates), Cigna, UHC, and Kaiser (CA HMO). Ancillary: MetLife/Delta/Aetna/Cigna dental, VSP/EyeMed vision, MetLife/Lincoln life and disability. OE2026 rates: 11-13% national medical inflation; best markets include IL Aetna 0% flat, TX 7-11%, FL 8-12%; worst AZ UHC 17%, NY 12-15%. PRIME underwriting (2-9 EEs): 50% participation, $65K avg wage ($75K in NYC/DC/SF), no COBRA-only, active business required. Healthcare benchmarks: 88% MLR target (vs 80-85% industry), 98.2% in-network, $1,742/yr pharmacy cost, 72% preventive utilization, 18% ER rate (vs 22% national). Competitor win strategies vs Rippling (no IRS cert, chatbot support, hidden fees), TriNet (dual system, regional benefits, 13 integrations), Paychex (SMB platform, limited reporting, no HRBP), Insperity (smaller scale, limited carriers, no global), Justworks (tech-only, no HRBP, no safety program).
+ADP TotalSource Benefits Knowledge: Available in all 50 states + DC with 28 primary markets. Medical carriers include Aetna, BCBS (state-specific affiliates), Cigna, UHC, and Kaiser (CA HMO). Ancillary: MetLife/Delta/Aetna/Cigna dental, VSP/EyeMed vision, MetLife/Lincoln life and disability. OE2026 rates: 11-13% national medical inflation; best markets include IL Aetna 0% flat, TX 7-11%, FL 8-12%; worst AZ UHC 17%, NY 12-15%. PRIME underwriting (2-9 EEs): 50% participation, $65K avg wage, no COBRA-only, active business required. Healthcare benchmarks: 88% MLR target (vs 80-85% industry), 98.2% in-network, $1,742/yr pharmacy cost, 72% preventive utilization, 18% ER rate (vs 22% national). Competitor win strategies vs Rippling (no IRS cert, chatbot support, hidden fees), TriNet (dual system, regional benefits, 13 integrations), Paychex (SMB platform, limited reporting, no HRBP), Insperity (smaller scale, limited carriers, no global), Justworks (tech-only, no HRBP, no safety program).
 `;

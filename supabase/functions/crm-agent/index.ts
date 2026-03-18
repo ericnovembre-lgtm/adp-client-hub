@@ -253,7 +253,7 @@ Keep proactive suggestions to one sentence. Don't be pushy.
 
 ADP TOTALSOURCE BENEFITS KNOWLEDGE:
 
-MARKET AVAILABILITY: PRIME available at 2+ EEs in AL, AZ, CO, GA, IL (avg wage $65-75K required). Standard TS at 10+ EEs. TS Select (no underwriting) available in all states. CA: TS Select only (no PRIME). HI: Refer to TS Field. ID: Exception basis only (10+ EEs). MD: TS Select any size, Standard TS 60+ EEs. MI/MN: Restrictions apply. NV, NM, OK, OR, UT, NY, PA: County restrictions — verify with underwriting. TX: All programs, no major restrictions.
+MARKET AVAILABILITY: PRIME available at 2+ EEs in AL, AZ, CO, GA, IL (avg wage $65K required). Standard TS at 10+ EEs. TS Select (no underwriting) available in all states. CA: TS Select only (no PRIME). HI: Refer to TS Field. ID: Exception basis only (10+ EEs). MD: TS Select any size, Standard TS 60+ EEs. MI/MN: Restrictions apply. NV, NM, OK, OR, UT, NY, PA: County restrictions — verify with underwriting. TX: All programs, no major restrictions.
 
 CARRIERS (OE2026): Aetna (PPO/HMO/POS, new Choice POS II, 12% rate trend) in AL/AZ/CO/GA/IL/TX. Anthem/BCBS/BCN (PPO dominant, 11% trend) in CA/CO/GA/IL/MI/MN/TX. UHC (PPO/HMO/HRA, new Surest plan, 13% trend) in AL/AZ/CO/GA/IL/NV/OR/TX. Kaiser (CA HMO only, 10% trend). Medica (MN only, 9% trend — lowest). Dental: Delta Dental primary ($4-12/mo), Cigna secondary. Vision: VSP primary ($3-8/mo), Eyemed secondary.
 

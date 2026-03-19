@@ -25,6 +25,11 @@ import OutreachMetricsChart from "@/components/OutreachMetricsChart";
 import DealVelocityChart from "@/components/DealVelocityChart";
 import CompetitorWinLossChart from "@/components/CompetitorWinLossChart";
 import ScoreDistributionChart from "@/components/ScoreDistributionChart";
+import QuotaAttainmentReport from "@/components/reports/QuotaAttainmentReport";
+import PipelineVelocityReport from "@/components/reports/PipelineVelocityReport";
+import ActivitySummaryReport from "@/components/reports/ActivitySummaryReport";
+import RevenueForecastReport from "@/components/reports/RevenueForecastReport";
+import LeadSourceROIReport from "@/components/reports/LeadSourceROIReport";
 
 const STAGE_COLORS: Record<string, string> = {
   lead: "hsl(225, 75%, 55%)",
@@ -127,6 +132,21 @@ export default function ReportsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* NEW: Quota Attainment */}
+        <QuotaAttainmentReport />
+
+        {/* NEW: Pipeline Velocity */}
+        <PipelineVelocityReport filters={filters} />
+
+        {/* NEW: Activity Summary - full width */}
+        <ActivitySummaryReport filters={filters} />
+
+        {/* NEW: Revenue Forecast - full width */}
+        <RevenueForecastReport />
+
+        {/* NEW: Lead Source ROI - full width */}
+        <LeadSourceROIReport filters={filters} />
+
         {/* Lead Conversion Funnel */}
         <Card>
           <CardHeader>

@@ -37,7 +37,111 @@ const TRACKED_FIELDS = [
   "decision_maker_name", "decision_maker_title",
   "decision_maker_email", "decision_maker_phone",
   "trigger_event", "trigger_type",
+  "current_provider", "provider_type",
 ] as const;
+
+// ─── COMPETITOR REGISTRY ───
+const COMPETITOR_REGISTRY = [
+  { name: "Paychex", aliases: ["paychex", "paychex flex", "paychex oasis", "oasis outsourcing"], type: "Payroll-Only", priority: "High", displacement: "Medium", klue_cards: 128 },
+  { name: "isolved", aliases: ["isolved", "isolved hcm", "isolved people cloud"], type: "HCM Platform", priority: "High", displacement: "Medium", klue_cards: 54 },
+  { name: "Intuit QuickBooks", aliases: ["quickbooks", "intuit", "qbo", "quickbooks online", "quickbooks payroll", "intuit payroll"], type: "Accounting+Payroll", priority: "High", displacement: "Easy", klue_cards: 41 },
+  { name: "Insperity", aliases: ["insperity", "administaff"], type: "PEO", priority: "High", displacement: "Hard", klue_cards: 32 },
+  { name: "Justworks", aliases: ["justworks", "just works"], type: "PEO", priority: "High", displacement: "Medium", klue_cards: 32 },
+  { name: "Dayforce", aliases: ["dayforce", "ceridian", "ceridian dayforce"], type: "HCM Platform", priority: "High", displacement: "Hard", klue_cards: 31 },
+  { name: "Rippling", aliases: ["rippling"], type: "HCM Platform", priority: "Medium", displacement: "Medium", klue_cards: 21 },
+  { name: "Gusto", aliases: ["gusto", "gusto payroll", "zenpayroll"], type: "Payroll-Only", priority: "Medium", displacement: "Easy", klue_cards: 18 },
+  { name: "TriNet", aliases: ["trinet", "tri net", "trinet zenefits"], type: "PEO", priority: "Medium", displacement: "Hard", klue_cards: 14 },
+  { name: "Paycom", aliases: ["paycom"], type: "HCM Platform", priority: "Low", displacement: "Medium", klue_cards: 7 },
+  { name: "Paylocity", aliases: ["paylocity"], type: "HCM Platform", priority: "Low", displacement: "Medium", klue_cards: 4 },
+  { name: "UKG", aliases: ["ukg", "ultimate kronos", "kronos", "ultimatesoftware"], type: "HCM Platform", priority: "Low", displacement: "Hard", klue_cards: 4 },
+  { name: "BambooHR", aliases: ["bamboohr", "bamboo hr"], type: "HCM Platform", priority: "Low", displacement: "Easy", klue_cards: 1 },
+  { name: "Workday", aliases: ["workday"], type: "HCM Platform", priority: "Low", displacement: "Hard", klue_cards: 1 },
+  { name: "SAP SuccessFactors", aliases: ["sap", "successfactors", "sap successfactors"], type: "HCM Platform", priority: "Low", displacement: "Hard", klue_cards: 1 },
+] as const;
+
+const DIY_PATTERNS = ["manual payroll", "spreadsheet payroll", "excel payroll", "doing payroll manually", "payroll in excel", "payroll spreadsheet"];
+
+const PRIORITY_ORDER: Record<string, number> = { High: 3, Medium: 2, Low: 1 };
+
+interface CompetitorDetection {
+  current_provider: string;
+  provider_type: string;
+  provider_confidence: string;
+  competitor_source: string;
+  displacement_difficulty: string;
+}
+
+function detectCompetitor(
+  enrichmentTexts: { text: string; source: string; confidence: "Confirmed" | "Likely" | "Possible" }[],
+  headcount?: number | null,
+): CompetitorDetection {
+  const matches: Array<{ competitor: typeof COMPETITOR_REGISTRY[number]; confidence: string; source: string }> = [];
+
+  for (const { text, source, confidence } of enrichmentTexts) {
+    if (!text) continue;
+    const lower = text.toLowerCase();
+
+    // Check DIY patterns
+    for (const pattern of DIY_PATTERNS) {
+      if (lower.includes(pattern)) {
+        return {
+          current_provider: "DIY/None",
+          provider_type: "DIY/None",
+          provider_confidence: "Confirmed",
+          competitor_source: source,
+          displacement_difficulty: "Easy",
+        };
+      }
+    }
+
+    // Check competitor aliases
+    for (const comp of COMPETITOR_REGISTRY) {
+      for (const alias of comp.aliases) {
+        if (lower.includes(alias)) {
+          matches.push({ competitor: comp, confidence, source });
+          break; // one match per competitor per text block
+        }
+      }
+    }
+  }
+
+  if (matches.length === 0) {
+    // Check if small company with no HR tech → possible DIY
+    if (headcount != null && headcount >= 5 && headcount <= 20) {
+      return {
+        current_provider: "Unknown",
+        provider_type: "Unknown",
+        provider_confidence: "Unknown",
+        competitor_source: "inference",
+        displacement_difficulty: "Easy",
+      };
+    }
+    return {
+      current_provider: "Unknown",
+      provider_type: "Unknown",
+      provider_confidence: "Unknown",
+      competitor_source: "",
+      displacement_difficulty: "Easy",
+    };
+  }
+
+  // Pick best match: highest priority, then most klue_cards
+  matches.sort((a, b) => {
+    const pa = PRIORITY_ORDER[a.competitor.priority] ?? 0;
+    const pb = PRIORITY_ORDER[b.competitor.priority] ?? 0;
+    if (pb !== pa) return pb - pa;
+    return b.competitor.klue_cards - a.competitor.klue_cards;
+  });
+
+  const best = matches[0];
+  return {
+    current_provider: best.competitor.name,
+    provider_type: best.competitor.type,
+    provider_confidence: best.confidence,
+    competitor_source: best.source,
+    displacement_difficulty: best.competitor.displacement,
+  };
+}
 
 function countFilled(lead: Record<string, unknown>): number {
   return TRACKED_FIELDS.filter(f => lead[f] != null && lead[f] !== "").length;

@@ -86,6 +86,7 @@ export default function DashboardPage() {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: pipeline, isLoading: pipelineLoading } = usePipelineData();
   const { data: territory, isLoading: territoryLoading } = useTerritoryStats();
+  const { data: signalsCount, isLoading: signalsLoading } = useSignalsCount();
   const { data: userSettings } = useUserSettings();
   const [, navigate] = useLocation();
 

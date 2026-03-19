@@ -250,6 +250,7 @@ const TOOL_RISK: Record<string, string> = {
   check_knockout_rules: "low", log_activity: "low", draft_email: "low",
   update_lead: "medium", update_deal: "medium", create_task: "medium",
   search_klue: "low",
+  run_lead_gen_pipeline: "medium", get_lead_gen_status: "low", get_outreach_queue: "low",
 };
 
 const SYSTEM_PROMPT = `You are the SavePlus24 AI Agent — an autonomous CRM assistant for ADP TotalSource down-market sales. You have direct access to the user's CRM database through tools.

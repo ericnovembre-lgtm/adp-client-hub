@@ -1,38 +1,52 @@
 
 
-## Create Crunchbase Intel Edge Function
+## Crunchbase Intel via RapidAPI Free Tier
 
 ### Overview
-New edge function at `supabase/functions/crunchbase-intel/index.ts` that proxies three Crunchbase API v4 endpoints for funding data, company search, and company lookup. Follows the same auth/CORS pattern as `crm-agent`.
+Replace the planned direct Crunchbase API integration with a RapidAPI-proxied version that uses the free Basic plan (500 req/month). The function only queries Crunchbase when a funding signal has already been detected by another provider (Apollo, etc.), conserving the free tier.
 
-### Edge Function: `supabase/functions/crunchbase-intel/index.ts`
+### Changes
 
-- Imports: `serve` from deno std, `createClient` from supabase-js (same versions as crm-agent)
-- CORS headers: identical to crm-agent
-- Auth: Bearer token → `getUser()` check
-- Reads `CRUNCHBASE_API_KEY` from env; returns descriptive error if missing
+#### 1. Edge Function: `supabase/functions/crunchbase-intel/index.ts` (new)
+- Same CORS/auth pattern as `enrich-lead` (Deno.serve, Bearer token, getUser check)
+- Reads `RAPIDAPI_KEY` from env; returns setup instructions if missing
+- Uses `RAPIDAPI_HOST = crunchbase-crunchbase-v1.p.rapidapi.com`
+- Three modes:
 
-Three modes as specified:
+  **`search_companies`** — GET `odm-organizations?name={name}` with RapidAPI headers. Extracts company profile + embedded funding data (total_funding_usd, last_funding_type, num_funding_rounds, etc.)
 
-1. **search_companies** — POST to `/searches/organizations?user_key={key}` with field_ids for identifier, description, location, categories, employees, founding, website, funding_total, last_funding_type, last_funding_at. Builds query predicates dynamically (employee range, location, optional industry/funding filters). Returns array of extracted company objects.
+  **`check_funding`** — The primary mode. Accepts `company_name`, `domain`, and optional `enrichment_hints` (apollo funding tags, trigger events). Runs `shouldQueryCrunchbase()` logic first; if no funding signals detected, returns `{ skipped: true, reason }`. If signals present, queries ODM Organizations endpoint, extracts funding data, categorizes into tiers (pre_seed/seed/early_stage/growth/late_stage), and flags `recently_funded` (within 6 months).
 
-2. **search_funding** — POST to `/searches/funding_rounds?user_key={key}` with field_ids for identifier, funded_organization_identifier, money_raised, announced_on, investment_type, num_investors. Defaults `funded_after` to 6 months ago. Returns array of funding round objects sorted by date desc.
+  **`lookup_company`** — GET `odm-organizations?name={name}`, find best match by domain/name, return full profile with funding data.
 
-3. **lookup_company** — GET to `/entities/organizations/{permalink}?user_key={key}&field_ids=...` where permalink is derived from company_name (lowercased, spaces to hyphens). Returns single company detail object.
+- Returns: `{ mode, success, data, count, skipped?, skip_reason?, funding_tier?, recently_funded? }`
+- Helper functions: `isRecentlyFunded()`, `categorizeFunding()`, `shouldQueryCrunchbase()`
 
-All modes return `{ mode, success, data, count, error? }`.
-
-### Config
-Add to `supabase/config.toml`:
+#### 2. Config: `supabase/config.toml`
+Add:
 ```toml
 [functions.crunchbase-intel]
 verify_jwt = false
 ```
 
-### Secret
-Will prompt user for `CRUNCHBASE_API_KEY` (not currently in project secrets).
+#### 3. Secret: `RAPIDAPI_KEY`
+Prompt user for their RapidAPI key with setup instructions (sign up at rapidapi.com, subscribe to Crunchbase Basic free plan, copy X-RapidAPI-Key).
+
+#### 4. Settings Page: `src/pages/SettingsPage.tsx`
+- Add `rapidapiKeyConfigured` / `testingRapidapi` state
+- Add `rapidapi_key_configured` to UserSettings interface
+- Add a "Crunchbase (RapidAPI)" card after the Klue card with:
+  - Connection status badge
+  - "Free: 500 requests/month" note
+  - Test Connection button (invokes `crunchbase-intel` with `{ mode: "lookup_company", company_name: "ADP" }`)
+  - Setup instructions text
+
+#### 5. UserSettings: `src/hooks/useUserSettings.ts`
+- Add `rapidapi_key_configured?: boolean` to the interface
 
 ### Files Changed
 - `supabase/functions/crunchbase-intel/index.ts` — new
 - `supabase/config.toml` — add function entry
+- `src/pages/SettingsPage.tsx` — add RapidAPI/Crunchbase settings card
+- `src/hooks/useUserSettings.ts` — add `rapidapi_key_configured` field
 

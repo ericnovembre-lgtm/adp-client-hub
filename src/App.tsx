@@ -25,6 +25,8 @@ import RenewalsPage from "@/pages/RenewalsPage";
 import TerritoryAnalyticsPage from "@/pages/TerritoryAnalyticsPage";
 import BattlecardsPage from "@/pages/BattlecardsPage";
 import ObjectionHandlerPage from "@/pages/ObjectionHandlerPage";
+import SignalsPage from "@/pages/SignalsPage";
+import CompliancePage from "@/pages/CompliancePage";
 import NotFound from "@/pages/NotFound";
 import AgentPanel from "@/components/AgentPanel";
 import ObjectionHandlerFAB from "@/components/ObjectionHandlerFAB";

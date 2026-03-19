@@ -953,6 +953,65 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Klue Competitive Intelligence */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            Klue Competitive Intelligence
+          </CardTitle>
+          <CardDescription>Connect to your Klue instance for live competitive battlecards</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Input type="password" placeholder="KLUE_API_KEY configured in secrets" disabled className="max-w-md" />
+            {klueKeyConfigured
+              ? <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-300"><CheckCircle2 className="h-3 w-3 mr-1" />Connected</Badge>
+              : <Badge variant="outline" className="text-muted-foreground"><Info className="h-3 w-3 mr-1" />Not configured</Badge>
+            }
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Connect to your organization's Klue instance to pull live competitive battlecards and intelligence. Get your API key from Klue under Apps &amp; Integrations &gt; Content API.
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={testingKlue}
+              onClick={async () => {
+                setTestingKlue(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke("klue-intelligence", {
+                    body: { mode: "cards" },
+                  });
+                  if (error) throw error;
+                  if (data?.error) {
+                    if (data.error === "klue_not_configured") {
+                      toast.error("KLUE_API_KEY not set. Add it to Edge Function secrets.");
+                    } else {
+                      throw new Error(data.error);
+                    }
+                    setKlueKeyConfigured(false);
+                    await updateSettings.mutateAsync({ ...settings, klue_api_key_configured: false });
+                    return;
+                  }
+                  toast.success(`Klue connection successful! ${data.card_count ?? 0} cards available.`);
+                  setKlueKeyConfigured(true);
+                  await updateSettings.mutateAsync({ ...settings, klue_api_key_configured: true });
+                } catch (e: any) {
+                  toast.error(e.message || "Klue connection test failed");
+                  setKlueKeyConfigured(false);
+                  await updateSettings.mutateAsync({ ...settings, klue_api_key_configured: false });
+                }
+                setTestingKlue(false);
+              }}
+            >
+              {testingKlue ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Zap className="h-4 w-4 mr-1" />}
+              Test Connection
+            </Button>
+          </div>
+        </CardContent>
+
       {/* Discovery Settings */}
       <Card>
         <CardHeader>

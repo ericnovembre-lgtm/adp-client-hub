@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
   );
 
   try {
-    const { to, subject, body, contact_id } = await req.json();
+    const { to, subject, body, contact_id, metadata = {} } = await req.json();
 
     if (!to || !subject || !body) {
       return new Response(

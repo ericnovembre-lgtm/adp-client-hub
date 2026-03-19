@@ -315,6 +315,9 @@ export default function DashboardPage() {
       </Card>
       </div>
 
+      {/* Competitor Breakdown */}
+      <CompetitorBreakdownWidget />
+
       {/* Pipeline Chart */}
       <Card>
         <CardHeader>

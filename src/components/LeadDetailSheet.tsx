@@ -503,6 +503,14 @@ export default function LeadDetailSheet({
                   <Phone className="h-4 w-4 mr-2" />
                   {showCallPrep ? "Hide Prep" : "Prep Call"}
                 </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowFollowUp((v) => !v)}
+                >
+                  <ListChecks className="h-4 w-4 mr-2" />
+                  {showFollowUp ? "Hide Sequence" : "Follow-Up Sequence"}
+                </Button>
                 {onConvertToDeal && lead.status !== "converted" && (
                   <Button
                     variant="outline"

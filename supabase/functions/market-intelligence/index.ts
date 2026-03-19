@@ -199,33 +199,37 @@ async function fetchCBP(
   year: string
 ): Promise<{ establishments: number; employees: number; payroll: number } | null> {
   try {
+    // Use year-specific endpoint: /data/{year}/cbp
     const params = new URLSearchParams({
       get: "ESTAB,EMP,PAYANN",
       for: `state:${stateFips}`,
       NAICS2017: naics,
-      TIME: year,
+      LFO: "001",       // All legal forms of organization
+      EMPSZES: "001",    // All establishment sizes
     });
     if (apiKey) params.set("key", apiKey);
 
-    const url = `https://api.census.gov/data/timeseries/cbp?${params}`;
+    const url = `https://api.census.gov/data/${year}/cbp?${params}`;
+    console.log(`Fetching CBP: state=${stateFips}, NAICS=${naics}, year=${year}`);
     const response = await fetch(url);
 
     if (!response.ok) {
-      console.error(`Census CBP error for state ${stateFips}, NAICS ${naics}, year ${year}:`, response.status);
+      const text = await response.text().catch(() => "");
+      console.error(`Census CBP error for state ${stateFips}, NAICS ${naics}, year ${year}: ${response.status}`, text.substring(0, 200));
       return null;
     }
 
-    let data = await response.json();
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.includes("json")) {
+      console.error(`Census CBP returned non-JSON for state ${stateFips}, NAICS ${naics}, year ${year}`);
+      return null;
+    }
 
-    // Fallback: try NAICS2012 for older years
-    if (!data || data.length < 2) {
-      params.delete("NAICS2017");
-      params.set("NAICS2012", naics);
-      const retryUrl = `https://api.census.gov/data/timeseries/cbp?${params}`;
-      const retryResp = await fetch(retryUrl);
-      if (!retryResp.ok) return null;
-      data = await retryResp.json();
-      if (!data || data.length < 2) return null;
+    const data = await response.json();
+
+    if (!data || !Array.isArray(data) || data.length < 2) {
+      console.error(`Census CBP returned no data for state ${stateFips}, NAICS ${naics}, year ${year}`);
+      return null;
     }
 
     const headers = data[0] as string[];

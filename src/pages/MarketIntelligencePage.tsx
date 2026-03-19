@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { TrendingUp, TrendingDown, BarChart3, Loader2, ArrowRight, ChevronDown, Info } from "lucide-react";
+import BLSTrendsSection from "@/components/market-intelligence/BLSTrendsSection";
 
 const TOP_STATES = [
   "California", "Texas", "New York", "Florida", "Illinois",
@@ -264,6 +265,13 @@ export default function MarketIntelligencePage() {
           </div>
         </div>
       )}
+
+      {/* BLS Recent Trends */}
+      <BLSTrendsSection
+        states={selectedStates}
+        industries={selectedIndustries}
+        hasAnalyzed={insights.length > 0}
+      />
 
       {/* Data Table */}
       {sortedInsights.length > 0 && (

@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from "recharts";
-import { usePipelineVelocity } from "@/hooks/useReportsData";
+import { usePipelineVelocity, type ReportsFilters } from "@/hooks/useReportsData";
 import { Gauge, TrendingUp, Award, Timer } from "lucide-react";
 
 const COLORS: Record<string, string> = {

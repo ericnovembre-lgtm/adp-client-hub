@@ -7,6 +7,7 @@ import { useCompanies } from "@/hooks/useCompanies";
 import { DEAL_STAGES, DEAL_STAGE_LABELS, DEAL_STAGE_COLORS } from "@/lib/constants";
 import { logActivity } from "@/lib/logActivity";
 import ActivityTimeline from "@/components/ActivityTimeline";
+import DealCoachPanel from "@/components/DealCoachPanel";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { toast } from "sonner";
 

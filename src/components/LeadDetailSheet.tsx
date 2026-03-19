@@ -523,6 +523,14 @@ export default function LeadDetailSheet({
                   <ClipboardCheck className="h-4 w-4 mr-2" />
                   {showQuoteReadiness ? "Hide Readiness" : "Quote Readiness"}
                 </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowBattlecard((v) => !v)}
+                >
+                  <Swords className="h-4 w-4 mr-2" />
+                  {showBattlecard ? "Hide Battlecard" : "Battlecard"}
+                </Button>
                 {onConvertToDeal && lead.status !== "converted" && (
                   <Button
                     variant="outline"

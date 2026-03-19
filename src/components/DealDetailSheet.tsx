@@ -23,7 +23,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import {
   DollarSign, CalendarIcon, Building2, User, FileText,
-  Pencil, X, Save, Loader2, Clock, GripVertical,
+  Pencil, X, Save, Loader2, Clock, GripVertical, Brain,
 } from "lucide-react";
 import { Link } from "wouter";
 

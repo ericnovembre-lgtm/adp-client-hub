@@ -1,21 +1,42 @@
 
 
-## Competitor-Aware Lead Scoring (COMPLETED)
+## Waterfall Orchestrator Update — Steps 6-7 Progress + Dashboard Competitor Breakdown
 
-### Overview
-Extended `computeScore` in `waterfall-enrich` with a 6th scoring factor: **Competitor Advantage** (max 60 points). Layers competitor displacement bonuses, trigger event bonuses, confidence multipliers, headcount sweet spot bonuses, and combo bonuses on top of the existing 5 base factors (max 100). Total possible = 160. Grade thresholds: A=80+, B=60-79, C=40-59, D=<40.
+### What's Already Done
+The waterfall-enrich edge function already has competitor detection (Step 6.5) and competitor-aware scoring integrated. The enrichment results already include competitor data. No backend changes needed.
 
-### Changes Made
-- `supabase/functions/waterfall-enrich/index.ts` — added COMPETITOR_SCORE_ADJUSTMENTS, TRIGGER_BONUSES, confidence multipliers, headcount bonuses, combo bonus, capped at 60
-- `src/components/LeadDetailSheet.tsx` — score display shows tier icons (Hot/Warm/Nurture/Cold), breakdown tooltip (Base + Competitor = Total), updated max score denominator
+### What Needs to Change
 
-## Competitor-Specific Outreach Templates + Battlecard AI Knowledge (COMPLETED)
+#### 1. Deep Enrich Progress Indicator (`LeadDetailSheet.tsx`)
+Currently shows a simple "Deep Enriching..." spinner. Replace with a step-by-step progress display:
+- Add `enrichStep` state tracking current step (1-7)
+- Use SSE-style polling or simply show a static "Step X/7: ..." label that updates on a timer during enrichment (since the edge function is a single call, simulate progress steps on ~2s intervals)
+- Steps: Apollo → Hunter.io → Snov.io → Crunchbase → Lead411 → Detecting provider → Calculating score
+- On completion, update toast to: `"✅ Provider: [X] | Score: Y (Tier) | Displacement: Z"`
 
-### Overview
-Two features: (1) Competitor-aware email templates that auto-select based on a lead's detected `current_provider`, and (2) Battlecard knowledge injected into the CRM Agent for real-time competitive Q&A.
+#### 2. Enrichment Results Card Enhancement (`LeadDetailSheet.tsx`)
+Add competitor detection and scoring rows to the existing enrichment results card:
+- Show "Provider Detected" row with competitor name + displacement badge
+- Show "Competitor Score" row with breakdown
 
-### Changes Made
-- `src/lib/competitorOutreachTemplates.ts` — new file with OUTREACH_TEMPLATES (QuickBooks, Justworks, Gusto, Paychex, DIY/None), BATTLECARD_KNOWLEDGE, `getCompetitorTemplate()`, and `buildCompetitorEmail()` builder
-- `src/components/DraftEmailDialog.tsx` — added `competitorTemplate` prop, "Competitor Displacement" template option in selector, pre-fills subject/body from competitor template
-- `src/pages/LeadsPage.tsx` — generates competitor template via `buildCompetitorEmail()` when opening email dialog from table actions or detail sheet
-- `supabase/functions/crm-agent/index.ts` — appended full BATTLECARD_KNOWLEDGE to system prompt with objection handlers, pricing intel, why_adp_wins/loses, and competitive question behavior instructions
+#### 3. Dashboard Competitor Breakdown Widget (`DashboardPage.tsx`)
+Add a new "Competitor Breakdown" section with:
+- Query leads grouped by `current_provider` for a pie chart (using Recharts `PieChart`)
+- Query leads grouped by `displacement_difficulty` for a bar chart
+- Counter: "X hot leads on easy-to-displace competitors" (leads with score ≥80 and displacement="Easy")
+- Table: Top 10 leads sorted by total score with competitor badges
+
+New query hook or inline queries fetching:
+```sql
+-- Leads by provider
+SELECT current_provider, COUNT(*) FROM leads WHERE current_provider IS NOT NULL GROUP BY current_provider
+-- Leads by displacement
+SELECT displacement_difficulty, COUNT(*) FROM leads WHERE displacement_difficulty IS NOT NULL GROUP BY displacement_difficulty
+-- Hot + Easy leads
+SELECT * FROM leads WHERE displacement_difficulty = 'Easy' JOIN lead_scores ON ... WHERE score >= 80
+```
+
+### Files Changed
+- `src/components/LeadDetailSheet.tsx` — progress steps during enrichment + enhanced results display
+- `src/pages/DashboardPage.tsx` — add Competitor Breakdown widget with pie chart, bar chart, counter, and top leads table
+

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useDashboardStats, usePipelineData, useTerritoryStats, type StatItem } from "@/hooks/useDashboardStats";
+import { useDashboardStats, usePipelineData, useTerritoryStats, useSignalsCount, type StatItem } from "@/hooks/useDashboardStats";
 import { useUserSettings } from "@/hooks/useUserSettings";
 import { formatDistanceToNow } from "date-fns";
 import { useLocation } from "wouter";
@@ -11,7 +11,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import {
   TrendingUp, TrendingDown, Phone, Mail, Calendar, FileText, Activity,
-  Users, DollarSign, Target, CheckSquare, Sparkles, MapPin,
+  Users, DollarSign, Target, CheckSquare, Sparkles, MapPin, Radio,
 } from "lucide-react";
 import { HEADCOUNT_MIN, HEADCOUNT_MAX } from "@/lib/constants";
 import DailyBriefWidget from "@/components/DailyBriefWidget";
@@ -86,6 +86,7 @@ export default function DashboardPage() {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: pipeline, isLoading: pipelineLoading } = usePipelineData();
   const { data: territory, isLoading: territoryLoading } = useTerritoryStats();
+  const { data: signalsCount, isLoading: signalsLoading } = useSignalsCount();
   const { data: userSettings } = useUserSettings();
   const [, navigate] = useLocation();
 
@@ -182,6 +183,31 @@ export default function DashboardPage() {
           ) : (
             <p className="text-sm text-muted-foreground">No leads yet</p>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Signals Badge */}
+      <Card
+        className="cursor-pointer hover:bg-muted/50 transition-colors"
+        onClick={() => navigate("/signals")}
+      >
+        <CardContent className="p-4 flex items-center gap-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+            <Radio className="h-5 w-5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-foreground">High-Confidence Signals</span>
+              {signalsLoading ? (
+                <Skeleton className="h-5 w-8 rounded-full" />
+              ) : (
+                <Badge variant={signalsCount && signalsCount > 0 ? "default" : "outline"}>
+                  {signalsCount ?? 0}
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">Last 7 days</p>
+          </div>
         </CardContent>
       </Card>
 

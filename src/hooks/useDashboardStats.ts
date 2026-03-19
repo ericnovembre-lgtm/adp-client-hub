@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { startOfMonth, endOfMonth, subMonths, startOfDay, endOfDay } from "date-fns";
+import { startOfMonth, endOfMonth, subMonths, startOfDay, endOfDay, subDays } from "date-fns";
 
 export interface StatItem {
   value: number;
@@ -124,6 +124,24 @@ export function useTerritoryStats() {
         outPct: pct(outOfTerritory),
         unknownPct: pct(unknown),
       } as TerritoryStats;
+    },
+    staleTime: 30_000,
+  });
+}
+
+export function useSignalsCount() {
+  return useQuery({
+    queryKey: ["dashboard-signals-count"],
+    queryFn: async () => {
+      const sevenDaysAgo = subDays(new Date(), 7).toISOString();
+      const { count, error } = await supabase
+        .from("leads")
+        .select("id", { count: "exact", head: true })
+        .not("trigger_event", "is", null)
+        .gte("created_at", sevenDaysAgo)
+        .neq("status", "dismissed");
+      if (error) throw error;
+      return count ?? 0;
     },
     staleTime: 30_000,
   });

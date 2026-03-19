@@ -14,6 +14,7 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/comp
 import { cn } from "@/lib/utils";
 import { useAgentChat, AgentMessage, AgentToolCall } from "@/hooks/useAgentChat";
 import { useAgentRecommendations } from "@/hooks/useAgentRecommendations";
+import { OutreachReviewList } from "@/components/OutreachReviewCard";
 
 const QUICK_ACTIONS = [
   { label: "Show my pipeline", message: "Show me my current pipeline summary with deal values by stage" },

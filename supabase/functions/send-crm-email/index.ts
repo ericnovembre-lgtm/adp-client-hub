@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
   );
 
   try {
-    const { to, subject, body, contact_id } = await req.json();
+    const { to, subject, body, contact_id, metadata = {} } = await req.json();
 
     if (!to || !subject || !body) {
       return new Response(
@@ -114,6 +114,7 @@ Deno.serve(async (req) => {
         contact_id: contact_id || null,
         status: "failed",
         user_id: userId,
+        metadata,
       });
 
       return new Response(
@@ -136,6 +137,7 @@ Deno.serve(async (req) => {
       contact_id: contact_id || null,
       status: "sent",
       user_id: userId,
+      metadata,
     });
 
     // Log activity

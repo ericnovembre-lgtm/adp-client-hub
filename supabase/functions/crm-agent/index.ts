@@ -205,6 +205,43 @@ const CRM_TOOLS = [
       required: ["competitor"],
     },
   },
+  {
+    name: "run_lead_gen_pipeline",
+    description: "Trigger the autonomous lead generation pipeline. Discovers new leads, enriches them, scores them, detects competitors, and drafts personalized outreach emails for review. Returns a run_id to track progress.",
+    input_schema: {
+      type: "object",
+      properties: {
+        industry: { type: "string", description: "Filter discovery to specific industry" },
+        state: { type: "string", description: "Filter to specific US state" },
+        skip_discovery: { type: "boolean", description: "Skip AI discovery, only process existing unenriched leads" },
+        max_leads: { type: "number", description: "Max leads to process. Default 10." },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "get_lead_gen_status",
+    description: "Check the status of a lead generation pipeline run. Returns current stage, counts, and any errors.",
+    input_schema: {
+      type: "object",
+      properties: {
+        run_id: { type: "string", description: "UUID of the pipeline run. If omitted, returns the latest run." },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "get_outreach_queue",
+    description: "Get pending outreach emails waiting for review. Shows drafted emails with lead context, competitor info, and score.",
+    input_schema: {
+      type: "object",
+      properties: {
+        status: { type: "string", enum: ["pending_review", "approved", "sent", "skipped"], description: "Filter by status. Default: pending_review" },
+        limit: { type: "number", description: "Max results. Default 10." },
+      },
+      required: [],
+    },
+  },
 ];
 
 const TOOL_RISK: Record<string, string> = {

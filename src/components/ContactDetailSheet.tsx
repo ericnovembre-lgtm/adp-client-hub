@@ -266,6 +266,23 @@ export default function ContactDetailSheet({
 
         <Separator className="my-6" />
 
+        <div className="mb-4">
+          <Button
+            variant={showCallPrep ? "secondary" : "outline"}
+            size="sm"
+            className="gap-1.5"
+            onClick={() => setShowCallPrep((v) => !v)}
+          >
+            <Phone className="h-4 w-4" />
+            Prep Call
+          </Button>
+          {showCallPrep && (
+            <div className="mt-3">
+              <CallPrepPanel contact_id={contact.id} />
+            </div>
+          )}
+        </div>
+
         <Tabs defaultValue="activity">
           <TabsList className="w-full">
             <TabsTrigger value="activity" className="flex-1">Activity</TabsTrigger>

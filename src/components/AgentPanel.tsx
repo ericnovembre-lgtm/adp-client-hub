@@ -20,6 +20,8 @@ const QUICK_ACTIONS = [
   { label: "Stalled deals", message: "Find deals that have had no activity in the last 14 days" },
   { label: "Draft outreach", message: "Help me draft an outreach email for my highest-priority uncontacted lead" },
   { label: "Score leads", message: "Score my new leads and tell me which ones to prioritize" },
+  { label: "Run lead gen", message: "Run the lead generation pipeline to discover, enrich, and draft outreach for new leads" },
+  { label: "Review outreach", message: "Show me pending outreach emails waiting for my review" },
 ];
 
 function getToolIcon(name: string) {

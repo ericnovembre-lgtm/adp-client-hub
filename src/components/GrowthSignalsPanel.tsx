@@ -137,8 +137,20 @@ export default function GrowthSignalsPanel() {
 
   return (
     <div className="space-y-6">
+      {/* Deferred Banner */}
+      <div className="rounded-lg border border-amber-300/50 bg-amber-50/50 dark:bg-amber-950/20 p-4">
+        <div className="flex items-center gap-2 mb-1">
+          <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border-amber-400">Deferred</Badge>
+          <span className="font-medium text-amber-800 dark:text-amber-300 text-sm">Lead411 Integration — Not Yet Active</span>
+        </div>
+        <p className="text-xs text-amber-700 dark:text-amber-400">
+          Lead411 requires a work email for signup. This feature will activate when <span className="font-mono">LEAD411_API_KEY</span> is configured.
+          For now, Apollo and Crunchbase provide basic funding/growth signals through the other discovery tabs.
+        </p>
+      </div>
+
       {/* Filters */}
-      <Card>
+      <Card className="opacity-60 pointer-events-none">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
@@ -259,13 +271,13 @@ export default function GrowthSignalsPanel() {
         </Card>
       )}
 
-      {/* Empty state */}
+      {/* Empty state — deferred */}
       {results.length === 0 && !searchMutation.isPending && (
         <div className="rounded-lg border bg-muted/30 p-8 text-center text-muted-foreground">
           <TrendingUp className="h-10 w-10 mx-auto mb-3 opacity-50" />
-          <p className="font-medium">No growth signals yet</p>
+          <p className="font-medium">Growth Signals — Deferred</p>
           <p className="text-sm mt-1 max-w-md mx-auto">
-            Select trigger types above and click "Find Growing Companies" to discover businesses with active growth intent.
+            This feature requires a Lead411 API key. For now, use the AI Generated, Intent-Based, or New Businesses tabs for lead discovery. Apollo and Crunchbase provide basic funding/growth signals.
           </p>
         </div>
       )}

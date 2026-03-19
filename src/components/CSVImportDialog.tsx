@@ -92,6 +92,7 @@ export default function CSVImportDialog({ entityType, open, onOpenChange, onImpo
     setProgress(0);
     setResult(null);
     setDuplicateWarning([]);
+    setImportedLeadIds([]);
   }, []);
 
   const handleClose = (v: boolean) => {

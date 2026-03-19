@@ -26,6 +26,7 @@ export interface UserSettings {
   yelp_api_key_configured?: boolean;
   census_api_key_configured?: boolean;
   opencorporates_api_key_configured?: boolean;
+  klue_api_key_configured?: boolean;
 }
 
 export function useUserSettings() {

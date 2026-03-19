@@ -5,7 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { useLeadSourceROI, type ReportsFilters } from "@/hooks/useReportsData";
 import { PieChart as PieChartIcon } from "lucide-react";
 
-export default function LeadSourceROIReport({ filters }: { filters: { range: string; from?: Date; to?: Date } }) {
+export default function LeadSourceROIReport({ filters }: { filters: ReportsFilters }) {
   const { data, isLoading } = useLeadSourceROI(filters);
 
   if (isLoading) {

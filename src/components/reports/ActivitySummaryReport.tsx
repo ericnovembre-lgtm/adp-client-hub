@@ -18,7 +18,7 @@ const TYPE_ICONS: Record<string, React.ElementType> = {
   note: StickyNote,
 };
 
-export default function ActivitySummaryReport({ filters }: { filters: { range: string; from?: Date; to?: Date } }) {
+export default function ActivitySummaryReport({ filters }: { filters: ReportsFilters }) {
   const { data, isLoading } = useActivitySummary(filters);
 
   if (isLoading) {

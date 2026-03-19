@@ -5,7 +5,7 @@ import { useUserSettings } from "@/hooks/useUserSettings";
 
 export type DateRange = "7" | "30" | "90" | "custom";
 
-interface ReportsFilters {
+export interface ReportsFilters {
   range: DateRange;
   from?: Date;
   to?: Date;

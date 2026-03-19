@@ -22,7 +22,7 @@ function KPIBox({ icon: Icon, label, value }: { icon: React.ElementType; label: 
   );
 }
 
-export default function PipelineVelocityReport({ filters }: { filters: { range: string; from?: Date; to?: Date } }) {
+export default function PipelineVelocityReport({ filters }: { filters: ReportsFilters }) {
   const { data, isLoading } = usePipelineVelocity(filters);
 
   if (isLoading) {

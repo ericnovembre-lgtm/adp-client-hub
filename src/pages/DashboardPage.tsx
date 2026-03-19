@@ -18,7 +18,9 @@ import { HEADCOUNT_MIN, HEADCOUNT_MAX } from "@/lib/constants";
 import DailyBriefWidget from "@/components/DailyBriefWidget";
 import BenefitsEligibilityChecker from "@/components/BenefitsEligibilityChecker";
 import CompetitorBreakdownWidget from "@/components/CompetitorBreakdownWidget";
+import QuotaTrackerWidget from "@/components/QuotaTrackerWidget";
 import LeadDetailSheet from "@/components/LeadDetailSheet";
+import type { Lead } from "@/types/database";
 import type { Lead } from "@/types/database";
 
 const formatCurrency = (v: number) =>

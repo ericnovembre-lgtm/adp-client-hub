@@ -10,6 +10,7 @@ import {
   Mail,
   BarChart3,
   ClipboardCheck,
+  RefreshCw,
   Settings,
   LogOut,
   ChevronLeft,
@@ -31,6 +32,7 @@ const navItems = [
   { title: "AI Discovery", path: "/ai-discovery", icon: Sparkles },
   { title: "Market Intel", path: "/market-intelligence", icon: TrendingUp },
   { title: "Quote Readiness", path: "/quote-readiness", icon: ClipboardCheck },
+  { title: "Renewals", path: "/renewals", icon: RefreshCw },
   { title: "Email Templates", path: "/email-templates", icon: Mail },
   { title: "Settings", path: "/settings", icon: Settings },
 ];

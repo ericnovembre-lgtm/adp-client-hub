@@ -21,6 +21,7 @@ import EmailTemplatesPage from "@/pages/EmailTemplatesPage";
 import SettingsPage from "@/pages/SettingsPage";
 import MarketIntelligencePage from "@/pages/MarketIntelligencePage";
 import QuoteReadinessPage from "@/pages/QuoteReadinessPage";
+import RenewalsPage from "@/pages/RenewalsPage";
 import NotFound from "@/pages/NotFound";
 import AgentPanel from "@/components/AgentPanel";
 import { toast } from "sonner";
@@ -104,6 +105,7 @@ const App = () => (
               <Route path="/ai-discovery">{() => <ProtectedPage><AIDiscoveryPage /></ProtectedPage>}</Route>
               <Route path="/market-intelligence">{() => <ProtectedPage><MarketIntelligencePage /></ProtectedPage>}</Route>
               <Route path="/quote-readiness">{() => <ProtectedPage><QuoteReadinessPage /></ProtectedPage>}</Route>
+              <Route path="/renewals">{() => <ProtectedPage><RenewalsPage /></ProtectedPage>}</Route>
               <Route path="/email-templates">{() => <ProtectedPage><EmailTemplatesPage /></ProtectedPage>}</Route>
               <Route path="/settings">{() => <ProtectedPage><SettingsPage /></ProtectedPage>}</Route>
               <Route component={NotFound} />

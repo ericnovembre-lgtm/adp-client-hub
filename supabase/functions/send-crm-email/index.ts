@@ -114,6 +114,7 @@ Deno.serve(async (req) => {
         contact_id: contact_id || null,
         status: "failed",
         user_id: userId,
+        metadata,
       });
 
       return new Response(

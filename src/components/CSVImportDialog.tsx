@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Upload, FileUp, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import EnrichmentProgress from "@/components/EnrichmentProgress";
 
 type EntityType = "leads" | "contacts" | "companies";
 
@@ -67,7 +68,8 @@ export default function CSVImportDialog({ entityType, open, onOpenChange, onImpo
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [importedLeadIds, setImportedLeadIds] = useState<string[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
   const [rows, setRows] = useState<Record<string, string>[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
@@ -90,6 +92,7 @@ export default function CSVImportDialog({ entityType, open, onOpenChange, onImpo
     setProgress(0);
     setResult(null);
     setDuplicateWarning([]);
+    setImportedLeadIds([]);
   }, []);
 
   const handleClose = (v: boolean) => {
@@ -211,16 +214,24 @@ export default function CSVImportDialog({ entityType, open, onOpenChange, onImpo
     let success = 0;
     let failed = 0;
     const batchSize = 10;
+    const collectedIds: string[] = [];
 
     for (let i = 0; i < mapped.length; i += batchSize) {
       const batch = mapped.slice(i, i + batchSize).map(row => ({ ...row, user_id: user.id }));
-      const { error } = await supabase.from(entityType).insert(batch as any);
+      const { data: inserted, error } = await supabase.from(entityType).insert(batch as any).select("id");
       if (error) {
         failed += batch.length;
       } else {
-        success += batch.length;
+        success += (inserted?.length ?? batch.length);
+        if (entityType === "leads" && inserted) {
+          collectedIds.push(...inserted.map((r: any) => r.id));
+        }
       }
       setProgress(Math.round(((i + batch.length) / mapped.length) * 100));
+    }
+
+    if (entityType === "leads") {
+      setImportedLeadIds(collectedIds);
     }
 
     setResult({ success, failed, skipped });
@@ -370,14 +381,29 @@ export default function CSVImportDialog({ entityType, open, onOpenChange, onImpo
                     <p className="text-xs">{duplicateWarning.slice(0, 10).join(", ")}{duplicateWarning.length > 10 ? ` and ${duplicateWarning.length - 10} more…` : ""}</p>
                   </div>
                 )}
-                <DialogFooter>
-                  <Button onClick={() => { reset(); onImportComplete(); handleClose(false); }}>
-                    Done
-                  </Button>
+                <DialogFooter className="gap-2">
+                  {entityType === "leads" && result.success > 0 ? (
+                    <Button onClick={() => setStep(4)}>
+                      Continue to Enrichment
+                    </Button>
+                  ) : (
+                    <Button onClick={() => { reset(); onImportComplete(); handleClose(false); }}>
+                      Done
+                    </Button>
+                  )}
                 </DialogFooter>
               </div>
             ) : null}
           </div>
+        )}
+
+        {/* Step 4: Enrichment (leads only) */}
+        {step === 4 && entityType === "leads" && (
+          <EnrichmentProgress
+            leadIds={importedLeadIds}
+            onComplete={() => { reset(); onImportComplete(); handleClose(false); }}
+            onSkip={() => { reset(); onImportComplete(); handleClose(false); }}
+          />
         )}
       </DialogContent>
     </Dialog>

@@ -106,7 +106,7 @@ const GRADE_COLORS: Record<string, string> = {
   D: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
 };
 
-export default function CompetitorBreakdownWidget() {
+export default function CompetitorBreakdownWidget({ onLeadClick }: { onLeadClick?: (leadId: string) => void } = {}) {
   const { data, isLoading } = useCompetitorBreakdown();
   const [, navigate] = useLocation();
 

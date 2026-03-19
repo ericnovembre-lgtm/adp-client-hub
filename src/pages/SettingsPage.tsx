@@ -518,6 +518,8 @@ export default function SettingsPage() {
   const [testingRapidapi, setTestingRapidapi] = useState(false);
   const [snovKeyConfigured, setSnovKeyConfigured] = useState(false);
   const [testingSnov, setTestingSnov] = useState(false);
+  const [lead411KeyConfigured, setLead411KeyConfigured] = useState(false);
+  const [testingLead411, setTestingLead411] = useState(false);
 
   // Discovery
   const [defaultIndustry, setDefaultIndustry] = useState("");
@@ -556,6 +558,7 @@ export default function SettingsPage() {
     setKlueKeyConfigured(settings.klue_api_key_configured ?? false);
     setRapidapiKeyConfigured(settings.rapidapi_key_configured ?? false);
     setSnovKeyConfigured(settings.snov_key_configured ?? false);
+    setLead411KeyConfigured(settings.lead411_api_key_configured ?? false);
   }, [settings]);
 
   const saveProfile = async () => {
@@ -1133,6 +1136,65 @@ export default function SettingsPage() {
               }}
             >
               {testingSnov ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Zap className="h-4 w-4 mr-1" />}
+              Test Connection
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Lead411 Growth Signals */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            Lead411
+          </CardTitle>
+          <CardDescription>Real-time growth intent signals — funding, hiring surges, exec hires, expansions</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-2">
+            {lead411KeyConfigured
+              ? <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 border-emerald-300"><CheckCircle2 className="h-3 w-3 mr-1" />Connected</Badge>
+              : <Badge variant="outline" className="text-muted-foreground"><Info className="h-3 w-3 mr-1" />Not configured</Badge>
+            }
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Sign up at <span className="font-mono text-foreground">lead411.com</span>, then go to <span className="font-mono text-foreground">Account → API Settings</span> to get your API key. Add it as a project secret named <span className="font-mono text-foreground">LEAD411_API_KEY</span>.
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={testingLead411}
+              onClick={async () => {
+                setTestingLead411(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke("lead411-intent", {
+                    body: { mode: "search_companies", industry: "technology", limit: 1 },
+                  });
+                  if (error) throw error;
+                  if (data?.error) {
+                    if (data.error === "lead411_not_configured") {
+                      toast.error("LEAD411_API_KEY not set. Add it to project secrets.");
+                    } else {
+                      throw new Error(data.error);
+                    }
+                    setLead411KeyConfigured(false);
+                    await updateSettings.mutateAsync({ ...settings, lead411_api_key_configured: false });
+                    return;
+                  }
+                  toast.success(`Lead411 connection successful! ${data.count ?? 0} companies returned.`);
+                  setLead411KeyConfigured(true);
+                  await updateSettings.mutateAsync({ ...settings, lead411_api_key_configured: true });
+                } catch (e: any) {
+                  toast.error(e.message || "Lead411 connection test failed");
+                  setLead411KeyConfigured(false);
+                  await updateSettings.mutateAsync({ ...settings, lead411_api_key_configured: false });
+                }
+                setTestingLead411(false);
+              }}
+            >
+              {testingLead411 ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Zap className="h-4 w-4 mr-1" />}
               Test Connection
             </Button>
           </div>

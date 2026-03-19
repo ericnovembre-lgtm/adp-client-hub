@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.call-prep]
 verify_jwt = false
+
+[functions.follow-up-sequence]
+verify_jwt = false

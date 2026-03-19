@@ -776,6 +776,10 @@ export default function LeadsPage() {
           >
             <Sparkles className="h-4 w-4 mr-1" />Score All Leads
           </Button>
+          <Button variant="outline" onClick={handleBulkEnrich} disabled={bulkEnriching}>
+            {bulkEnriching ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <SearchCheck className="h-4 w-4 mr-1" />}
+            {bulkEnriching ? `Enriching ${bulkEnrichProgress.current}/${bulkEnrichProgress.total}…` : "Bulk Enrich"}
+          </Button>
           <Button variant="outline" onClick={() => setImportOpen(true)}>
             <Upload className="h-4 w-4 mr-1" />Import CSV
           </Button>

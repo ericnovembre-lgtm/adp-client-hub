@@ -1,8 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from "recharts";
 import { usePipelineVelocity, type ReportsFilters } from "@/hooks/useReportsData";
-import { Gauge, TrendingUp, Award, Timer } from "lucide-react";
+import { Gauge, TrendingUp, Award, Timer, Download } from "lucide-react";
+import { exportToCSV } from "@/lib/exportCSV";
 
 const COLORS: Record<string, string> = {
   lead: "hsl(225, 75%, 55%)",
@@ -50,13 +52,30 @@ export default function PipelineVelocityReport({ filters }: { filters: ReportsFi
     );
   }
 
+  const handleExport = () => {
+    const rows = [
+      ...data.conversions.map((c) => ({ metric: `${c.stage} Conversion`, value: `${c.rate}%`, count: String(c.count) })),
+      { metric: "Win Rate", value: `${data.winRate}%`, count: "" },
+      { metric: "Avg Days to Close", value: `${data.avgDaysToClose}`, count: "" },
+      ...data.pipelineByStage.map((p) => ({ metric: `${p.stage} Pipeline`, value: `$${p.value}`, count: String(p.count) })),
+    ];
+    exportToCSV(rows, "pipeline-velocity.csv", [
+      { header: "Metric", accessor: (r) => r.metric },
+      { header: "Value", accessor: (r) => r.value },
+      { header: "Count", accessor: (r) => r.count },
+    ]);
+  };
+
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-base flex items-center gap-2">
           <Gauge className="h-4 w-4 text-primary" />
           Pipeline Velocity
         </CardTitle>
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleExport} title="Export CSV">
+          <Download className="h-3.5 w-3.5" />
+        </Button>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-3 gap-3">
@@ -65,7 +84,6 @@ export default function PipelineVelocityReport({ filters }: { filters: ReportsFi
           <KPIBox icon={Award} label="Total Deals" value={String(data.totalDeals)} />
         </div>
 
-        {/* Conversion funnel */}
         <div>
           <p className="text-xs font-medium text-muted-foreground mb-2">Stage Conversion Rates</p>
           <ResponsiveContainer width="100%" height={200}>
@@ -83,7 +101,6 @@ export default function PipelineVelocityReport({ filters }: { filters: ReportsFi
           </ResponsiveContainer>
         </div>
 
-        {/* Pipeline value */}
         <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
           {data.pipelineByStage.filter(p => p.count > 0).map((p) => (
             <span key={p.key} className="bg-muted rounded px-2 py-1">

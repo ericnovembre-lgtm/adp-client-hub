@@ -1,9 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { useLeadSourceROI, type ReportsFilters } from "@/hooks/useReportsData";
-import { PieChart as PieChartIcon } from "lucide-react";
+import { PieChart as PieChartIcon, Download } from "lucide-react";
+import { exportToCSV } from "@/lib/exportCSV";
 
 export default function LeadSourceROIReport({ filters }: { filters: ReportsFilters }) {
   const { data, isLoading } = useLeadSourceROI(filters);
@@ -33,16 +35,30 @@ export default function LeadSourceROIReport({ filters }: { filters: ReportsFilte
     );
   }
 
+  const handleExport = () => {
+    exportToCSV(data.rows, "lead-source-roi.csv", [
+      { header: "Source", accessor: (r) => r.source },
+      { header: "Total Leads", accessor: (r) => r.total },
+      { header: "Qualified", accessor: (r) => r.qualified },
+      { header: "Converted", accessor: (r) => r.converted },
+      { header: "Dismissed", accessor: (r) => r.dismissed },
+      { header: "Qualify Rate %", accessor: (r) => r.qualifyRate },
+      { header: "Convert Rate %", accessor: (r) => r.convertRate },
+    ]);
+  };
+
   return (
     <Card className="lg:col-span-2">
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-base flex items-center gap-2">
           <PieChartIcon className="h-4 w-4 text-primary" />
           Lead Source ROI
         </CardTitle>
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleExport} title="Export CSV">
+          <Download className="h-3.5 w-3.5" />
+        </Button>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Stacked bar: qualify vs convert rates */}
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={data.rows}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -55,7 +71,6 @@ export default function LeadSourceROIReport({ filters }: { filters: ReportsFilte
           </BarChart>
         </ResponsiveContainer>
 
-        {/* Table */}
         <Table>
           <TableHeader>
             <TableRow>

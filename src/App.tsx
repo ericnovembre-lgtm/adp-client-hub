@@ -29,6 +29,7 @@ import SignalsPage from "@/pages/SignalsPage";
 import CompliancePage from "@/pages/CompliancePage";
 import NotFound from "@/pages/NotFound";
 import PipelineHistoryPage from "@/pages/PipelineHistoryPage";
+import OutreachAnalyticsPage from "@/pages/OutreachAnalyticsPage";
 import AgentPanel from "@/components/AgentPanel";
 import ObjectionHandlerFAB from "@/components/ObjectionHandlerFAB";
 import { toast } from "sonner";

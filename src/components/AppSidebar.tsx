@@ -14,6 +14,7 @@ import {
   ShieldAlert,
   Mail,
   BarChart3,
+  Send,
   ClipboardCheck,
   RefreshCw,
   Settings,

@@ -247,6 +247,7 @@ export default function LeadsPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [converting, setConverting] = useState(false);
   const [emailLead, setEmailLead] = useState<Lead | null>(null);
+  const [competitorEmailTemplate, setCompetitorEmailTemplate] = useState<{ subject: string; body: string } | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [detailLead, setDetailLead] = useState<Lead | null>(null);

@@ -590,6 +590,33 @@ export default function LeadDetailSheet({
                         </div>
                       )
                     ))}
+                    {/* Competitor Detection & Scoring rows */}
+                    {(deepEnrichResult.competitor || deepEnrichResult.fields_after?.current_provider) && (
+                      <>
+                        <Separator className="my-2" />
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Provider Detected</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{deepEnrichResult.competitor?.current_provider ?? deepEnrichResult.fields_after?.current_provider ?? "Unknown"}</span>
+                            {(deepEnrichResult.competitor?.displacement_difficulty ?? deepEnrichResult.fields_after?.displacement_difficulty) && (
+                              <Badge variant="outline" className="text-xs">
+                                {deepEnrichResult.competitor?.displacement_difficulty ?? deepEnrichResult.fields_after?.displacement_difficulty}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        {deepEnrichResult.competitor?.score != null && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Competitor Score</span>
+                            <span className="font-medium">
+                              {deepEnrichResult.competitor.score}
+                              {" "}
+                              ({deepEnrichResult.competitor.score >= 80 ? "Hot" : deepEnrichResult.competitor.score >= 60 ? "Warm" : deepEnrichResult.competitor.score >= 40 ? "Nurture" : "Cold"})
+                            </span>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </CardContent>
                 </Card>
               </div>

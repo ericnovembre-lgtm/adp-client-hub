@@ -63,6 +63,7 @@ export default function ContactDetailSheet({
 }) {
   const [, navigate] = useLocation();
   const [isEditing, setIsEditing] = useState(false);
+  const [showCallPrep, setShowCallPrep] = useState(false);
   const [editData, setEditData] = useState<Partial<Contact>>({});
   const updateContact = useUpdateContact();
   const { data: companiesData } = useCompanies({ limit: 200 });

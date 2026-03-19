@@ -52,6 +52,20 @@ function LeadScoreSection({ leadId, lead }: { leadId: string; lead: Lead }) {
     }));
   };
 
+  const baseScore = score ? score.factors.filter(f => f.factor !== "Competitor Advantage").reduce((s, f) => s + f.points, 0) : 0;
+  const competitorFactor = score?.factors.find(f => f.factor === "Competitor Advantage");
+  const competitorScore = competitorFactor?.points ?? 0;
+
+  const getTierInfo = (s: number) => {
+    if (s >= 80) return { label: "Hot", icon: <Flame className="h-4 w-4 text-red-500" />, color: "text-red-600 dark:text-red-400" };
+    if (s >= 60) return { label: "Warm", icon: <span className="h-4 w-4 rounded-full bg-orange-400 inline-block" />, color: "text-orange-600 dark:text-orange-400" };
+    if (s >= 40) return { label: "Nurture", icon: <span className="h-4 w-4 rounded-full bg-yellow-400 inline-block" />, color: "text-yellow-600 dark:text-yellow-400" };
+    return { label: "Cold", icon: <Snowflake className="h-4 w-4 text-blue-400" />, color: "text-blue-600 dark:text-blue-400" };
+  };
+
+  const tier = score ? getTierInfo(score.score) : null;
+  const maxScore = 100 + (competitorFactor ? 60 : 0);
+
   return (
     <>
       <Separator />
@@ -71,14 +85,30 @@ function LeadScoreSection({ leadId, lead }: { leadId: string; lead: Lead }) {
         {score ? (
           <div className="space-y-3">
             <div className="flex items-center gap-3">
-              <span className="text-3xl font-bold text-foreground">{score.score}<span className="text-lg text-muted-foreground font-normal">/100</span></span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="text-3xl font-bold text-foreground cursor-default">
+                      {score.score}<span className="text-lg text-muted-foreground font-normal">/{maxScore}</span>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent className="text-xs max-w-xs">
+                    <p>Base: {baseScore}{competitorScore > 0 ? ` + Competitor: ${competitorScore}` : ""} = {score.score}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <Badge variant="outline" className={GRADE_COLORS[score.grade] ?? ""}>{score.grade}</Badge>
+              {tier && (
+                <span className={`flex items-center gap-1 text-xs font-medium ${tier.color}`}>
+                  {tier.icon}
+                  {tier.label}
+                </span>
+              )}
             </div>
-            {/* Qualification banners */}
             {isPreQualified && score.score >= 60 && (
               <div className="rounded-md border border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950 p-3 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 shrink-0" />
-                This lead qualifies for outreach — Grade {score.grade} with a score of {score.score}/100
+                This lead qualifies for outreach — Grade {score.grade} with a score of {score.score}/{maxScore}
               </div>
             )}
             {isPreQualified && score.score < 40 && (

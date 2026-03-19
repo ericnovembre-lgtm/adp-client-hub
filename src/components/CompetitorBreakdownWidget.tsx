@@ -203,7 +203,7 @@ export default function CompetitorBreakdownWidget({ onLeadClick }: { onLeadClick
               </TableHeader>
               <TableBody>
                 {data.topLeads.map((lead) => (
-                  <TableRow key={lead.id} className="cursor-pointer" onClick={() => navigate("/leads")}>
+                  <TableRow key={lead.id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => onLeadClick ? onLeadClick(lead.id) : navigate("/leads")}>
                     <TableCell className="font-medium">{lead.company_name}</TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="text-xs">{lead.current_provider}</Badge>

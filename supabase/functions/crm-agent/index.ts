@@ -516,6 +516,36 @@ function toolDraftEmail(input: Record<string, any>) {
   };
 }
 
+async function toolSearchKlue(input: Record<string, any>) {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  try {
+    const response = await fetch(`${supabaseUrl}/functions/v1/klue-intelligence`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        competitor: input.competitor,
+        query: input.question,
+        mode: input.question ? "search" : "cards",
+      }),
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      return { error: `Klue API returned ${response.status}: ${errText}` };
+    }
+    const data = await response.json();
+    if (data.error === "klue_not_configured") {
+      return { error: "Klue is not configured. The KLUE_API_KEY secret needs to be set. Falling back to built-in competitive knowledge." };
+    }
+    return { cards: data.cards, analysis: data.analysis ?? null, card_count: data.card_count ?? 0 };
+  } catch (err) {
+    return { error: `Failed to reach Klue: ${err instanceof Error ? err.message : String(err)}` };
+  }
+}
+
 function getDateFilter(period: string): string {
   const now = new Date();
   switch (period) {

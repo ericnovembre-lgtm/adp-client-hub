@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
-import { useLeadSourceROI } from "@/hooks/useReportsData";
+import { useLeadSourceROI, type ReportsFilters } from "@/hooks/useReportsData";
 import { PieChart as PieChartIcon } from "lucide-react";
 
 export default function LeadSourceROIReport({ filters }: { filters: { range: string; from?: Date; to?: Date } }) {

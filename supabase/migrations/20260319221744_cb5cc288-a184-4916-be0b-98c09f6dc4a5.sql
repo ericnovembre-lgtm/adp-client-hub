@@ -1,0 +1,1 @@
+ALTER TABLE email_send_log ADD COLUMN IF NOT EXISTS metadata jsonb DEFAULT '{}'::jsonb;

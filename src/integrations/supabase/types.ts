@@ -349,6 +349,7 @@ export type Database = {
           created_at: string | null
           id: string
           message_id: string | null
+          metadata: Json | null
           recipient_email: string
           status: string | null
           subject: string | null
@@ -359,6 +360,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           message_id?: string | null
+          metadata?: Json | null
           recipient_email: string
           status?: string | null
           subject?: string | null
@@ -369,6 +371,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           message_id?: string | null
+          metadata?: Json | null
           recipient_email?: string
           status?: string | null
           subject?: string | null

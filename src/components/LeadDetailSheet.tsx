@@ -233,7 +233,7 @@ export default function LeadDetailSheet({
   const set = (field: keyof Lead, value: string | number | null) =>
     setEditData((prev) => ({ ...prev, [field]: value }));
 
-  const needsEnrichment = !lead.headcount || !lead.decision_maker_email;
+  const _needsEnrichment = !lead.headcount || !lead.decision_maker_email;
 
   const handleDeepEnrich = async () => {
     setIsEnriching(true);

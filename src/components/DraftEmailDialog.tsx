@@ -27,7 +27,7 @@ interface DraftEmailDialogProps {
   competitorTemplate?: { subject: string; body: string } | null;
 }
 
-export default function DraftEmailDialog({ open, onOpenChange, mergeFields, contactId, contactEmail }: DraftEmailDialogProps) {
+export default function DraftEmailDialog({ open, onOpenChange, mergeFields, contactId, contactEmail, competitorTemplate }: DraftEmailDialogProps) {
   const [selectedTemplateId, setSelectedTemplateId] = useState(EMAIL_TEMPLATES[0].id);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");

@@ -472,15 +472,21 @@ export type Database = {
         Row: {
           ai_pitch_summary: string | null
           company_name: string
+          competitor_detected_at: string | null
+          competitor_source: string | null
           created_at: string | null
+          current_provider: string | null
           decision_maker_email: string | null
           decision_maker_name: string | null
           decision_maker_phone: string | null
           decision_maker_title: string | null
+          displacement_difficulty: string | null
           headcount: number | null
           id: string
           industry: string | null
           notes: string | null
+          provider_confidence: string | null
+          provider_type: string | null
           source: string | null
           state: string | null
           status: string | null
@@ -492,15 +498,21 @@ export type Database = {
         Insert: {
           ai_pitch_summary?: string | null
           company_name: string
+          competitor_detected_at?: string | null
+          competitor_source?: string | null
           created_at?: string | null
+          current_provider?: string | null
           decision_maker_email?: string | null
           decision_maker_name?: string | null
           decision_maker_phone?: string | null
           decision_maker_title?: string | null
+          displacement_difficulty?: string | null
           headcount?: number | null
           id?: string
           industry?: string | null
           notes?: string | null
+          provider_confidence?: string | null
+          provider_type?: string | null
           source?: string | null
           state?: string | null
           status?: string | null
@@ -512,15 +524,21 @@ export type Database = {
         Update: {
           ai_pitch_summary?: string | null
           company_name?: string
+          competitor_detected_at?: string | null
+          competitor_source?: string | null
           created_at?: string | null
+          current_provider?: string | null
           decision_maker_email?: string | null
           decision_maker_name?: string | null
           decision_maker_phone?: string | null
           decision_maker_title?: string | null
+          displacement_difficulty?: string | null
           headcount?: number | null
           id?: string
           industry?: string | null
           notes?: string | null
+          provider_confidence?: string | null
+          provider_type?: string | null
           source?: string | null
           state?: string | null
           status?: string | null

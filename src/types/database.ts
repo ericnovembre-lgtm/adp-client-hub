@@ -101,6 +101,12 @@ export interface Lead {
   source: string | null;
   user_id: string;
   created_at: string | null;
+  current_provider: string | null;
+  provider_type: string | null;
+  provider_confidence: string | null;
+  competitor_detected_at: string | null;
+  competitor_source: string | null;
+  displacement_difficulty: string | null;
 }
 
 export interface PaginatedResult<T> {

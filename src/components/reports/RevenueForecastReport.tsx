@@ -1,8 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, AreaChart, Area } from "recharts";
 import { useRevenueForecast } from "@/hooks/useReportsData";
-import { TrendingUp, DollarSign } from "lucide-react";
+import { TrendingUp, DollarSign, Download } from "lucide-react";
+import { exportToCSV } from "@/lib/exportCSV";
 
 const STAGE_COLORS: Record<string, string> = {
   lead: "hsl(225, 75%, 55%)",
@@ -41,16 +43,32 @@ export default function RevenueForecastReport() {
     );
   }
 
+  const handleExport = () => {
+    const rows = [
+      ...data.byStage.map((s) => ({ category: "By Stage", item: s.stage, raw: s.raw, weighted: s.weighted, count: s.count })),
+      ...data.monthlyForecast.map((m) => ({ category: "Monthly Forecast", item: m.month, raw: 0, weighted: m.forecast, count: 0 })),
+    ];
+    exportToCSV(rows, "revenue-forecast.csv", [
+      { header: "Category", accessor: (r) => r.category },
+      { header: "Item", accessor: (r) => r.item },
+      { header: "Raw Value", accessor: (r) => r.raw },
+      { header: "Weighted Value", accessor: (r) => r.weighted },
+      { header: "Deal Count", accessor: (r) => r.count },
+    ]);
+  };
+
   return (
     <Card className="lg:col-span-2">
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-base flex items-center gap-2">
           <TrendingUp className="h-4 w-4 text-primary" />
           Revenue Forecast
         </CardTitle>
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleExport} title="Export CSV">
+          <Download className="h-3.5 w-3.5" />
+        </Button>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* KPI row */}
         <div className="grid grid-cols-3 gap-3">
           <div className="rounded-lg border bg-card p-3 text-center">
             <p className="text-xs text-muted-foreground">Pipeline (Raw)</p>
@@ -67,7 +85,6 @@ export default function RevenueForecastReport() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Weighted by stage */}
           <div>
             <p className="text-xs font-medium text-muted-foreground mb-2">Weighted Value by Stage</p>
             <ResponsiveContainer width="100%" height={200}>
@@ -85,7 +102,6 @@ export default function RevenueForecastReport() {
             </ResponsiveContainer>
           </div>
 
-          {/* Monthly forecast */}
           <div>
             <p className="text-xs font-medium text-muted-foreground mb-2">6-Month Forecast</p>
             <ResponsiveContainer width="100%" height={200}>

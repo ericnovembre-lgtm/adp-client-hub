@@ -1,8 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, PieChart, Pie, Cell } from "recharts";
 import { useActivitySummary, type ReportsFilters } from "@/hooks/useReportsData";
-import { Activity, Phone, Mail, Users, StickyNote } from "lucide-react";
+import { Activity, Phone, Mail, Users, StickyNote, Download } from "lucide-react";
+import { exportToCSV } from "@/lib/exportCSV";
 
 const TYPE_COLORS: Record<string, string> = {
   call: "hsl(225, 75%, 55%)",
@@ -51,16 +53,37 @@ export default function ActivitySummaryReport({ filters }: { filters: ReportsFil
     fill: TYPE_COLORS[t.key] ?? "hsl(var(--primary))",
   }));
 
+  const handleExport = () => {
+    const rows = data.weekly.map((w) => ({
+      week: w.week,
+      calls: w.call,
+      emails: w.email,
+      meetings: w.meeting,
+      notes: w.note,
+      total: w.total,
+    }));
+    exportToCSV(rows, "activity-summary.csv", [
+      { header: "Week", accessor: (r) => r.week },
+      { header: "Calls", accessor: (r) => r.calls },
+      { header: "Emails", accessor: (r) => r.emails },
+      { header: "Meetings", accessor: (r) => r.meetings },
+      { header: "Notes", accessor: (r) => r.notes },
+      { header: "Total", accessor: (r) => r.total },
+    ]);
+  };
+
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-base flex items-center gap-2">
           <Activity className="h-4 w-4 text-primary" />
           Activity Summary
         </CardTitle>
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleExport} title="Export CSV">
+          <Download className="h-3.5 w-3.5" />
+        </Button>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* KPI row */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           <div className="rounded-lg border bg-card p-3 text-center">
             <p className="text-lg font-bold text-foreground">{data.total}</p>
@@ -79,29 +102,16 @@ export default function ActivitySummaryReport({ filters }: { filters: ReportsFil
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Pie chart */}
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
-              <Pie
-                data={pieData}
-                dataKey="count"
-                nameKey="type"
-                cx="50%"
-                cy="50%"
-                innerRadius={50}
-                outerRadius={80}
-                label={({ type, count }) => `${type}: ${count}`}
-                fontSize={11}
-              >
-                {pieData.map((d, i) => (
-                  <Cell key={i} fill={d.fill} />
-                ))}
+              <Pie data={pieData} dataKey="count" nameKey="type" cx="50%" cy="50%" innerRadius={50} outerRadius={80}
+                label={({ type, count }) => `${type}: ${count}`} fontSize={11}>
+                {pieData.map((d, i) => (<Cell key={i} fill={d.fill} />))}
               </Pie>
               <Tooltip />
             </PieChart>
           </ResponsiveContainer>
 
-          {/* Weekly stacked bar */}
           {data.weekly.length > 0 && (
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={data.weekly}>

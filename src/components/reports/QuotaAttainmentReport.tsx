@@ -1,9 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from "recharts";
 import { useQuotaAttainment } from "@/hooks/useReportsData";
-import { Target } from "lucide-react";
+import { Target, Download } from "lucide-react";
+import { exportToCSV } from "@/lib/exportCSV";
 
 const fmt = (v: number) => `$${(v / 1000).toFixed(0)}k`;
 
@@ -23,16 +25,33 @@ export default function QuotaAttainmentReport() {
 
   if (!data) return null;
 
+  const handleExport = () => {
+    const rows = data.quarters.map((q) => ({
+      quarter: q.label,
+      quota: q.quota,
+      closed: q.closed,
+      attainment: q.attainment,
+    }));
+    exportToCSV(rows, "quota-attainment.csv", [
+      { header: "Quarter", accessor: (r) => r.quarter },
+      { header: "Quota", accessor: (r) => r.quota },
+      { header: "Closed Won", accessor: (r) => r.closed },
+      { header: "Attainment %", accessor: (r) => r.attainment },
+    ]);
+  };
+
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-base flex items-center gap-2">
           <Target className="h-4 w-4 text-primary" />
           Quota Attainment
         </CardTitle>
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleExport} title="Export CSV">
+          <Download className="h-3.5 w-3.5" />
+        </Button>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Quarterly bars */}
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={data.quarters}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -48,20 +67,14 @@ export default function QuotaAttainmentReport() {
           </BarChart>
         </ResponsiveContainer>
 
-        {/* Attainment badges */}
         <div className="flex flex-wrap gap-2">
           {data.quarters.map((q) => (
-            <Badge
-              key={q.label}
-              variant={q.attainment >= 100 ? "default" : "secondary"}
-              className="text-xs"
-            >
+            <Badge key={q.label} variant={q.attainment >= 100 ? "default" : "secondary"} className="text-xs">
               {q.label}: {q.attainment}%
             </Badge>
           ))}
         </div>
 
-        {/* Monthly breakdown */}
         <div>
           <p className="text-xs font-medium text-muted-foreground mb-2">Current Quarter — Monthly</p>
           <div className="grid grid-cols-3 gap-3">

@@ -51,7 +51,7 @@ export default function ObjectionHandler() {
     <div className="space-y-4 max-w-2xl mx-auto">
       <div className="space-y-3">
         <Textarea
-          placeholder='Type the objection you just heard, e.g. "We think we\'re too small for a PEO"'
+          placeholder={'Type the objection you just heard, e.g. "We think we\'re too small for a PEO"'}
           value={objection}
           onChange={(e) => setObjection(e.target.value)}
           className="text-base min-h-[80px] resize-none"

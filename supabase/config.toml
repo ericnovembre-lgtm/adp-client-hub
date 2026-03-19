@@ -53,3 +53,9 @@ verify_jwt = false
 
 [functions.klue-intelligence]
 verify_jwt = false
+
+[functions.waterfall-enrich]
+verify_jwt = false
+
+[functions.snov-enrichment]
+verify_jwt = false

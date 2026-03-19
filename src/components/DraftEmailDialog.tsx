@@ -172,11 +172,22 @@ export default function DraftEmailDialog({ open, onOpenChange, mergeFields, cont
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Template</Label>
-            <Select value={selectedTemplateId} onValueChange={applyTemplate}>
+            <Select value={selectedTemplateId} onValueChange={(v) => {
+              if (v === "competitor" && competitorTemplate) {
+                setSelectedTemplateId("competitor");
+                setSubject(competitorTemplate.subject);
+                setBody(competitorTemplate.body);
+              } else {
+                applyTemplate(v);
+              }
+            }}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                {competitorTemplate && (
+                  <SelectItem value="competitor">Competitor Displacement</SelectItem>
+                )}
                 {EMAIL_TEMPLATES.map((t) => (
                   <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                 ))}

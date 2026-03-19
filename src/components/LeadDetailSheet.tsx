@@ -235,26 +235,25 @@ export default function LeadDetailSheet({
 
   const needsEnrichment = !lead.headcount || !lead.decision_maker_email;
 
-  const handleEnrich = async () => {
+  const handleDeepEnrich = async () => {
     setIsEnriching(true);
+    setDeepEnrichResult(null);
     try {
-      const { data, error } = await supabase.functions.invoke("enrich-lead", {
+      const { data, error } = await supabase.functions.invoke("waterfall-enrich", {
         body: { lead_id: lead.id },
       });
       if (error) throw error;
-      if (data?.error === "apollo_not_configured") {
-        toast.error("Apollo API key is not configured. Go to Settings to add it.");
-        return;
-      }
       if (data?.error) throw new Error(data.error);
-      if (data.enriched_count > 0) {
-        toast.success(`Enriched: ${data.enriched_fields.join(", ")}`);
-        onLeadUpdated?.();
+      setDeepEnrichResult(data);
+      const totalFields = data.sources_succeeded?.length ?? 0;
+      if (totalFields > 0) {
+        toast.success(`Deep enrichment complete — ${data.fields_after.filled}/${data.fields_after.total} fields filled from ${data.sources_succeeded.join(", ")}`);
       } else {
-        toast.info("No additional data found in Apollo for this lead.");
+        toast.info("Deep enrichment complete — no additional data found.");
       }
-    } catch {
-      toast.error("Failed to enrich lead");
+      onLeadUpdated?.();
+    } catch (e: any) {
+      toast.error(e.message || "Deep enrichment failed");
     } finally {
       setIsEnriching(false);
     }

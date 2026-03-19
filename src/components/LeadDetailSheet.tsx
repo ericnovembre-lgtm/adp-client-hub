@@ -169,6 +169,7 @@ export default function LeadDetailSheet({
   const [editData, setEditData] = useState<Partial<Lead>>({});
   const [isEnriching, setIsEnriching] = useState(false);
   const [showCallPrep, setShowCallPrep] = useState(false);
+  const [showFollowUp, setShowFollowUp] = useState(false);
   const updateLead = useUpdateLead();
   const _queryClient = useQueryClient();
   const { data: knockoutRules = [] } = useKnockoutRules();

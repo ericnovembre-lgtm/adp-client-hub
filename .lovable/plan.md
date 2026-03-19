@@ -1,52 +1,49 @@
 
 
-## Quote Readiness Checker
+## Lead Enrichment for Registry-Discovered Leads
 
-### Overview
-Create a quote readiness edge function + UI component that checks whether a prospect is ready for Gallagher quoting submission, and add it to both the LeadDetailSheet and as a standalone page.
+Registry leads lack headcount, website, and decision-maker contact info. This plan adds a post-discovery enrichment step using the Apollo API (already configured with `APOLLO_API_KEY`).
 
-### 1. Edge Function: `supabase/functions/quote-readiness/index.ts`
+### Architecture
 
-Same pattern as `call-prep/index.ts`:
-- CORS, Anthropic API (`claude-sonnet-4-20250514`), auth via `supabase.auth.getUser()`
-- Accepts POST `{ lead_id?, state, headcount, currently_enrolled?, current_carrier?, is_self_funded? }`
-- If `lead_id` provided, fetches lead record for additional context (industry, company name, etc.)
-- Queries `knockout_rules` to check industry eligibility
-- Sends all data to Anthropic with the full system prompt from the request (PRIME vs Standard rules, state exceptions, required documents, carrier options, red flags)
-- Returns `{ checklist: string, group_type: "prime" | "standard", state_available: boolean, industry_status: string }`
+```text
+Registry Discovery (OpenCorporates)
+        │
+        ▼
+   Leads saved (no headcount/contact)
+        │
+        ▼
+   Enrichment step (Apollo People Search)
+        │
+        ▼
+   Update leads with headcount, website,
+   decision maker name/title/email/phone
+```
 
-Add `[functions.quote-readiness] verify_jwt = false` to `supabase/config.toml`.
+### Changes
 
-### 2. Component: `src/components/QuoteReadinessPanel.tsx`
+**1. `supabase/functions/registry-discovery/index.ts`**
+- After saving all registry leads, add an enrichment pass using Apollo's `organizations/enrich` endpoint
+- For each saved lead, call Apollo with the company name + state to get: headcount, website, industry (refined), and a decision-maker contact via `mixed_people/search`
+- Only enrich if `APOLLO_API_KEY` is present (graceful skip otherwise)
+- Update the lead record with enriched data
+- Log enrichment activity
+- Add enrichment stats to the response (`enriched` count)
+- Rate-limit Apollo calls (200ms delay between)
 
-- Props: `lead_id?: string, defaultState?: string, defaultHeadcount?: number`
-- Inputs: state dropdown (all 50 US states), headcount number, currently enrolled number, current carrier text, self-funded checkbox
-- "Check Readiness" button with loading state
-- Displays result in a Card with:
-  - Group type badge (PRIME/Standard)
-  - State availability indicator (green/red)
-  - Industry status badge (clear/bluefield/low_probability/prohibited with appropriate colors)
-  - Checklist text in a pre-formatted block
-- Color-coded sections based on keywords in the response (green for met, yellow for warnings, red for blockers)
+**2. `src/components/discovery/RegistryDiscoveryTab.tsx`**
+- Show enrichment results in the summary: "Found X, saved Y, enriched Z"
+- Add an "Enriched" badge on leads that received contact info
+- Show decision maker name/email columns in the results table when available
+- Add a note: "Leads enriched via Apollo (headcount + contacts)" when Apollo key is configured, or "Configure Apollo API key in Settings to auto-enrich leads with headcount & contacts" when not
 
-### 3. Update: `src/components/LeadDetailSheet.tsx`
+### Technical Detail
 
-- Add `showQuoteReadiness` state toggle
-- Add "Quote Readiness" button in the action buttons section (next to Follow-Up Sequence)
-- Render `<QuoteReadinessPanel lead_id={lead.id} defaultState={lead.state} defaultHeadcount={lead.headcount} />` when toggled
+The enrichment uses two Apollo endpoints per lead:
+1. `POST /v1/organizations/enrich` with `domain` or `name` — returns headcount, website, industry
+2. `POST /v1/mixed_people/search` with company name + decision-maker titles — returns contact info
 
-### 4. Standalone Page: `src/pages/QuoteReadinessPage.tsx`
+Fields updated on the lead: `headcount`, `website`, `industry` (if null), `decision_maker_name`, `decision_maker_title`, `decision_maker_email`, `decision_maker_phone`
 
-- Simple page wrapper rendering `<QuoteReadinessPanel />` without pre-filled lead data
-- Add to `src/App.tsx` routes as `/quote-readiness`
-- Add to `src/components/AppSidebar.tsx` nav items with `ClipboardCheck` icon
-
-### Files Changed
-- `supabase/config.toml` — add function config
-- `supabase/functions/quote-readiness/index.ts` — new edge function
-- `src/components/QuoteReadinessPanel.tsx` — new component
-- `src/components/LeadDetailSheet.tsx` — add button + panel toggle
-- `src/pages/QuoteReadinessPage.tsx` — new standalone page
-- `src/components/AppSidebar.tsx` — add nav item
-- `src/App.tsx` — add route
+Leads outside territory range (2-20 employees) after enrichment get flagged with a warning activity, consistent with existing scoring behavior.
 

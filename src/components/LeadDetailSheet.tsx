@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import CallPrepPanel from "@/components/CallPrepPanel";
 import FollowUpSequencePanel from "@/components/FollowUpSequencePanel";
+import QuoteReadinessPanel from "@/components/QuoteReadinessPanel";
 import { format } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Lead } from "@/types/database";
@@ -24,7 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Building2, User, Mail, Phone, Globe, MapPin, Users, Briefcase,
   Zap, Clock, Sparkles, Tag, Pencil, X, Save, Loader2, FileText, ArrowRightLeft, Target,
-  RefreshCw, CheckCircle2, AlertTriangle, SearchCheck, ListChecks,
+  RefreshCw, CheckCircle2, AlertTriangle, SearchCheck, ListChecks, ClipboardCheck,
 } from "lucide-react";
 import { useLeadScore, type ScoreFactor } from "@/hooks/useLeadScores";
 import { Progress } from "@/components/ui/progress";
@@ -170,6 +171,7 @@ export default function LeadDetailSheet({
   const [isEnriching, setIsEnriching] = useState(false);
   const [showCallPrep, setShowCallPrep] = useState(false);
   const [showFollowUp, setShowFollowUp] = useState(false);
+  const [showQuoteReadiness, setShowQuoteReadiness] = useState(false);
   const updateLead = useUpdateLead();
   const _queryClient = useQueryClient();
   const { data: knockoutRules = [] } = useKnockoutRules();
@@ -511,6 +513,14 @@ export default function LeadDetailSheet({
                   <ListChecks className="h-4 w-4 mr-2" />
                   {showFollowUp ? "Hide Sequence" : "Follow-Up Sequence"}
                 </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowQuoteReadiness((v) => !v)}
+                >
+                  <ClipboardCheck className="h-4 w-4 mr-2" />
+                  {showQuoteReadiness ? "Hide Readiness" : "Quote Readiness"}
+                </Button>
                 {onConvertToDeal && lead.status !== "converted" && (
                   <Button
                     variant="outline"
@@ -548,6 +558,23 @@ export default function LeadDetailSheet({
                   Call Prep Briefing
                 </h3>
                 <CallPrepPanel lead_id={lead.id} />
+              </div>
+            </>
+          )}
+
+          {showQuoteReadiness && (
+            <>
+              <Separator />
+              <div>
+                <h3 className="font-semibold text-sm mb-3 flex items-center gap-1.5">
+                  <ClipboardCheck className="h-4 w-4 text-primary" />
+                  Quote Readiness Check
+                </h3>
+                <QuoteReadinessPanel
+                  lead_id={lead.id}
+                  defaultState={lead.state}
+                  defaultHeadcount={lead.headcount}
+                />
               </div>
             </>
           )}

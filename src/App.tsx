@@ -20,6 +20,7 @@ import ReportsPage from "@/pages/ReportsPage";
 import EmailTemplatesPage from "@/pages/EmailTemplatesPage";
 import SettingsPage from "@/pages/SettingsPage";
 import MarketIntelligencePage from "@/pages/MarketIntelligencePage";
+import QuoteReadinessPage from "@/pages/QuoteReadinessPage";
 import NotFound from "@/pages/NotFound";
 import AgentPanel from "@/components/AgentPanel";
 import { toast } from "sonner";
@@ -102,6 +103,7 @@ const App = () => (
               <Route path="/reports">{() => <ProtectedPage><ReportsPage /></ProtectedPage>}</Route>
               <Route path="/ai-discovery">{() => <ProtectedPage><AIDiscoveryPage /></ProtectedPage>}</Route>
               <Route path="/market-intelligence">{() => <ProtectedPage><MarketIntelligencePage /></ProtectedPage>}</Route>
+              <Route path="/quote-readiness">{() => <ProtectedPage><QuoteReadinessPage /></ProtectedPage>}</Route>
               <Route path="/email-templates">{() => <ProtectedPage><EmailTemplatesPage /></ProtectedPage>}</Route>
               <Route path="/settings">{() => <ProtectedPage><SettingsPage /></ProtectedPage>}</Route>
               <Route component={NotFound} />

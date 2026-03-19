@@ -41,3 +41,9 @@ verify_jwt = false
 
 [functions.objection-handler]
 verify_jwt = false
+
+[functions.linkedin-signals]
+verify_jwt = false
+
+[functions.compliance-alerts]
+verify_jwt = false

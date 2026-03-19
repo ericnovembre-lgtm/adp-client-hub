@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import CallPrepPanel from "@/components/CallPrepPanel";
 import { format } from "date-fns";
 import { useLocation } from "wouter";
 import type { Contact } from "@/types/database";
@@ -62,6 +63,7 @@ export default function ContactDetailSheet({
 }) {
   const [, navigate] = useLocation();
   const [isEditing, setIsEditing] = useState(false);
+  const [showCallPrep, setShowCallPrep] = useState(false);
   const [editData, setEditData] = useState<Partial<Contact>>({});
   const updateContact = useUpdateContact();
   const { data: companiesData } = useCompanies({ limit: 200 });
@@ -263,6 +265,23 @@ export default function ContactDetailSheet({
         </div>
 
         <Separator className="my-6" />
+
+        <div className="mb-4">
+          <Button
+            variant={showCallPrep ? "secondary" : "outline"}
+            size="sm"
+            className="gap-1.5"
+            onClick={() => setShowCallPrep((v) => !v)}
+          >
+            <Phone className="h-4 w-4" />
+            Prep Call
+          </Button>
+          {showCallPrep && (
+            <div className="mt-3">
+              <CallPrepPanel contact_id={contact.id} />
+            </div>
+          )}
+        </div>
 
         <Tabs defaultValue="activity">
           <TabsList className="w-full">

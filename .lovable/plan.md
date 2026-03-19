@@ -1,49 +1,37 @@
 
 
-## Lead Enrichment for Registry-Discovered Leads
+## Deal Coach: AI Coaching for Deals
 
-Registry leads lack headcount, website, and decision-maker contact info. This plan adds a post-discovery enrichment step using the Apollo API (already configured with `APOLLO_API_KEY`).
-
-### Architecture
-
-```text
-Registry Discovery (OpenCorporates)
-        │
-        ▼
-   Leads saved (no headcount/contact)
-        │
-        ▼
-   Enrichment step (Apollo People Search)
-        │
-        ▼
-   Update leads with headcount, website,
-   decision maker name/title/email/phone
-```
+### Overview
+Add a Deal Coach feature that analyzes deal context (stage, activities, tasks, contacts, company) and provides actionable sales coaching via Anthropic Claude.
 
 ### Changes
 
-**1. `supabase/functions/registry-discovery/index.ts`**
-- After saving all registry leads, add an enrichment pass using Apollo's `organizations/enrich` endpoint
-- For each saved lead, call Apollo with the company name + state to get: headcount, website, industry (refined), and a decision-maker contact via `mixed_people/search`
-- Only enrich if `APOLLO_API_KEY` is present (graceful skip otherwise)
-- Update the lead record with enriched data
-- Log enrichment activity
-- Add enrichment stats to the response (`enriched` count)
-- Rate-limit Apollo calls (200ms delay between)
+**1. Edge Function: `supabase/functions/deal-coach/index.ts`**
+- Same pattern as `crm-agent/index.ts` (serve, createClient, corsHeaders, Anthropic Messages API, `claude-sonnet-4-20250514`)
+- Accepts `POST { deal_id }`, authenticates via `supabase.auth.getUser()`
+- Queries: deal (with contact/company info), last 10 activities, open tasks for the deal
+- Calculates `days_in_current_stage` and `days_since_last_activity`
+- Sends all context to Anthropic with the specified system prompt (deal health, next action, talk track, objection prep, timeline check)
+- Returns `{ coaching: string, deal_health: "hot"|"warm"|"stale"|"at_risk", next_action: string }`
+- Parses the AI response to extract deal_health from the coaching text
 
-**2. `src/components/discovery/RegistryDiscoveryTab.tsx`**
-- Show enrichment results in the summary: "Found X, saved Y, enriched Z"
-- Add an "Enriched" badge on leads that received contact info
-- Show decision maker name/email columns in the results table when available
-- Add a note: "Leads enriched via Apollo (headcount + contacts)" when Apollo key is configured, or "Configure Apollo API key in Settings to auto-enrich leads with headcount & contacts" when not
+**2. Config: `supabase/config.toml`**
+- Add `[functions.deal-coach]` with `verify_jwt = false`
 
-### Technical Detail
+**3. Component: `src/components/DealCoachPanel.tsx`**
+- Props: `deal_id: string`
+- "Get Coaching" button that calls the edge function via `supabase.functions.invoke("deal-coach", { body: { deal_id } })`
+- Displays coaching in a Card with colored Badge for deal health (green/yellow/orange/red)
+- Loading spinner while waiting
+- Shows next_action prominently
 
-The enrichment uses two Apollo endpoints per lead:
-1. `POST /v1/organizations/enrich` with `domain` or `name` — returns headcount, website, industry
-2. `POST /v1/mixed_people/search` with company name + decision-maker titles — returns contact info
+**4. Update: `src/components/DealDetailSheet.tsx`**
+- Add "Get AI Coaching" button (with sparkle/brain icon) below the activity timeline
+- Renders `DealCoachPanel` when clicked, passing the deal ID
 
-Fields updated on the lead: `headcount`, `website`, `industry` (if null), `decision_maker_name`, `decision_maker_title`, `decision_maker_email`, `decision_maker_phone`
-
-Leads outside territory range (2-20 employees) after enrichment get flagged with a warning activity, consistent with existing scoring behavior.
+### Technical Details
+- No new database tables needed
+- Uses existing `ANTHROPIC_API_KEY` secret (already configured)
+- Auth pattern: `verify_jwt = false` in config, validate in code via `getUser()`
 

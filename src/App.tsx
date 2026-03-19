@@ -103,6 +103,7 @@ const App = () => (
               <Route path="/reports">{() => <ProtectedPage><ReportsPage /></ProtectedPage>}</Route>
               <Route path="/ai-discovery">{() => <ProtectedPage><AIDiscoveryPage /></ProtectedPage>}</Route>
               <Route path="/market-intelligence">{() => <ProtectedPage><MarketIntelligencePage /></ProtectedPage>}</Route>
+              <Route path="/quote-readiness">{() => <ProtectedPage><QuoteReadinessPage /></ProtectedPage>}</Route>
               <Route path="/email-templates">{() => <ProtectedPage><EmailTemplatesPage /></ProtectedPage>}</Route>
               <Route path="/settings">{() => <ProtectedPage><SettingsPage /></ProtectedPage>}</Route>
               <Route component={NotFound} />

@@ -562,6 +562,23 @@ export default function LeadDetailSheet({
             </>
           )}
 
+          {showQuoteReadiness && (
+            <>
+              <Separator />
+              <div>
+                <h3 className="font-semibold text-sm mb-3 flex items-center gap-1.5">
+                  <ClipboardCheck className="h-4 w-4 text-primary" />
+                  Quote Readiness Check
+                </h3>
+                <QuoteReadinessPanel
+                  lead_id={lead.id}
+                  defaultState={lead.state}
+                  defaultHeadcount={lead.headcount}
+                />
+              </div>
+            </>
+          )}
+
           {/* Activity Timeline */}
           <Separator />
           <ActivityTimeline entityType="lead" entityId={lead.id} showAddForm />

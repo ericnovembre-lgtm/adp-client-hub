@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.quote-readiness]
 verify_jwt = false
+
+[functions.renewal-tracker]
+verify_jwt = false

@@ -3,6 +3,7 @@ import CallPrepPanel from "@/components/CallPrepPanel";
 import FollowUpSequencePanel from "@/components/FollowUpSequencePanel";
 import QuoteReadinessPanel from "@/components/QuoteReadinessPanel";
 import BattlecardPanel from "@/components/BattlecardPanel";
+import CompetitorBadge from "@/components/CompetitorBadge";
 import { format } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Lead } from "@/types/database";
@@ -319,6 +320,13 @@ export default function LeadDetailSheet({
               </Badge>
               {lead.source && <Badge variant="secondary">{lead.source}</Badge>}
               {knockoutResult && <EligibilityBadge tier={knockoutResult.tier} message={knockoutResult.message} />}
+              <CompetitorBadge
+                currentProvider={lead.current_provider ?? null}
+                providerType={lead.provider_type ?? null}
+                displacementDifficulty={lead.displacement_difficulty ?? null}
+                providerConfidence={lead.provider_confidence ?? null}
+                onOpenBattlecard={() => setShowBattlecard(true)}
+              />
             </div>
           )}
 
@@ -647,11 +655,13 @@ export default function LeadDetailSheet({
                 <BattlecardPanel
                   lead_id={lead.id}
                   defaultCompetitor={
-                    lead.trigger_event
-                      ? ["Rippling", "TriNet", "Paychex", "Insperity", "Justworks", "VensureHR", "Gusto", "BambooHR"].find(
-                          (c) => lead.trigger_event!.toLowerCase().includes(c.toLowerCase())
-                        ) ?? ""
-                      : ""
+                    lead.current_provider && lead.current_provider !== "Unknown" && lead.current_provider !== "DIY/None"
+                      ? lead.current_provider
+                      : lead.trigger_event
+                        ? ["Rippling", "TriNet", "Paychex", "Insperity", "Justworks", "VensureHR", "Gusto", "BambooHR"].find(
+                            (c) => lead.trigger_event!.toLowerCase().includes(c.toLowerCase())
+                          ) ?? ""
+                        : ""
                   }
                   defaultIndustry={lead.industry ?? ""}
                   defaultHeadcount={lead.headcount ?? undefined}

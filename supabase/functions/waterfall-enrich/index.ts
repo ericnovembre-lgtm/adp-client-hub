@@ -37,7 +37,111 @@ const TRACKED_FIELDS = [
   "decision_maker_name", "decision_maker_title",
   "decision_maker_email", "decision_maker_phone",
   "trigger_event", "trigger_type",
+  "current_provider", "provider_type",
 ] as const;
+
+// ─── COMPETITOR REGISTRY ───
+const COMPETITOR_REGISTRY = [
+  { name: "Paychex", aliases: ["paychex", "paychex flex", "paychex oasis", "oasis outsourcing"], type: "Payroll-Only", priority: "High", displacement: "Medium", klue_cards: 128 },
+  { name: "isolved", aliases: ["isolved", "isolved hcm", "isolved people cloud"], type: "HCM Platform", priority: "High", displacement: "Medium", klue_cards: 54 },
+  { name: "Intuit QuickBooks", aliases: ["quickbooks", "intuit", "qbo", "quickbooks online", "quickbooks payroll", "intuit payroll"], type: "Accounting+Payroll", priority: "High", displacement: "Easy", klue_cards: 41 },
+  { name: "Insperity", aliases: ["insperity", "administaff"], type: "PEO", priority: "High", displacement: "Hard", klue_cards: 32 },
+  { name: "Justworks", aliases: ["justworks", "just works"], type: "PEO", priority: "High", displacement: "Medium", klue_cards: 32 },
+  { name: "Dayforce", aliases: ["dayforce", "ceridian", "ceridian dayforce"], type: "HCM Platform", priority: "High", displacement: "Hard", klue_cards: 31 },
+  { name: "Rippling", aliases: ["rippling"], type: "HCM Platform", priority: "Medium", displacement: "Medium", klue_cards: 21 },
+  { name: "Gusto", aliases: ["gusto", "gusto payroll", "zenpayroll"], type: "Payroll-Only", priority: "Medium", displacement: "Easy", klue_cards: 18 },
+  { name: "TriNet", aliases: ["trinet", "tri net", "trinet zenefits"], type: "PEO", priority: "Medium", displacement: "Hard", klue_cards: 14 },
+  { name: "Paycom", aliases: ["paycom"], type: "HCM Platform", priority: "Low", displacement: "Medium", klue_cards: 7 },
+  { name: "Paylocity", aliases: ["paylocity"], type: "HCM Platform", priority: "Low", displacement: "Medium", klue_cards: 4 },
+  { name: "UKG", aliases: ["ukg", "ultimate kronos", "kronos", "ultimatesoftware"], type: "HCM Platform", priority: "Low", displacement: "Hard", klue_cards: 4 },
+  { name: "BambooHR", aliases: ["bamboohr", "bamboo hr"], type: "HCM Platform", priority: "Low", displacement: "Easy", klue_cards: 1 },
+  { name: "Workday", aliases: ["workday"], type: "HCM Platform", priority: "Low", displacement: "Hard", klue_cards: 1 },
+  { name: "SAP SuccessFactors", aliases: ["sap", "successfactors", "sap successfactors"], type: "HCM Platform", priority: "Low", displacement: "Hard", klue_cards: 1 },
+] as const;
+
+const DIY_PATTERNS = ["manual payroll", "spreadsheet payroll", "excel payroll", "doing payroll manually", "payroll in excel", "payroll spreadsheet"];
+
+const PRIORITY_ORDER: Record<string, number> = { High: 3, Medium: 2, Low: 1 };
+
+interface CompetitorDetection {
+  current_provider: string;
+  provider_type: string;
+  provider_confidence: string;
+  competitor_source: string;
+  displacement_difficulty: string;
+}
+
+function detectCompetitor(
+  enrichmentTexts: { text: string; source: string; confidence: "Confirmed" | "Likely" | "Possible" }[],
+  headcount?: number | null,
+): CompetitorDetection {
+  const matches: Array<{ competitor: typeof COMPETITOR_REGISTRY[number]; confidence: string; source: string }> = [];
+
+  for (const { text, source, confidence } of enrichmentTexts) {
+    if (!text) continue;
+    const lower = text.toLowerCase();
+
+    // Check DIY patterns
+    for (const pattern of DIY_PATTERNS) {
+      if (lower.includes(pattern)) {
+        return {
+          current_provider: "DIY/None",
+          provider_type: "DIY/None",
+          provider_confidence: "Confirmed",
+          competitor_source: source,
+          displacement_difficulty: "Easy",
+        };
+      }
+    }
+
+    // Check competitor aliases
+    for (const comp of COMPETITOR_REGISTRY) {
+      for (const alias of comp.aliases) {
+        if (lower.includes(alias)) {
+          matches.push({ competitor: comp, confidence, source });
+          break; // one match per competitor per text block
+        }
+      }
+    }
+  }
+
+  if (matches.length === 0) {
+    // Check if small company with no HR tech → possible DIY
+    if (headcount != null && headcount >= 5 && headcount <= 20) {
+      return {
+        current_provider: "Unknown",
+        provider_type: "Unknown",
+        provider_confidence: "Unknown",
+        competitor_source: "inference",
+        displacement_difficulty: "Easy",
+      };
+    }
+    return {
+      current_provider: "Unknown",
+      provider_type: "Unknown",
+      provider_confidence: "Unknown",
+      competitor_source: "",
+      displacement_difficulty: "Easy",
+    };
+  }
+
+  // Pick best match: highest priority, then most klue_cards
+  matches.sort((a, b) => {
+    const pa = PRIORITY_ORDER[a.competitor.priority] ?? 0;
+    const pb = PRIORITY_ORDER[b.competitor.priority] ?? 0;
+    if (pb !== pa) return pb - pa;
+    return b.competitor.klue_cards - a.competitor.klue_cards;
+  });
+
+  const best = matches[0];
+  return {
+    current_provider: best.competitor.name,
+    provider_type: best.competitor.type,
+    provider_confidence: best.confidence,
+    competitor_source: best.source,
+    displacement_difficulty: best.competitor.displacement,
+  };
+}
 
 function countFilled(lead: Record<string, unknown>): number {
   return TRACKED_FIELDS.filter(f => lead[f] != null && lead[f] !== "").length;
@@ -547,6 +651,43 @@ Deno.serve(async (req) => {
       details.lead411 = { status: "skipped", fields_found: [] };
     }
 
+    // ─── Step 6.5: COMPETITOR DETECTION ───
+    const enrichmentTexts: { text: string; source: string; confidence: "Confirmed" | "Likely" | "Possible" }[] = [];
+
+    // Collect text from enrichment data for scanning
+    // Technologies / tech stack → Confirmed
+    if (working.notes) enrichmentTexts.push({ text: working.notes as string, source: "notes", confidence: "Likely" });
+    if (working.trigger_event) enrichmentTexts.push({ text: working.trigger_event as string, source: "trigger_event", confidence: "Possible" });
+    if (working.industry) enrichmentTexts.push({ text: working.industry as string, source: "industry", confidence: "Likely" });
+    if (working.ai_pitch_summary) enrichmentTexts.push({ text: working.ai_pitch_summary as string, source: "ai_pitch", confidence: "Possible" });
+    if (working.decision_maker_title) enrichmentTexts.push({ text: working.decision_maker_title as string, source: "job_title", confidence: "Likely" });
+
+    // Scan all provider result data for competitor mentions
+    for (const [provider, detail] of Object.entries(details)) {
+      if (detail.status !== "skipped" && detail.status !== "failed") {
+        // Fields found text can hint at tools
+        for (const field of detail.fields_found) {
+          const val = working[field];
+          if (typeof val === "string") {
+            enrichmentTexts.push({ text: val, source: provider, confidence: provider === "lead411" ? "Confirmed" : "Likely" });
+          }
+        }
+      }
+    }
+
+    const competitorResult = detectCompetitor(enrichmentTexts, working.headcount as number | null);
+
+    if (competitorResult.current_provider !== "Unknown" || shouldUpdate("current_provider")) {
+      updates.current_provider = competitorResult.current_provider;
+      updates.provider_type = competitorResult.provider_type;
+      updates.provider_confidence = competitorResult.provider_confidence;
+      updates.competitor_source = competitorResult.competitor_source;
+      updates.displacement_difficulty = competitorResult.displacement_difficulty;
+      updates.competitor_detected_at = new Date().toISOString();
+      working.current_provider = competitorResult.current_provider;
+      working.provider_type = competitorResult.provider_type;
+    }
+
     // ─── Step 7: Update lead ───
     if (Object.keys(updates).length > 0) {
       await serviceClient.from("leads").update(updates).eq("id", lead_id);
@@ -568,16 +709,19 @@ Deno.serve(async (req) => {
 
     // ─── Step 9: Log activity ───
     const allFieldsFound = Object.values(details).flatMap(d => d.fields_found);
+    const competitorLog = competitorResult.current_provider !== "Unknown"
+      ? ` Competitor detected: ${competitorResult.current_provider} (${competitorResult.provider_confidence}, via ${competitorResult.competitor_source}).`
+      : "";
     await serviceClient.from("activities").insert({
       type: "system",
-      description: `Waterfall enrichment completed for ${working.company_name}. Sources: ${sourcesSucceeded.length > 0 ? sourcesSucceeded.join(", ") : "none succeeded"}. Fields enriched: ${allFieldsFound.length > 0 ? allFieldsFound.join(", ") : "none"}. Score: ${scoreBefore} → ${score}.`,
+      description: `Waterfall enrichment completed for ${working.company_name}. Sources: ${sourcesSucceeded.length > 0 ? sourcesSucceeded.join(", ") : "none succeeded"}. Fields enriched: ${allFieldsFound.length > 0 ? allFieldsFound.join(", ") : "none"}. Score: ${scoreBefore} → ${score}.${competitorLog}`,
       lead_id,
       user_id: user.id,
     });
 
     const fieldsAfter = countFilled(working);
 
-    const result: EnrichmentResult = {
+    const result = {
       lead_id,
       company_name: working.company_name as string,
       sources_tried: sourcesTried,
@@ -587,6 +731,7 @@ Deno.serve(async (req) => {
       enrichment_details: details,
       score_change: { before: scoreBefore, after: score, grade_before: gradeBefore, grade_after: grade },
       trigger_updated: triggerUpdated,
+      competitor: competitorResult,
     };
 
     return new Response(JSON.stringify(result), {

@@ -267,6 +267,16 @@ export default function ReportsPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Outreach Effectiveness */}
+        <OutreachMetricsChart filters={filters} />
+
+        {/* Deal Velocity + Competitor Win/Loss */}
+        <DealVelocityChart filters={filters} />
+        <CompetitorWinLossChart filters={filters} />
+
+        {/* Score Distribution */}
+        <ScoreDistributionChart />
       </div>
     </div>
   );

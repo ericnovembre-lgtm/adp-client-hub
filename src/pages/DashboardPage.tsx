@@ -157,6 +157,9 @@ export default function DashboardPage() {
         <StatCard label="Tasks Due Today" value={String(stats?.tasksDueToday.value ?? 0)} stat={stats?.tasksDueToday} icon={CheckSquare} isLoading={statsLoading} />
       </div>
 
+      {/* Quota Tracker */}
+      <QuotaTrackerWidget />
+
       {/* Territory Coverage */}
       <Card>
         <CardContent className="p-4">

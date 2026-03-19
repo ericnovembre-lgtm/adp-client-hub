@@ -59,7 +59,18 @@ serve(async (req) => {
     const authHeader = req.headers.get("authorization") ?? "";
     let userId: string;
 
-    if (authHeader.startsWith("Bearer ")) {
+    const token = authHeader.replace("Bearer ", "");
+    // Allow service role key for internal calls (e.g. from crm-agent)
+    if (token === serviceKey) {
+      // Internal call — user_id must be provided in the request body
+      const bodyPeek = await req.clone().json().catch(() => ({}));
+      if (!bodyPeek.user_id) {
+        return new Response(JSON.stringify({ error: "user_id required for service role calls" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      userId = bodyPeek.user_id;
+    } else if (authHeader.startsWith("Bearer ")) {
       const authClient = createClient(supabaseUrl, supabaseAnonKey, {
         global: { headers: { Authorization: authHeader } },
       });

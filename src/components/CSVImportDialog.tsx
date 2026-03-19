@@ -381,10 +381,16 @@ export default function CSVImportDialog({ entityType, open, onOpenChange, onImpo
                     <p className="text-xs">{duplicateWarning.slice(0, 10).join(", ")}{duplicateWarning.length > 10 ? ` and ${duplicateWarning.length - 10} more…` : ""}</p>
                   </div>
                 )}
-                <DialogFooter>
-                  <Button onClick={() => { reset(); onImportComplete(); handleClose(false); }}>
-                    Done
-                  </Button>
+                <DialogFooter className="gap-2">
+                  {entityType === "leads" && result.success > 0 ? (
+                    <Button onClick={() => setStep(4)}>
+                      Continue to Enrichment
+                    </Button>
+                  ) : (
+                    <Button onClick={() => { reset(); onImportComplete(); handleClose(false); }}>
+                      Done
+                    </Button>
+                  )}
                 </DialogFooter>
               </div>
             ) : null}

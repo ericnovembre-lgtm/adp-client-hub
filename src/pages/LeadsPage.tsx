@@ -11,6 +11,7 @@ import { useCreateDeal } from "@/hooks/useDeals";
 import { useCreateActivity } from "@/hooks/useActivities";
 import { useKnockoutRules, type KnockoutRule } from "@/hooks/useKnockoutRules";
 import { exportToCSV } from "@/lib/exportCSV";
+import { buildCompetitorEmail } from "@/lib/competitorOutreachTemplates";
 import { supabase } from "@/integrations/supabase/client";
 import type { Lead } from "@/types/database";
 import { Button } from "@/components/ui/button";
@@ -246,6 +247,7 @@ export default function LeadsPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [converting, setConverting] = useState(false);
   const [emailLead, setEmailLead] = useState<Lead | null>(null);
+  const [competitorEmailTemplate, setCompetitorEmailTemplate] = useState<{ subject: string; body: string } | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [detailLead, setDetailLead] = useState<Lead | null>(null);
@@ -987,7 +989,7 @@ export default function LeadsPage() {
                               <DropdownMenuItem onClick={() => initiateConvert(lead)}>
                                 <ArrowRightLeft className="h-4 w-4 mr-2" /> Convert to Deal
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setEmailLead(lead)}>
+                              <DropdownMenuItem onClick={() => { setCompetitorEmailTemplate(buildCompetitorEmail(lead)); setEmailLead(lead); }}>
                                 <FileText className="h-4 w-4 mr-2" /> Draft Email
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleStatusAction(lead, "dismissed", "status_change", `Lead "${lead.company_name}" dismissed`)}>
@@ -1250,7 +1252,7 @@ export default function LeadsPage() {
       {emailLead && (
         <DraftEmailDialog
           open={!!emailLead}
-          onOpenChange={(v) => { if (!v) setEmailLead(null); }}
+          onOpenChange={(v) => { if (!v) { setEmailLead(null); setCompetitorEmailTemplate(null); } }}
           mergeFields={{
             contact_name: emailLead.decision_maker_name ?? emailLead.company_name,
             contact_title: emailLead.decision_maker_title ?? "",
@@ -1258,6 +1260,7 @@ export default function LeadsPage() {
             headcount: emailLead.headcount ? String(emailLead.headcount) : "",
           }}
           contactEmail={emailLead.decision_maker_email}
+          competitorTemplate={competitorEmailTemplate}
         />
       )}
 
@@ -1266,7 +1269,7 @@ export default function LeadsPage() {
         open={!!detailLead}
         onOpenChange={(v) => { if (!v) setDetailLead(null); }}
         onLeadUpdated={() => setDetailLead(null)}
-        onDraftEmail={(lead) => { setDetailLead(null); setEmailLead(lead); }}
+        onDraftEmail={(lead) => { setDetailLead(null); setCompetitorEmailTemplate(buildCompetitorEmail(lead)); setEmailLead(lead); }}
         onConvertToDeal={(lead) => { setDetailLead(null); initiateConvert(lead); }}
       />
 

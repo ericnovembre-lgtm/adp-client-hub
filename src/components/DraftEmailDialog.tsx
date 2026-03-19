@@ -24,9 +24,10 @@ interface DraftEmailDialogProps {
   mergeFields: MergeFields;
   contactId?: string | null;
   contactEmail?: string | null;
+  competitorTemplate?: { subject: string; body: string } | null;
 }
 
-export default function DraftEmailDialog({ open, onOpenChange, mergeFields, contactId, contactEmail }: DraftEmailDialogProps) {
+export default function DraftEmailDialog({ open, onOpenChange, mergeFields, contactId, contactEmail, competitorTemplate }: DraftEmailDialogProps) {
   const [selectedTemplateId, setSelectedTemplateId] = useState(EMAIL_TEMPLATES[0].id);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
@@ -51,7 +52,13 @@ export default function DraftEmailDialog({ open, onOpenChange, mergeFields, cont
 
   useEffect(() => {
     if (open) {
-      applyTemplate(EMAIL_TEMPLATES[0].id);
+      if (competitorTemplate) {
+        setSelectedTemplateId("competitor");
+        setSubject(competitorTemplate.subject);
+        setBody(competitorTemplate.body);
+      } else {
+        applyTemplate(EMAIL_TEMPLATES[0].id);
+      }
       setCopied(false);
     }
   }, [open]);
@@ -165,11 +172,22 @@ export default function DraftEmailDialog({ open, onOpenChange, mergeFields, cont
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Template</Label>
-            <Select value={selectedTemplateId} onValueChange={applyTemplate}>
+            <Select value={selectedTemplateId} onValueChange={(v) => {
+              if (v === "competitor" && competitorTemplate) {
+                setSelectedTemplateId("competitor");
+                setSubject(competitorTemplate.subject);
+                setBody(competitorTemplate.body);
+              } else {
+                applyTemplate(v);
+              }
+            }}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                {competitorTemplate && (
+                  <SelectItem value="competitor">Competitor Displacement</SelectItem>
+                )}
                 {EMAIL_TEMPLATES.map((t) => (
                   <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                 ))}

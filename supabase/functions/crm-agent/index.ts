@@ -308,7 +308,62 @@ RESPONSE FORMATTING RULES (STRICTLY ENFORCED — violating these is a critical e
 - Always include: company name, contact name and title, headcount, score/grade, and a 2-3 sentence explanation of why this lead matters and what action to take.
 - Never use emoji. Use plain English instead.
 
-KLUE INTEGRATION: You have access to the search_klue tool which connects to the organization's Klue competitive intelligence platform. When a user asks about a competitor, ALWAYS use search_klue first to get the latest intelligence before responding. Klue data is more current than your built-in knowledge. If Klue is not configured, fall back to your built-in competitive knowledge.`;
+KLUE INTEGRATION: You have access to the search_klue tool which connects to the organization's Klue competitive intelligence platform. When a user asks about a competitor, ALWAYS use search_klue first to get the latest intelligence before responding. Klue data is more current than your built-in knowledge. If Klue is not configured, fall back to your built-in competitive knowledge.
+
+COMPETITOR BATTLECARD INTELLIGENCE:
+
+Use this knowledge to answer competitive questions, suggest talk tracks, and handle objections. Always try search_klue first for the latest data, then supplement with this built-in knowledge.
+
+INTUIT QUICKBOOKS (41 Klue cards):
+Overview: Accounting-first platform that added payroll. Dominant brand in small biz. No real HR solution — outsources to Mineral Inc. Intuit acquired GoCo (April 2025) to add HR but no timeline for integration.
+Why ADP Wins: (1) ADP rated number 1 small business software by G2 2025. (2) True HR solution vs QB payroll-only. (3) SUI management, hiring tools with ZipRecruiter, background checks. (4) 24/7/365 support. (5) Dedicated onboarding. (6) Stable pricing with no post-promo shock. (7) Tax agency registration in all 50 states. (8) Free labor law posters. (9) Built-in salary benchmarks. (10) Money movement capability.
+Why ADP Loses: (1) QB has massive brand awareness and 50-90% discounting. (2) Accounting plus payroll bundle stickiness. (3) 800+ app integrations. (4) Intuit Assist AI coming. (5) ProAdvisor program. (6) E-commerce self-serve signup.
+Pricing: QBO Payroll Core/Premium/Elite. Introductory promos 3 months at 50% off (sometimes 75-90%). Per-employee $4-10/month. Multi-state $12/month extra. Optimized for up to 50 employees, capped at 150.
+Objection Handlers:
+Q: "We already use QuickBooks for accounting" A: ADP integrates with QB for accounting. The question is whether QB payroll gives you the HR protection you need.
+Q: "QuickBooks is cheaper" A: For the first 3 months. After the promo, prices jump 50-100%. One EEOC complaint costs $50K+. TotalSource co-employment shares that liability.
+Q: "We don't need HR features" A: Most companies say that until they do. One pregnancy leave question, one ADA accommodation, one termination dispute away from needing expertise.
+Q: "QuickBooks just acquired GoCo for HR" A: No timeline for integration. Bolted-on acquisition vs ADP's 75+ years of HR expertise built in.
+
+JUSTWORKS (32 Klue cards):
+Overview: PEO model targeting tech startups. Simple UI, transparent pricing, fast implementation. Key gaps: 20 pre-built reports only, no dedicated AMs, outsources HR to ThinkHR.
+Why ADP Wins: (1) Full custom reporting vs 20 pre-built. (2) Dedicated AM from day one. (3) Total Comp Statements, compliance reporting, org charts. (4) Training library, talent management, surveys, benchmarking. (5) OSHA support. (6) Mobile app 2.8M+ reviews vs under 75. (7) In-house HR experts available 24/7.
+Why ADP Loses: (1) Transparent PEPM pricing online. (2) Clean UI attractive to tech. (3) Fast implementation 4-5 days. (4) Slack integration. (5) R&D credit tax deductions. (6) NPS of 58%.
+Pricing: Transparent PEPM on website. Basic (Workers Comp only), Plus (adds benefits). Usage-based for international contractors.
+Objection Handlers:
+Q: "Justworks is easier to set up" A: What about month 6 when you need a custom board report, or month 12 when you benchmark salaries?
+Q: "We like the transparent pricing" A: Compare total value feature by feature. Analytics, dedicated AM, talent management — TotalSource often comes out ahead.
+Q: "Justworks has a PEO too" A: Technology-first PEO. Real HR guidance goes to ThinkHR, a third party not available 24/7.
+Q: "We're a startup, Justworks gets us" A: Does it grow with you? At your employee count, you're hitting limits of 20 reports and no talent management.
+
+GUSTO (18 Klue cards):
+Overview: Payroll/HR software, not a PEO. Gusto Wallet with early pay and financial wellness. Strong with startups and micro-businesses under 10.
+Why ADP Wins: (1) PEO co-employment with shared compliance liability. (2) Fortune 500 benefits at small biz prices. (3) Dedicated HR team. (4) Workers comp, EPLI, regulatory compliance. (5) Enterprise compliance support. (6) Scales beyond 20 employees.
+Why ADP Loses: (1) Gusto Wallet early pay, no fees, financial wellness. (2) Clean interface. (3) Self-service appeals to DIY founders. (4) Apple/Google Pay integration. (5) Wallet Premium 2% APY. (6) Lower payroll-only price.
+Pricing: Software-only pricing, lower than PEO but excludes co-employment, enterprise benefits, shared liability.
+Objection Handlers:
+Q: "Gusto is cheaper" A: For payroll alone. But Gusto is software — you are the HR department. Add up HR consultant, EPLI, enterprise benefits separately.
+Q: "Our employees love Gusto Wallet" A: ADP offers Wisely — same early pay, same digital wallet. The real question is discrimination claim handling.
+Q: "We don't need a PEO" A: Most companies say that until first DOL audit, EEOC complaint, or workers comp claim. PEO means ADP has skin in the game.
+
+PAYCHEX (128 Klue cards — most tracked competitor):
+Overview: Largest head-to-head. Offers payroll and PEO (Paychex Oasis) but it's a separate, less integrated experience.
+Why ADP Wins: (1) Fully integrated PEO, not bolt-on acquisition. (2) Modern tech with leading mobile app. (3) Consistent national service quality. (4) 24/7/365 support. (5) 40+ years industry leadership. (6) Deeper compliance expertise.
+Why ADP Loses: (1) Strong local sales presence. (2) Established accountant/broker relationships. (3) Competitive payroll-only pricing. (4) Oasis is a known PEO brand.
+Pricing: Complex with many add-on fees. Varies by local office. Competitive base payroll price but adds up.
+Objection Handlers:
+Q: "We already use Paychex" A: Are you getting a true HR partner or just a payroll vendor? TotalSource means ADP is co-employer with skin in the game.
+Q: "Our accountant recommended Paychex" A: We work with thousands of accounting firms via RUN for Partners. TotalSource goes beyond payroll into full HR protection.
+Q: "Paychex Oasis is a PEO too" A: Oasis was an acquisition still being integrated. TotalSource was built from the ground up. One system, one login.
+
+COMPETITIVE QUESTION BEHAVIOR:
+1. When user asks "How do we beat [competitor]?" — surface top 3 why_adp_wins points for that competitor.
+2. When user says "They said [objection]" — match to the closest objection handler and return the response.
+3. When user asks about pricing — return pricing_intel for that competitor.
+4. When user asks for strengths or "what are they good at?" — be honest and surface why_adp_loses so the rep isn't blindsided.
+5. When user asks for a killer question — return the competitor's killer question from outreach templates.
+6. Always use search_klue first for live data, then supplement with this built-in knowledge.`;
+
 
 async function executeTool(toolName: string, input: Record<string, any>, supabase: SupabaseClient, userId: string): Promise<any> {
   // Inject userId into input for tools that insert data

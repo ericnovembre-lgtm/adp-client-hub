@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.deal-coach]
 verify_jwt = false
+
+[functions.call-prep]
+verify_jwt = false

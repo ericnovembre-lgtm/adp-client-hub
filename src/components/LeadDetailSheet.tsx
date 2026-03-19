@@ -269,27 +269,60 @@ export default function LeadDetailSheet({
 
   const _needsEnrichment = !lead.headcount || !lead.decision_maker_email;
 
+  const ENRICH_STEPS = [
+    { label: "Querying Apollo…", icon: "🔍" },
+    { label: "Checking Hunter.io for email…", icon: "📧" },
+    { label: "Enriching via Snov.io…", icon: "🔗" },
+    { label: "Pulling Crunchbase funding data…", icon: "💰" },
+    { label: "Fetching Lead411 trigger events…", icon: "⚡" },
+    { label: "Detecting current provider…", icon: "🏢" },
+    { label: "Calculating competitor-adjusted score…", icon: "📊" },
+  ];
+
   const handleDeepEnrich = async () => {
     setIsEnriching(true);
     setDeepEnrichResult(null);
+    setEnrichStep(0);
+
+    // Simulate step progression while the single API call runs
+    const stepInterval = setInterval(() => {
+      setEnrichStep((prev) => {
+        if (prev < ENRICH_STEPS.length - 1) return prev + 1;
+        return prev;
+      });
+    }, 2000);
+
     try {
       const { data, error } = await supabase.functions.invoke("waterfall-enrich", {
         body: { lead_id: lead.id },
       });
+      clearInterval(stepInterval);
+      setEnrichStep(ENRICH_STEPS.length - 1);
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       setDeepEnrichResult(data);
+
+      const provider = data.competitor?.current_provider ?? data.fields_after?.current_provider ?? "Unknown";
+      const score = data.competitor?.score ?? null;
+      const displacement = data.competitor?.displacement_difficulty ?? data.fields_after?.displacement_difficulty ?? "Unknown";
+      const tier = score != null ? (score >= 80 ? "Hot" : score >= 60 ? "Warm" : score >= 40 ? "Nurture" : "Cold") : null;
+
       const totalFields = data.sources_succeeded?.length ?? 0;
       if (totalFields > 0) {
-        toast.success(`Deep enrichment complete — ${data.fields_after.filled}/${data.fields_after.total} fields filled from ${data.sources_succeeded.join(", ")}`);
+        const scorePart = tier ? ` | Score: ${score} (${tier})` : "";
+        const providerPart = provider !== "Unknown" ? ` | Provider: ${provider}` : "";
+        const displacePart = displacement !== "Unknown" ? ` | Displacement: ${displacement}` : "";
+        toast.success(`✅ Enrichment complete — ${data.fields_after.filled}/${data.fields_after.total} fields filled${providerPart}${scorePart}${displacePart}`);
       } else {
         toast.info("Deep enrichment complete — no additional data found.");
       }
       onLeadUpdated?.();
     } catch (e: any) {
+      clearInterval(stepInterval);
       toast.error(e.message || "Deep enrichment failed");
     } finally {
       setIsEnriching(false);
+      setEnrichStep(0);
     }
   };
 

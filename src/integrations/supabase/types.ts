@@ -430,6 +430,60 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_gen_runs: {
+        Row: {
+          completed_at: string | null
+          config: Json | null
+          created_at: string | null
+          discovered_count: number | null
+          emails_approved: number | null
+          emails_drafted: number | null
+          emails_sent: number | null
+          enriched_count: number | null
+          error_message: string | null
+          id: string
+          scored_count: number | null
+          started_at: string | null
+          status: string
+          trigger_type: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          config?: Json | null
+          created_at?: string | null
+          discovered_count?: number | null
+          emails_approved?: number | null
+          emails_drafted?: number | null
+          emails_sent?: number | null
+          enriched_count?: number | null
+          error_message?: string | null
+          id?: string
+          scored_count?: number | null
+          started_at?: string | null
+          status?: string
+          trigger_type?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          config?: Json | null
+          created_at?: string | null
+          discovered_count?: number | null
+          emails_approved?: number | null
+          emails_drafted?: number | null
+          emails_sent?: number | null
+          enriched_count?: number | null
+          error_message?: string | null
+          id?: string
+          scored_count?: number | null
+          started_at?: string | null
+          status?: string
+          trigger_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       lead_scores: {
         Row: {
           created_at: string | null
@@ -548,6 +602,90 @@ export type Database = {
           website?: string | null
         }
         Relationships: []
+      }
+      outreach_queue: {
+        Row: {
+          approved_at: string | null
+          body: string
+          clicked_at: string | null
+          company_name: string | null
+          competitor_detected: string | null
+          created_at: string | null
+          email_type: string | null
+          id: string
+          lead_grade: string | null
+          lead_id: string
+          lead_score: number | null
+          opened_at: string | null
+          recipient_email: string | null
+          recipient_name: string | null
+          replied_at: string | null
+          run_id: string | null
+          sent_at: string | null
+          status: string | null
+          subject: string
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          body: string
+          clicked_at?: string | null
+          company_name?: string | null
+          competitor_detected?: string | null
+          created_at?: string | null
+          email_type?: string | null
+          id?: string
+          lead_grade?: string | null
+          lead_id: string
+          lead_score?: number | null
+          opened_at?: string | null
+          recipient_email?: string | null
+          recipient_name?: string | null
+          replied_at?: string | null
+          run_id?: string | null
+          sent_at?: string | null
+          status?: string | null
+          subject: string
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          body?: string
+          clicked_at?: string | null
+          company_name?: string | null
+          competitor_detected?: string | null
+          created_at?: string | null
+          email_type?: string | null
+          id?: string
+          lead_grade?: string | null
+          lead_id?: string
+          lead_score?: number | null
+          opened_at?: string | null
+          recipient_email?: string | null
+          recipient_name?: string | null
+          replied_at?: string | null
+          run_id?: string | null
+          sent_at?: string | null
+          status?: string | null
+          subject?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_queue_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_queue_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "lead_gen_runs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tasks: {
         Row: {

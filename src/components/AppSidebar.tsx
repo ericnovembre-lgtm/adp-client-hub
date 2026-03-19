@@ -8,6 +8,7 @@ import {
   Sparkles,
   TrendingUp,
   Map,
+  Swords,
   Mail,
   BarChart3,
   ClipboardCheck,

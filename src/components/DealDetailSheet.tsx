@@ -75,7 +75,10 @@ export default function DealDetailSheet({
   const { data: companiesData } = useCompanies({ limit: 200 });
 
   useEffect(() => {
-    if (!open) setIsEditing(false);
+    if (!open) {
+      setIsEditing(false);
+      setShowCoach(false);
+    }
   }, [open]);
 
   if (!deal) return null;

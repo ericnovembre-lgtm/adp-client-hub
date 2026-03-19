@@ -9,6 +9,7 @@ import {
   TrendingUp,
   Mail,
   BarChart3,
+  ClipboardCheck,
   Settings,
   LogOut,
   ChevronLeft,

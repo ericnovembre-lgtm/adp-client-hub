@@ -468,7 +468,7 @@ export default function LeadDetailSheet({
           <LeadScoreSection leadId={lead.id} lead={lead} />
 
           {/* Action Buttons */}
-          {!isEditing && (onDraftEmail || onConvertToDeal || needsEnrichment) && (
+          {!isEditing && (
             <>
               <Separator />
               <div className="flex gap-2 flex-wrap">

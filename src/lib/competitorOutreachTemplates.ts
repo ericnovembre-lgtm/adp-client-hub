@@ -138,6 +138,110 @@ export const OUTREACH_TEMPLATES: Record<string, CompetitorTemplate> = {
     notes:
       "These are your hottest leads. No switching costs, no competitor loyalty. Lead with time savings and liability reduction.",
   },
+
+  Rippling: {
+    subject_lines: [
+      "{{first_name}}, is Rippling's tech enough when compliance gets real?",
+      "{{company_name}} — software alone can't protect you from an audit",
+      "{{first_name}}, who shares the liability when things go sideways?",
+    ],
+    pain_points: [
+      "Rippling is software-only — no co-employment, no shared compliance liability",
+      "No dedicated HR professionals on your account; support is ticket-based",
+      "Complex modular pricing — costs escalate as you add each module",
+      "Designed for tech companies; limited industry-specific compliance expertise",
+      "No workers' comp co-management or EPLI coverage built in",
+    ],
+    adp_counters: [
+      "TotalSource PEO model means ADP is your co-employer and shares compliance risk",
+      "Dedicated HR Business Partner assigned to your account from day one",
+      "All-inclusive bundled pricing — payroll, HR, benefits, compliance in one package",
+      "75+ years of expertise across every industry vertical",
+      "Built-in workers' comp, EPLI, and regulatory compliance management",
+    ],
+    killer_question:
+      "Rippling gives you great software to manage HR tasks. But when a DOL auditor shows up or an employee files a discrimination claim, who's standing next to you? With TotalSource, ADP is your co-employer — we share that liability.",
+    notes:
+      "Rippling is gaining share fast in tech/startup space. Their strength is IT + HR integration (device management, app provisioning). Don't compete on tech features — compete on the PEO value prop: shared liability, dedicated expertise, enterprise benefits.",
+  },
+
+  BambooHR: {
+    subject_lines: [
+      "{{first_name}}, is BambooHR giving {{company_name}} real protection?",
+      "Beyond employee records — what {{company_name}} needs next",
+      "{{first_name}}, HR software ≠ HR expertise",
+    ],
+    pain_points: [
+      "BambooHR is an HRIS — no payroll tax filing, no compliance management",
+      "No co-employment model means zero shared liability protection",
+      "Limited benefits administration — no access to enterprise-level plans",
+      "No workers' comp management or EPLI coverage",
+      "Requires bolting on separate payroll and benefits vendors",
+    ],
+    adp_counters: [
+      "TotalSource is a complete solution: payroll, HR, benefits, and compliance in one platform",
+      "Co-employment means ADP shares regulatory and compliance liability",
+      "Fortune 500-level benefits packages with 98.2% in-network utilization",
+      "Built-in workers' comp co-management and EPLI protection",
+      "One vendor, one platform, one login — no bolt-on integrations needed",
+    ],
+    killer_question:
+      "BambooHR keeps great employee records. But who files your payroll taxes, manages your workers' comp claims, and stands beside you during a compliance audit? With TotalSource, that's all included — and ADP shares the liability.",
+    notes:
+      "BambooHR is popular for its clean UI and culture features (eNPS, satisfaction surveys). Acknowledge the employee experience strengths, then pivot to what's missing: payroll, compliance, benefits, and shared liability.",
+  },
+
+  isolved: {
+    subject_lines: [
+      "{{first_name}}, is isolved keeping up with {{company_name}}'s growth?",
+      "{{company_name}} — when your HCM can't share the compliance burden",
+      "{{first_name}}, there's a difference between HCM software and an HR partner",
+    ],
+    pain_points: [
+      "isolved is sold through a fragmented network of resellers — inconsistent service quality",
+      "No co-employment model — all compliance risk stays with you",
+      "Technology platform is less modern than competitors; user experience lags",
+      "Support quality depends entirely on your local reseller partner",
+      "Limited enterprise-grade benefits access for small employers",
+    ],
+    adp_counters: [
+      "ADP provides consistent, national-level service quality — no reseller variability",
+      "Co-employment means ADP shares compliance risk as your legal co-employer",
+      "Industry-leading mobile app with 2.8M+ reviews and modern UX",
+      "24/7/365 dedicated support from ADP professionals — not a third-party reseller",
+      "Fortune 500 benefits buying power with 742,000+ worksite employees",
+    ],
+    killer_question:
+      "When you call isolved support, are you reaching isolved — or a local reseller? With TotalSource, you get a dedicated ADP team that knows your business, available 24/7. And as your co-employer, we have skin in the game.",
+    notes:
+      "isolved uses a channel-partner model (resellers), which creates inconsistent experiences. This is the key attack vector. Also position against their 'People Cloud' branding — it's HCM software, not a PEO partnership.",
+  },
+
+  Insperity: {
+    subject_lines: [
+      "{{first_name}}, is Insperity the right fit for {{company_name}}'s size?",
+      "{{company_name}} — comparing PEOs? Here's what matters most",
+      "{{first_name}}, not all PEOs are created equal",
+    ],
+    pain_points: [
+      "Insperity targets mid-market (50-5,000 employees) — small businesses get less attention",
+      "Less flexible technology platform compared to ADP's modern suite",
+      "Smaller benefits pool means less negotiating power on insurance rates",
+      "Limited industry-specific compliance expertise for niche verticals",
+      "No built-in ATS or recruiting tools — requires separate integrations",
+    ],
+    adp_counters: [
+      "ADP TotalSource is purpose-built for small businesses (2-20 employees) with dedicated support",
+      "Modern, industry-leading technology platform and mobile app",
+      "742,000+ worksite employees = Fortune 500-level benefits buying power",
+      "Deep compliance expertise across every industry vertical and all 50 states",
+      "Built-in ATS with ZipRecruiter integration and background check services",
+    ],
+    killer_question:
+      "Insperity is a solid PEO — but are you getting the attention you deserve? With 742,000+ worksite employees, ADP has more buying power for your benefits. And our Down Market team is dedicated to businesses exactly your size.",
+    notes:
+      "Insperity is a direct PEO competitor. Don't knock the PEO model (they validate it). Instead focus on scale advantages: ADP's larger benefits pool, better technology, and dedicated small business team. Insperity's sweet spot is 50-150 employees — position ADP as the better fit for smaller companies.",
+  },
 };
 
 export const BATTLECARD_KNOWLEDGE: Record<string, {

@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Upload, FileUp, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import EnrichmentProgress from "@/components/EnrichmentProgress";
 
 type EntityType = "leads" | "contacts" | "companies";
 

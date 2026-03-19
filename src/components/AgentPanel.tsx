@@ -26,12 +26,14 @@ const QUICK_ACTIONS = [
 
 function getToolIcon(name: string) {
   if (name.startsWith("search_")) return Search;
-  if (name === "get_pipeline" || name === "get_activity") return BarChart3;
-  if (name === "check_knockout") return ShieldCheck;
+  if (name === "get_pipeline" || name === "get_activity" || name === "get_pipeline_stats") return BarChart3;
+  if (name === "check_knockout" || name === "check_knockout_rules") return ShieldCheck;
   if (name.startsWith("update_")) return Pencil;
   if (name === "create_task") return Plus;
   if (name === "log_activity") return FileText;
   if (name === "draft_email") return Mail;
+  if (name === "run_lead_gen_pipeline") return Sparkles;
+  if (name === "get_lead_gen_status" || name === "get_outreach_queue") return BarChart3;
   return Wrench;
 }
 

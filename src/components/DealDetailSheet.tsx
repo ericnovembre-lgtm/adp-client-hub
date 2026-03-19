@@ -316,6 +316,19 @@ export default function DealDetailSheet({
 
         <Separator className="my-6" />
 
+        {showCoach ? (
+          <DealCoachPanel deal_id={deal.id} />
+        ) : (
+          <div className="flex justify-center pb-2">
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowCoach(true)}>
+              <Brain className="h-4 w-4" />
+              Get AI Coaching
+            </Button>
+          </div>
+        )}
+
+        <Separator className="my-6" />
+
         <ActivityTimeline entityType="deal" entityId={deal.id} />
 
         {deal.created_at && (

@@ -651,6 +651,43 @@ Deno.serve(async (req) => {
       details.lead411 = { status: "skipped", fields_found: [] };
     }
 
+    // ─── Step 6.5: COMPETITOR DETECTION ───
+    const enrichmentTexts: { text: string; source: string; confidence: "Confirmed" | "Likely" | "Possible" }[] = [];
+
+    // Collect text from enrichment data for scanning
+    // Technologies / tech stack → Confirmed
+    if (working.notes) enrichmentTexts.push({ text: working.notes as string, source: "notes", confidence: "Likely" });
+    if (working.trigger_event) enrichmentTexts.push({ text: working.trigger_event as string, source: "trigger_event", confidence: "Possible" });
+    if (working.industry) enrichmentTexts.push({ text: working.industry as string, source: "industry", confidence: "Likely" });
+    if (working.ai_pitch_summary) enrichmentTexts.push({ text: working.ai_pitch_summary as string, source: "ai_pitch", confidence: "Possible" });
+    if (working.decision_maker_title) enrichmentTexts.push({ text: working.decision_maker_title as string, source: "job_title", confidence: "Likely" });
+
+    // Scan all provider result data for competitor mentions
+    for (const [provider, detail] of Object.entries(details)) {
+      if (detail.status !== "skipped" && detail.status !== "failed") {
+        // Fields found text can hint at tools
+        for (const field of detail.fields_found) {
+          const val = working[field];
+          if (typeof val === "string") {
+            enrichmentTexts.push({ text: val, source: provider, confidence: provider === "lead411" ? "Confirmed" : "Likely" });
+          }
+        }
+      }
+    }
+
+    const competitorResult = detectCompetitor(enrichmentTexts, working.headcount as number | null);
+
+    if (competitorResult.current_provider !== "Unknown" || shouldUpdate("current_provider")) {
+      updates.current_provider = competitorResult.current_provider;
+      updates.provider_type = competitorResult.provider_type;
+      updates.provider_confidence = competitorResult.provider_confidence;
+      updates.competitor_source = competitorResult.competitor_source;
+      updates.displacement_difficulty = competitorResult.displacement_difficulty;
+      updates.competitor_detected_at = new Date().toISOString();
+      working.current_provider = competitorResult.current_provider;
+      working.provider_type = competitorResult.provider_type;
+    }
+
     // ─── Step 7: Update lead ───
     if (Object.keys(updates).length > 0) {
       await serviceClient.from("leads").update(updates).eq("id", lead_id);

@@ -200,6 +200,9 @@ export default function AIDiscoveryPage() {
           <TabsTrigger value="local-businesses" className="gap-1.5">
             <MapPin className="h-4 w-4" /> Local Businesses
           </TabsTrigger>
+          <TabsTrigger value="growth-signals" className="gap-1.5">
+            <TrendingUp className="h-4 w-4" /> Growth Signals
+          </TabsTrigger>
         </TabsList>
 
         {/* AI Generated Tab — existing functionality */}

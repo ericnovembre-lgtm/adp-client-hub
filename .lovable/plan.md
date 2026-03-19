@@ -1,52 +1,36 @@
 
 
-## Crunchbase Intel via RapidAPI Free Tier
+## Create PDL Enrichment Edge Function
 
 ### Overview
-Replace the planned direct Crunchbase API integration with a RapidAPI-proxied version that uses the free Basic plan (500 req/month). The function only queries Crunchbase when a funding signal has already been detected by another provider (Apollo, etc.), conserving the free tier.
+New edge function for People Data Labs API integration, providing person enrichment, company enrichment, and person search as a secondary data source when Apollo is incomplete.
 
-### Changes
+### Edge Function: `supabase/functions/pdl-enrichment/index.ts`
+- Same CORS/auth pattern as `crunchbase-intel` (imports, corsHeaders, Bearer token → getUser)
+- Reads `PDL_API_KEY` from env; returns signup instructions if missing (free tier: 100 lookups/month)
+- API base: `https://api.peopledatalabs.com/v5`, auth via `X-Api-Key` header
 
-#### 1. Edge Function: `supabase/functions/crunchbase-intel/index.ts` (new)
-- Same CORS/auth pattern as `enrich-lead` (Deno.serve, Bearer token, getUser check)
-- Reads `RAPIDAPI_KEY` from env; returns setup instructions if missing
-- Uses `RAPIDAPI_HOST = crunchbase-crunchbase-v1.p.rapidapi.com`
-- Three modes:
+**Three modes:**
 
-  **`search_companies`** — GET `odm-organizations?name={name}` with RapidAPI headers. Extracts company profile + embedded funding data (total_funding_usd, last_funding_type, num_funding_rounds, etc.)
+1. **`person_enrich`** — GET `/person/enrich` with query params built from email, phone, name, company, linkedin_url, location. Extracts: full_name, first/last name, job_title, company info, work_email, personal_emails, phone_numbers, linkedin_url, location, experience, education, skills. Returns `match_likelihood` from PDL response.
 
-  **`check_funding`** — The primary mode. Accepts `company_name`, `domain`, and optional `enrichment_hints` (apollo funding tags, trigger events). Runs `shouldQueryCrunchbase()` logic first; if no funding signals detected, returns `{ skipped: true, reason }`. If signals present, queries ODM Organizations endpoint, extracts funding data, categorizes into tiers (pre_seed/seed/early_stage/growth/late_stage), and flags `recently_funded` (within 6 months).
+2. **`company_enrich`** — GET `/company/enrich` with `website={domain}` or `name={company}`. Extracts: name, display_name, size, industry, location, founded, description, linkedin_url, employee_count, tags, recent_exec_hires, technologies.
 
-  **`lookup_company`** — GET `odm-organizations?name={name}`, find best match by domain/name, return full profile with funding data.
+3. **`person_search`** — POST `/person/search` with Elasticsearch-style bool query built from provided filters (job_company_name, job_title, location). Size defaults to 10. Returns array of person profiles.
 
-- Returns: `{ mode, success, data, count, skipped?, skip_reason?, funding_tier?, recently_funded? }`
-- Helper functions: `isRecentlyFunded()`, `categorizeFunding()`, `shouldQueryCrunchbase()`
+All modes return `{ mode, success, data, match_likelihood?, error? }`.
 
-#### 2. Config: `supabase/config.toml`
-Add:
+### Config
+Add to `supabase/config.toml`:
 ```toml
-[functions.crunchbase-intel]
+[functions.pdl-enrichment]
 verify_jwt = false
 ```
 
-#### 3. Secret: `RAPIDAPI_KEY`
-Prompt user for their RapidAPI key with setup instructions (sign up at rapidapi.com, subscribe to Crunchbase Basic free plan, copy X-RapidAPI-Key).
-
-#### 4. Settings Page: `src/pages/SettingsPage.tsx`
-- Add `rapidapiKeyConfigured` / `testingRapidapi` state
-- Add `rapidapi_key_configured` to UserSettings interface
-- Add a "Crunchbase (RapidAPI)" card after the Klue card with:
-  - Connection status badge
-  - "Free: 500 requests/month" note
-  - Test Connection button (invokes `crunchbase-intel` with `{ mode: "lookup_company", company_name: "ADP" }`)
-  - Setup instructions text
-
-#### 5. UserSettings: `src/hooks/useUserSettings.ts`
-- Add `rapidapi_key_configured?: boolean` to the interface
+### Secret
+Prompt user for `PDL_API_KEY` (not currently configured).
 
 ### Files Changed
-- `supabase/functions/crunchbase-intel/index.ts` — new
+- `supabase/functions/pdl-enrichment/index.ts` — new
 - `supabase/config.toml` — add function entry
-- `src/pages/SettingsPage.tsx` — add RapidAPI/Crunchbase settings card
-- `src/hooks/useUserSettings.ts` — add `rapidapi_key_configured` field
 

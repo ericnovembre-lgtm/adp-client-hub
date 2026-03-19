@@ -205,6 +205,43 @@ const CRM_TOOLS = [
       required: ["competitor"],
     },
   },
+  {
+    name: "run_lead_gen_pipeline",
+    description: "Trigger the autonomous lead generation pipeline. Discovers new leads, enriches them, scores them, detects competitors, and drafts personalized outreach emails for review. Returns a run_id to track progress.",
+    input_schema: {
+      type: "object",
+      properties: {
+        industry: { type: "string", description: "Filter discovery to specific industry" },
+        state: { type: "string", description: "Filter to specific US state" },
+        skip_discovery: { type: "boolean", description: "Skip AI discovery, only process existing unenriched leads" },
+        max_leads: { type: "number", description: "Max leads to process. Default 10." },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "get_lead_gen_status",
+    description: "Check the status of a lead generation pipeline run. Returns current stage, counts, and any errors.",
+    input_schema: {
+      type: "object",
+      properties: {
+        run_id: { type: "string", description: "UUID of the pipeline run. If omitted, returns the latest run." },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "get_outreach_queue",
+    description: "Get pending outreach emails waiting for review. Shows drafted emails with lead context, competitor info, and score.",
+    input_schema: {
+      type: "object",
+      properties: {
+        status: { type: "string", enum: ["pending_review", "approved", "sent", "skipped"], description: "Filter by status. Default: pending_review" },
+        limit: { type: "number", description: "Max results. Default 10." },
+      },
+      required: [],
+    },
+  },
 ];
 
 const TOOL_RISK: Record<string, string> = {
@@ -213,6 +250,7 @@ const TOOL_RISK: Record<string, string> = {
   check_knockout_rules: "low", log_activity: "low", draft_email: "low",
   update_lead: "medium", update_deal: "medium", create_task: "medium",
   search_klue: "low",
+  run_lead_gen_pipeline: "medium", get_lead_gen_status: "low", get_outreach_queue: "low",
 };
 
 const SYSTEM_PROMPT = `You are the SavePlus24 AI Agent — an autonomous CRM assistant for ADP TotalSource down-market sales. You have direct access to the user's CRM database through tools.
@@ -362,7 +400,21 @@ COMPETITIVE QUESTION BEHAVIOR:
 3. When user asks about pricing — return pricing_intel for that competitor.
 4. When user asks for strengths or "what are they good at?" — be honest and surface why_adp_loses so the rep isn't blindsided.
 5. When user asks for a killer question — return the competitor's killer question from outreach templates.
-6. Always use search_klue first for live data, then supplement with this built-in knowledge.`;
+6. Always use search_klue first for live data, then supplement with this built-in knowledge.
+
+LEAD GENERATION PIPELINE:
+You can trigger and monitor the autonomous lead gen pipeline. When the user asks to:
+- "Find me new leads" or "Run lead gen" — use run_lead_gen_pipeline
+- "Check pipeline status" or "How's the lead gen going?" — use get_lead_gen_status
+- "Show me pending emails" or "What outreach is ready?" — use get_outreach_queue
+- "Score my leads" or "Enrich my leads" — use run_lead_gen_pipeline with skip_discovery: true
+
+When presenting outreach queue results, format each email as:
+1. Company name, contact name, score/grade
+2. Competitor detected (if any) and email type
+3. Subject line
+4. First paragraph preview (truncated to about 100 chars)
+5. Ask if the user wants to approve, edit, or skip each email`;
 
 
 async function executeTool(toolName: string, input: Record<string, any>, supabase: SupabaseClient, userId: string): Promise<any> {
@@ -393,6 +445,9 @@ async function executeTool(toolName: string, input: Record<string, any>, supabas
       case "log_activity": result = await toolLogActivity(supabase, input); break;
       case "draft_email": result = await toolDraftEmail(input); break;
       case "search_klue": result = await toolSearchKlue(input); break;
+      case "run_lead_gen_pipeline": result = await toolRunLeadGenPipeline(supabase, input, userId); break;
+      case "get_lead_gen_status": result = await toolGetLeadGenStatus(supabase, input, userId); break;
+      case "get_outreach_queue": result = await toolGetOutreachQueue(supabase, input, userId); break;
       default: throw new Error(`Unknown tool: ${toolName}`);
     }
 
@@ -599,6 +654,70 @@ async function toolSearchKlue(input: Record<string, any>) {
   } catch (err) {
     return { error: `Failed to reach Klue: ${err instanceof Error ? err.message : String(err)}` };
   }
+}
+
+async function toolRunLeadGenPipeline(supabase: SupabaseClient, input: Record<string, any>, userId: string) {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  try {
+    const resp = await fetch(`${supabaseUrl}/functions/v1/lead-gen-agent`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        trigger_type: "agent",
+        config: {
+          industry: input.industry,
+          state: input.state,
+          skip_discovery: input.skip_discovery ?? false,
+          max_leads: input.max_leads ?? 10,
+        },
+      }),
+    });
+    if (!resp.ok) {
+      const errText = await resp.text();
+      return { error: `Pipeline trigger failed: ${resp.status} ${errText}` };
+    }
+    const result = await resp.json();
+    return { success: true, run_id: result.run_id, message: "Lead gen pipeline started. Use get_lead_gen_status to track progress." };
+  } catch (err) {
+    return { error: `Failed to trigger pipeline: ${err instanceof Error ? err.message : String(err)}` };
+  }
+}
+
+async function toolGetLeadGenStatus(supabase: SupabaseClient, input: Record<string, any>, userId: string) {
+  let query = supabase.from("lead_gen_runs").select("*");
+  if (input.run_id) {
+    query = query.eq("id", input.run_id);
+  } else {
+    query = query.eq("user_id", userId).order("created_at", { ascending: false }).limit(1);
+  }
+  const { data, error } = await query;
+  if (error) return { error: error.message };
+  if (!data || data.length === 0) return { message: "No pipeline runs found." };
+  const run = data[0];
+
+  // Get outreach queue counts for this run
+  const { data: queueItems } = await supabase.from("outreach_queue").select("status").eq("run_id", run.id);
+  const queueCounts: Record<string, number> = {};
+  for (const item of queueItems ?? []) {
+    queueCounts[item.status] = (queueCounts[item.status] ?? 0) + 1;
+  }
+
+  return { run, outreach_queue: queueCounts };
+}
+
+async function toolGetOutreachQueue(supabase: SupabaseClient, input: Record<string, any>, userId: string) {
+  const status = input.status ?? "pending_review";
+  const limit = Math.min(input.limit ?? 10, 50);
+  const { data, error } = await supabase
+    .from("outreach_queue")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("status", status)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) return { error: error.message };
+  return { emails: data ?? [], count: (data ?? []).length, status_filter: status };
 }
 
 function getDateFilter(period: string): string {

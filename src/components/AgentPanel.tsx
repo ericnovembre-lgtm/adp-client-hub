@@ -20,16 +20,20 @@ const QUICK_ACTIONS = [
   { label: "Stalled deals", message: "Find deals that have had no activity in the last 14 days" },
   { label: "Draft outreach", message: "Help me draft an outreach email for my highest-priority uncontacted lead" },
   { label: "Score leads", message: "Score my new leads and tell me which ones to prioritize" },
+  { label: "Run lead gen", message: "Run the lead generation pipeline to discover, enrich, and draft outreach for new leads" },
+  { label: "Review outreach", message: "Show me pending outreach emails waiting for my review" },
 ];
 
 function getToolIcon(name: string) {
   if (name.startsWith("search_")) return Search;
-  if (name === "get_pipeline" || name === "get_activity") return BarChart3;
-  if (name === "check_knockout") return ShieldCheck;
+  if (name === "get_pipeline" || name === "get_activity" || name === "get_pipeline_stats") return BarChart3;
+  if (name === "check_knockout" || name === "check_knockout_rules") return ShieldCheck;
   if (name.startsWith("update_")) return Pencil;
   if (name === "create_task") return Plus;
   if (name === "log_activity") return FileText;
   if (name === "draft_email") return Mail;
+  if (name === "run_lead_gen_pipeline") return Sparkles;
+  if (name === "get_lead_gen_status" || name === "get_outreach_queue") return BarChart3;
   return Wrench;
 }
 

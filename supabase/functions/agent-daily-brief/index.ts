@@ -128,6 +128,52 @@ serve(async (req) => {
         recs.push({ user_id: uid, type: "follow_up_due", title: `${todayTasks.length} task${todayTasks.length !== 1 ? "s" : ""} due today`, body: `You have **${todayTasks.length}** task${todayTasks.length !== 1 ? "s" : ""} due today:\n\n${taskList}`, entity_type: null, entity_id: null, priority: 65, batch_id: currentBatch, expires_at: expiresAt });
       }
 
+      // CHECK 7: Unenriched Leads
+      const { data: unenrichedLeads } = await supabase
+        .from("leads")
+        .select("id")
+        .eq("status", "new")
+        .is("decision_maker_email", null);
+      
+      let unenrichedCount = 0;
+      for (const lead of unenrichedLeads ?? []) {
+        const { count: actCount } = await supabase
+          .from("activities")
+          .select("id", { count: "exact", head: true })
+          .eq("lead_id", lead.id)
+          .ilike("description", "Waterfall enrichment completed%");
+        if (!actCount || actCount === 0) unenrichedCount++;
+        if (unenrichedCount >= 5) break;
+      }
+
+      if (unenrichedCount >= 5) {
+        recs.push({
+          user_id: uid, type: "uncontacted_lead",
+          title: `${unenrichedCount}+ leads need enrichment`,
+          body: `You have ${unenrichedCount}+ unenriched leads sitting in your pipeline. Run the lead gen pipeline to enrich them, detect competitors, score them, and draft outreach.`,
+          entity_type: null, entity_id: null, priority: 70,
+          batch_id: currentBatch, expires_at: expiresAt,
+        });
+      }
+
+      // CHECK 8: Stale Outreach Queue
+      const twoDaysAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString();
+      const { count: staleCount } = await supabase
+        .from("outreach_queue")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending_review")
+        .lt("created_at", twoDaysAgo);
+
+      if (staleCount && staleCount > 0) {
+        recs.push({
+          user_id: uid, type: "follow_up_due",
+          title: `${staleCount} outreach emails awaiting review`,
+          body: `You have ${staleCount} drafted outreach emails that have been waiting for review for over 48 hours. Open the AI Agent to review and approve them.`,
+          entity_type: null, entity_id: null, priority: 80,
+          batch_id: currentBatch, expires_at: expiresAt,
+        });
+      }
+
       // WRITE RECOMMENDATIONS
       if (recs.length > 0) {
         const { error: insertErr } = await supabase.from("agent_recommendations").insert(recs);

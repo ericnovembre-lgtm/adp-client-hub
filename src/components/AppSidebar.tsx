@@ -32,6 +32,7 @@ const navItems = [
   { title: "Reports", path: "/reports", icon: BarChart3 },
   { title: "AI Discovery", path: "/ai-discovery", icon: Sparkles },
   { title: "Market Intel", path: "/market-intelligence", icon: TrendingUp },
+  { title: "Territory Analytics", path: "/territory-analytics", icon: Map },
   { title: "Quote Readiness", path: "/quote-readiness", icon: ClipboardCheck },
   { title: "Renewals", path: "/renewals", icon: RefreshCw },
   { title: "Email Templates", path: "/email-templates", icon: Mail },

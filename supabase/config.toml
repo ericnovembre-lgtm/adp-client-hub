@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.renewal-tracker]
 verify_jwt = false
+
+[functions.territory-analytics]
+verify_jwt = false

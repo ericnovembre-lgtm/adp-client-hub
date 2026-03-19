@@ -266,6 +266,13 @@ export default function MarketIntelligencePage() {
         </div>
       )}
 
+      {/* BLS Recent Trends */}
+      <BLSTrendsSection
+        states={selectedStates}
+        industries={selectedIndustries}
+        hasAnalyzed={insights.length > 0}
+      />
+
       {/* Data Table */}
       {sortedInsights.length > 0 && (
         <Card>

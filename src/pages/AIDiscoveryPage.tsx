@@ -353,6 +353,11 @@ export default function AIDiscoveryPage() {
         <TabsContent value="local-businesses">
           <YelpDiscoveryTab />
         </TabsContent>
+
+        {/* Growth Signals Tab */}
+        <TabsContent value="growth-signals">
+          <GrowthSignalsPanel />
+        </TabsContent>
       </Tabs>
     </div>
   );

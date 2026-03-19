@@ -29,6 +29,7 @@ export interface UserSettings {
   klue_api_key_configured?: boolean;
   rapidapi_key_configured?: boolean;
   snov_key_configured?: boolean;
+  lead411_api_key_configured?: boolean;
 }
 
 export function useUserSettings() {

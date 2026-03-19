@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Search, MoreHorizontal, Phone, UserCheck, ArrowRightLeft, XCircle, Pencil, Trash2, Download, Upload, Loader2, Users, FileText, X, CheckSquare, Sparkles, Filter, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Phone, UserCheck, ArrowRightLeft, XCircle, Pencil, Trash2, Download, Upload, Loader2, Users, FileText, X, CheckSquare, Sparkles, Filter, CheckCircle2, AlertTriangle, SearchCheck } from "lucide-react";
 import { Link } from "wouter";
 import { useLeads, useCreateLead, useUpdateLead, useDeleteLead } from "@/hooks/useLeads";
 import { useCreateCompany } from "@/hooks/useCompanies";
@@ -255,6 +255,8 @@ export default function LeadsPage() {
   const [sourceFilter, setSourceFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [bulkConvertOpen, setBulkConvertOpen] = useState(false);
+  const [bulkEnriching, setBulkEnriching] = useState(false);
+  const [bulkEnrichProgress, setBulkEnrichProgress] = useState({ current: 0, total: 0, currentName: "" });
 
   // Knockout dialog state
   const [knockoutDialogType, setKnockoutDialogType] = useState<'prohibited' | 'low_probability' | 'bluefield' | null>(null);
@@ -399,7 +401,36 @@ export default function LeadsPage() {
     toast.success(`Exported ${selected.length} lead(s)`);
   };
 
-  // Bulk convert — compute eligible vs skipped
+  // Bulk enrich
+  const handleBulkEnrich = async () => {
+    const candidates = allLeads.filter(
+      l => l.status === "new" && (!l.decision_maker_email || !l.headcount)
+    );
+    if (candidates.length === 0) {
+      toast.info("No new leads with incomplete data to enrich.");
+      return;
+    }
+    setBulkEnriching(true);
+    setBulkEnrichProgress({ current: 0, total: candidates.length, currentName: "" });
+    let succeeded = 0;
+    let failed = 0;
+    for (let i = 0; i < candidates.length; i++) {
+      const lead = candidates[i];
+      setBulkEnrichProgress({ current: i + 1, total: candidates.length, currentName: lead.company_name });
+      try {
+        const { error } = await supabase.functions.invoke("waterfall-enrich", {
+          body: { lead_id: lead.id },
+        });
+        if (error) throw error;
+        succeeded++;
+      } catch {
+        failed++;
+      }
+    }
+    setBulkEnriching(false);
+    toast.success(`Bulk enrichment complete: ${succeeded} succeeded, ${failed} failed out of ${candidates.length}`);
+  };
+
   const bulkConvertAnalysis = useMemo(() => {
     if (!bulkConvertOpen) return null;
     const selected = leads.filter(l => selectedIds.has(l.id));
@@ -744,6 +775,10 @@ export default function LeadsPage() {
             }}
           >
             <Sparkles className="h-4 w-4 mr-1" />Score All Leads
+          </Button>
+          <Button variant="outline" onClick={handleBulkEnrich} disabled={bulkEnriching}>
+            {bulkEnriching ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <SearchCheck className="h-4 w-4 mr-1" />}
+            {bulkEnriching ? `Enriching ${bulkEnrichProgress.current}/${bulkEnrichProgress.total}…` : "Bulk Enrich"}
           </Button>
           <Button variant="outline" onClick={() => setImportOpen(true)}>
             <Upload className="h-4 w-4 mr-1" />Import CSV

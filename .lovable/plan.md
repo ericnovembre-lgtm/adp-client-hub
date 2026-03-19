@@ -1,53 +1,61 @@
 
 
-## Waterfall Enrichment Engine
+## Competitor Detection Engine
 
 ### Overview
-Create a master enrichment edge function that chains 5 data providers in sequence to maximize lead data completeness. Add "Deep Enrich" button to LeadDetailSheet and "Bulk Enrich" button to LeadsPage.
+Add competitor detection that runs automatically after waterfall enrichment. Detects the prospect's current payroll/HR/PEO provider by scanning enrichment data against a registry of known competitors. Displays results as a color-coded badge on the lead detail page.
 
-**Important note:** The plan references "PDL" (People Data Labs) in Step 4, but PDL was replaced with Snov.io. Step 4 will use `snov-enrichment` instead of `pdl-enrichment`.
+### 1. Database Migration — Add 6 columns to `leads` table
 
-### 1. Edge Function: `supabase/functions/waterfall-enrich/index.ts`
-
-Same auth pattern as `enrich-lead`. Uses service role client for DB operations.
-
-**Flow:**
-1. Read lead from DB, identify missing fields
-2. **Apollo** (Step 1) — call `enrich-lead` function internally (re-use existing logic inline since edge functions can't call each other easily). Try org enrichment + people search.
-3. **Hunter.io** (Step 2) — if email still missing and we have name+domain, call `hunter-email` via fetch to the edge function URL. Use `email_finder` then `email_verifier`.
-4. **Snov.io** (Step 3) — if still missing email/phone/profile data and lead score >= 40, call `snov-enrichment` with `check_gaps` mode.
-5. **Crunchbase** (Step 4) — call `crunchbase-intel` with `lookup_company` if funding signals detected. Update trigger_type/trigger_event if funding found in last 12 months.
-6. **Lead411** (Step 5) — if `LEAD411_API_KEY` is set, call `lead411-intent` with `get_triggers`. Update trigger if more recent/specific.
-7. Update lead (only fill blanks unless `force_refresh`).
-8. Recalculate score inline (headcount 2-20 = 30pts, ADP industry = 25pts, verified email = 15pts, real trigger = 20pts, contact completeness = 10pts). Upsert to `lead_scores`.
-9. Log activity with sources used and fields enriched.
-
-Each provider call is a fetch to the edge function URL with the user's auth token forwarded. Each step is wrapped in try/catch — failures skip gracefully.
-
-**Returns** the detailed enrichment result object with `sources_tried`, `sources_succeeded`, `fields_before/after`, `enrichment_details` per provider, `score_change`, and `trigger_updated`.
-
-### 2. Config: `supabase/config.toml`
-```toml
-[functions.waterfall-enrich]
-verify_jwt = false
+```sql
+ALTER TABLE leads ADD COLUMN current_provider text;
+ALTER TABLE leads ADD COLUMN provider_type text;
+ALTER TABLE leads ADD COLUMN provider_confidence text;
+ALTER TABLE leads ADD COLUMN competitor_detected_at timestamptz;
+ALTER TABLE leads ADD COLUMN competitor_source text;
+ALTER TABLE leads ADD COLUMN displacement_difficulty text;
 ```
 
-### 3. LeadDetailSheet: "Deep Enrich" button
-- Add `isDeepEnriching` state and `deepEnrichResult` state
-- Replace the existing "Enrich Lead" button with "Deep Enrich" that calls `waterfall-enrich`
-- Show a progress card during enrichment with provider status updates (polling or just a spinner with "Running waterfall enrichment...")
-- After completion, show a summary card: sources used, fields found, score change
-- Invalidate queries on completion
+### 2. Edge Function: Update `waterfall-enrich/index.ts`
 
-### 4. LeadsPage: "Bulk Enrich" button
-- Add a "Bulk Enrich" button in the toolbar (next to existing bulk action buttons)
-- When clicked, filters leads with status "new" that are missing email or headcount
-- Processes sequentially with a progress dialog: "Enriching X of Y... [CompanyName]"
-- Shows summary on completion: total enriched, fields found, failures
+Add competitor detection as **Step 6.5** (after Lead411, before lead update):
+
+- Define `COMPETITOR_REGISTRY` constant with all 15 competitors, their aliases, types, priorities, displacement difficulty, and Klue card counts
+- Add `detectCompetitor()` function that:
+  1. Collects all text from enrichment results (company description, technologies, job postings, trigger events, notes)
+  2. Normalizes to lowercase and scans for alias matches
+  3. Picks highest-priority match (by priority tier, then Klue card count)
+  4. Sets confidence: "Confirmed" (tech stack/job posting), "Likely" (description/profiles), "Possible" (news/loose mentions)
+  5. Also detects "DIY/None" patterns: "manual payroll", "spreadsheet payroll", "excel payroll"
+  6. Falls back to "Unknown" if nothing detected
+- Write `current_provider`, `provider_type`, `provider_confidence`, `competitor_detected_at`, `competitor_source`, `displacement_difficulty` to the lead update
+- Add competitor detection details to the enrichment result response
+- Update `TRACKED_FIELDS` to include the new fields in field counting
+- Include competitor info in the activity log
+
+### 3. Component: `src/components/CompetitorBadge.tsx` (new)
+
+A clickable badge component:
+- Props: `currentProvider`, `providerType`, `displacementDifficulty`, `providerConfidence`, `onOpenBattlecard`
+- Color coding by displacement difficulty: green (Easy), yellow (Medium), red (Hard)
+- "No Provider — Hot Lead" green badge for DIY/None
+- Gray badge for Unknown
+- Clicking opens the battlecard panel pre-filled with the detected competitor
+
+### 4. Update `src/components/LeadDetailSheet.tsx`
+
+- Import and render `CompetitorBadge` in the status/badges area (next to existing status badge)
+- When badge is clicked, auto-open the battlecard panel with the detected competitor pre-selected
+- Show competitor info in the enrichment results card
+
+### 5. Update `src/types/database.ts`
+
+Add the 6 new fields to the `Lead` interface.
 
 ### Files Changed
-- `supabase/functions/waterfall-enrich/index.ts` — new (main orchestrator)
-- `supabase/config.toml` — add waterfall-enrich entry
-- `src/components/LeadDetailSheet.tsx` — replace Enrich button with Deep Enrich + results display
-- `src/pages/LeadsPage.tsx` — add Bulk Enrich button + progress dialog
+- `supabase/functions/waterfall-enrich/index.ts` — add competitor detection logic
+- `src/components/CompetitorBadge.tsx` — new component
+- `src/components/LeadDetailSheet.tsx` — add competitor badge display
+- `src/types/database.ts` — update Lead interface
+- Migration: add 6 columns to leads table
 

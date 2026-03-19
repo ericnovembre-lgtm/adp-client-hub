@@ -239,6 +239,9 @@ function LeadFormDialog({
 }
 
 export default function LeadsPage() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialFilter = urlParams.get("filter") || "";
+
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -256,6 +259,7 @@ export default function LeadsPage() {
   const [territoryOnly, setTerritoryOnly] = useState(true);
   const [sourceFilter, setSourceFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [hotEasyFilter, setHotEasyFilter] = useState(initialFilter === "hot-easy");
   const [bulkConvertOpen, setBulkConvertOpen] = useState(false);
   const [bulkEnriching, setBulkEnriching] = useState(false);
   const [bulkEnrichProgress, setBulkEnrichProgress] = useState({ current: 0, total: 0, currentName: "" });
@@ -304,8 +308,14 @@ export default function LeadsPage() {
     if (statusFilter !== "all") {
       filtered = filtered.filter(l => l.status === statusFilter);
     }
+    if (hotEasyFilter) {
+      filtered = filtered.filter(l => {
+        const score = leadScores.get(l.id);
+        return (score?.score ?? 0) >= 80 && l.displacement_difficulty === "Easy";
+      });
+    }
     return filtered;
-  }, [allLeads, territoryOnly, sourceFilter, statusFilter]);
+  }, [allLeads, territoryOnly, sourceFilter, statusFilter, hotEasyFilter, leadScores]);
 
   // Pre-compute knockout results for all visible leads
   const knockoutMap = useMemo(() => {
@@ -768,6 +778,19 @@ export default function LeadsPage() {
               <SelectItem value="dismissed">Dismissed</SelectItem>
             </SelectContent>
           </Select>
+          {hotEasyFilter && (
+            <Badge
+              variant="secondary"
+              className="cursor-pointer gap-1 shrink-0 bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200"
+              onClick={() => {
+                setHotEasyFilter(false);
+                window.history.replaceState({}, "", window.location.pathname);
+              }}
+            >
+              🔥 Hot + Easy
+              <X className="h-3 w-3" />
+            </Badge>
+          )}
           <Button
             variant="outline"
             onClick={() => {

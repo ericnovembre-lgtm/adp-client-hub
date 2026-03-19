@@ -526,6 +526,19 @@ export default function LeadDetailSheet({
           )}
 
           {/* Call Prep Panel */}
+          {showFollowUp && (
+            <>
+              <Separator />
+              <div>
+                <h3 className="font-semibold text-sm mb-3 flex items-center gap-1.5">
+                  <ListChecks className="h-4 w-4 text-primary" />
+                  Follow-Up Sequence
+                </h3>
+                <FollowUpSequencePanel lead_id={lead.id} />
+              </div>
+            </>
+          )}
+
           {showCallPrep && (
             <>
               <Separator />

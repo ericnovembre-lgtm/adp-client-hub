@@ -518,6 +518,8 @@ export default function SettingsPage() {
   const [testingRapidapi, setTestingRapidapi] = useState(false);
   const [snovKeyConfigured, setSnovKeyConfigured] = useState(false);
   const [testingSnov, setTestingSnov] = useState(false);
+  const [lead411KeyConfigured, setLead411KeyConfigured] = useState(false);
+  const [testingLead411, setTestingLead411] = useState(false);
 
   // Discovery
   const [defaultIndustry, setDefaultIndustry] = useState("");

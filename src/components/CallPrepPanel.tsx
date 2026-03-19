@@ -74,10 +74,16 @@ export default function CallPrepPanel({ lead_id, contact_id }: { lead_id?: strin
         <Badge variant="outline" className={STATUS_STYLES[industryStatus] ?? STATUS_STYLES.clear}>
           {industryStatus.replace("_", " ")}
         </Badge>
-        <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={handlePrep}>
-          <RefreshCw className="h-3 w-3" />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={handleCopy}>
+            {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+            {copied ? "Copied" : "Copy"}
+          </Button>
+          <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={handlePrep}>
+            <RefreshCw className="h-3 w-3" />
+            Refresh
+          </Button>
+        </div>
       </div>
       <Card className="bg-muted/50">
         <CardContent className="p-4 text-sm whitespace-pre-wrap leading-relaxed">

@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, PieChart, Pie, Cell } from "recharts";
-import { useActivitySummary } from "@/hooks/useReportsData";
+import { useActivitySummary, type ReportsFilters } from "@/hooks/useReportsData";
 import { Activity, Phone, Mail, Users, StickyNote } from "lucide-react";
 
 const TYPE_COLORS: Record<string, string> = {

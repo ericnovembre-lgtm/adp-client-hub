@@ -255,6 +255,8 @@ export default function LeadsPage() {
   const [sourceFilter, setSourceFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [bulkConvertOpen, setBulkConvertOpen] = useState(false);
+  const [bulkEnriching, setBulkEnriching] = useState(false);
+  const [bulkEnrichProgress, setBulkEnrichProgress] = useState({ current: 0, total: 0, currentName: "" });
 
   // Knockout dialog state
   const [knockoutDialogType, setKnockoutDialogType] = useState<'prohibited' | 'low_probability' | 'bluefield' | null>(null);

@@ -185,7 +185,10 @@ export default function LeadDetailSheet({
   }, [lead?.industry, knockoutRules]);
 
   useEffect(() => {
-    if (!open) setIsEditing(false);
+    if (!open) {
+      setIsEditing(false);
+      setDeepEnrichResult(null);
+    }
   }, [open]);
 
   if (!lead) return null;

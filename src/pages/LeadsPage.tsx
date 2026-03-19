@@ -308,8 +308,14 @@ export default function LeadsPage() {
     if (statusFilter !== "all") {
       filtered = filtered.filter(l => l.status === statusFilter);
     }
+    if (hotEasyFilter) {
+      filtered = filtered.filter(l => {
+        const score = leadScores.find(s => s.lead_id === l.id);
+        return (score?.score ?? 0) >= 80 && l.displacement_difficulty === "Easy";
+      });
+    }
     return filtered;
-  }, [allLeads, territoryOnly, sourceFilter, statusFilter]);
+  }, [allLeads, territoryOnly, sourceFilter, statusFilter, hotEasyFilter, leadScores]);
 
   // Pre-compute knockout results for all visible leads
   const knockoutMap = useMemo(() => {

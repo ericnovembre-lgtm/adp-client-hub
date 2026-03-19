@@ -134,7 +134,7 @@ export default function CompetitorBreakdownWidget({ onLeadClick }: { onLeadClick
     <div className="space-y-6">
       {/* Hot leads counter */}
       {data.hotEasyCount > 0 && (
-        <Card className="border-emerald-300 dark:border-emerald-800 cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate("/leads")}>
+        <Card className="border-emerald-300 dark:border-emerald-800 cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => navigate("/leads?filter=hot-easy")}>
           <CardContent className="p-4 flex items-center gap-4">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900">
               <Flame className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />

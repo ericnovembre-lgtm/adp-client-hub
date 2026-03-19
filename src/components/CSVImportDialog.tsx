@@ -214,16 +214,24 @@ export default function CSVImportDialog({ entityType, open, onOpenChange, onImpo
     let success = 0;
     let failed = 0;
     const batchSize = 10;
+    const collectedIds: string[] = [];
 
     for (let i = 0; i < mapped.length; i += batchSize) {
       const batch = mapped.slice(i, i + batchSize).map(row => ({ ...row, user_id: user.id }));
-      const { error } = await supabase.from(entityType).insert(batch as any);
+      const { data: inserted, error } = await supabase.from(entityType).insert(batch as any).select("id");
       if (error) {
         failed += batch.length;
       } else {
-        success += batch.length;
+        success += (inserted?.length ?? batch.length);
+        if (entityType === "leads" && inserted) {
+          collectedIds.push(...inserted.map((r: any) => r.id));
+        }
       }
       setProgress(Math.round(((i + batch.length) / mapped.length) * 100));
+    }
+
+    if (entityType === "leads") {
+      setImportedLeadIds(collectedIds);
     }
 
     setResult({ success, failed, skipped });

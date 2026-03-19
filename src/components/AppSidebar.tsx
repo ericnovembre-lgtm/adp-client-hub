@@ -9,6 +9,7 @@ import {
   TrendingUp,
   Map,
   Swords,
+  ShieldAlert,
   Mail,
   BarChart3,
   ClipboardCheck,

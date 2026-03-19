@@ -664,6 +664,7 @@ async function toolRunLeadGenPipeline(supabase: SupabaseClient, input: Record<st
       method: "POST",
       headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
+        user_id: userId,
         trigger_type: "agent",
         config: {
           industry: input.industry,

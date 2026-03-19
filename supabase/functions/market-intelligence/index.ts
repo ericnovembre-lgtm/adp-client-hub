@@ -198,38 +198,60 @@ async function fetchCBP(
   naics: string,
   year: string
 ): Promise<{ establishments: number; employees: number; payroll: number } | null> {
+  // Try with key first, then without if key is invalid
+  const attempts = apiKey ? [apiKey, undefined] : [undefined];
+
+  for (const key of attempts) {
+    const result = await fetchCBPAttempt(key, stateFips, naics, year);
+    if (result === "invalid_key") continue;
+    return result;
+  }
+  return null;
+}
+
+async function fetchCBPAttempt(
+  apiKey: string | undefined,
+  stateFips: string,
+  naics: string,
+  year: string
+): Promise<{ establishments: number; employees: number; payroll: number } | "invalid_key" | null> {
   try {
-    // Use year-specific endpoint: /data/{year}/cbp
     const params = new URLSearchParams({
       get: "ESTAB,EMP,PAYANN",
       for: `state:${stateFips}`,
       NAICS2017: naics,
-      LFO: "001",       // All legal forms of organization
-      EMPSZES: "001",    // All establishment sizes
+      LFO: "001",
+      EMPSZES: "001",
     });
     if (apiKey) params.set("key", apiKey);
 
     const url = `https://api.census.gov/data/${year}/cbp?${params}`;
-    console.log(`Fetching CBP: state=${stateFips}, NAICS=${naics}, year=${year}`);
     const response = await fetch(url);
 
     if (!response.ok) {
       const text = await response.text().catch(() => "");
-      console.error(`Census CBP error for state ${stateFips}, NAICS ${naics}, year ${year}: ${response.status}`, text.substring(0, 200));
+      console.error(`Census CBP error ${response.status} for state ${stateFips}, NAICS ${naics}, year ${year}`);
       return null;
     }
 
     const text = await response.text();
+
+    // Detect "Invalid Key" HTML response
+    if (text.includes("Invalid Key")) {
+      console.warn(`Census API: Invalid Key detected, retrying without key`);
+      return "invalid_key";
+    }
+
     let data: unknown;
     try {
       data = JSON.parse(text);
     } catch {
-      console.error(`Census CBP returned non-JSON for state ${stateFips}, NAICS ${naics}, year ${year}:`, text.substring(0, 300));
+      console.error(`Census CBP non-JSON for state ${stateFips}, NAICS ${naics}, year ${year}:`, text.substring(0, 200));
       return null;
     }
 
     if (!data || !Array.isArray(data) || data.length < 2) {
-      console.error(`Census CBP returned no data for state ${stateFips}, NAICS ${naics}, year ${year}`);
+      console.error(`Census CBP no data for state ${stateFips}, NAICS ${naics}, year ${year}`);
       return null;
     }
 

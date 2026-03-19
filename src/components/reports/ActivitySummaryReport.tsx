@@ -54,14 +54,17 @@ export default function ActivitySummaryReport({ filters }: { filters: ReportsFil
   }));
 
   const handleExport = () => {
-    const rows = data.weekly.map((w) => ({
-      week: w.week,
-      calls: (w as Record<string, number>)["call"] ?? 0,
-      emails: (w as Record<string, number>)["email"] ?? 0,
-      meetings: (w as Record<string, number>)["meeting"] ?? 0,
-      notes: (w as Record<string, number>)["note"] ?? 0,
-      total: w.total,
-    }));
+    const rows = data.weekly.map((w) => {
+      const rec = w as unknown as Record<string, string | number>;
+      return {
+        week: w.week,
+        calls: Number(rec["call"] ?? 0),
+        emails: Number(rec["email"] ?? 0),
+        meetings: Number(rec["meeting"] ?? 0),
+        notes: Number(rec["note"] ?? 0),
+        total: w.total,
+      };
+    });
     exportToCSV(rows, "activity-summary.csv", [
       { header: "Week", accessor: (r) => r.week },
       { header: "Calls", accessor: (r) => r.calls },

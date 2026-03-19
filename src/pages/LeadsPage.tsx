@@ -11,6 +11,7 @@ import { useCreateDeal } from "@/hooks/useDeals";
 import { useCreateActivity } from "@/hooks/useActivities";
 import { useKnockoutRules, type KnockoutRule } from "@/hooks/useKnockoutRules";
 import { exportToCSV } from "@/lib/exportCSV";
+import { buildCompetitorEmail } from "@/lib/competitorOutreachTemplates";
 import { supabase } from "@/integrations/supabase/client";
 import type { Lead } from "@/types/database";
 import { Button } from "@/components/ui/button";

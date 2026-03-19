@@ -7,6 +7,7 @@ import { useCompanies } from "@/hooks/useCompanies";
 import { DEAL_STAGES, DEAL_STAGE_LABELS, DEAL_STAGE_COLORS } from "@/lib/constants";
 import { logActivity } from "@/lib/logActivity";
 import ActivityTimeline from "@/components/ActivityTimeline";
+import DealCoachPanel from "@/components/DealCoachPanel";
 import { SearchableSelect } from "@/components/ui/SearchableSelect";
 import { toast } from "sonner";
 
@@ -22,7 +23,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import {
   DollarSign, CalendarIcon, Building2, User, FileText,
-  Pencil, X, Save, Loader2, Clock, GripVertical,
+  Pencil, X, Save, Loader2, Clock, GripVertical, Brain,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -68,12 +69,16 @@ export default function DealDetailSheet({
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<Partial<Deal>>({});
+  const [showCoach, setShowCoach] = useState(false);
   const updateDeal = useUpdateDeal();
   const { data: contactsData } = useContacts({ limit: 200 });
   const { data: companiesData } = useCompanies({ limit: 200 });
 
   useEffect(() => {
-    if (!open) setIsEditing(false);
+    if (!open) {
+      setIsEditing(false);
+      setShowCoach(false);
+    }
   }, [open]);
 
   if (!deal) return null;
@@ -308,6 +313,19 @@ export default function DealDetailSheet({
             </>
           ) : null}
         </div>
+
+        <Separator className="my-6" />
+
+        {showCoach ? (
+          <DealCoachPanel deal_id={deal.id} />
+        ) : (
+          <div className="flex justify-center pb-2">
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => setShowCoach(true)}>
+              <Brain className="h-4 w-4" />
+              Get AI Coaching
+            </Button>
+          </div>
+        )}
 
         <Separator className="my-6" />
 

@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.bls-trends]
 verify_jwt = false
+
+[functions.deal-coach]
+verify_jwt = false

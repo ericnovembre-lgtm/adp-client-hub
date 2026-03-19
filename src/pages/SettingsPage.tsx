@@ -516,6 +516,8 @@ export default function SettingsPage() {
   const [testingKlue, setTestingKlue] = useState(false);
   const [rapidapiKeyConfigured, setRapidapiKeyConfigured] = useState(false);
   const [testingRapidapi, setTestingRapidapi] = useState(false);
+  const [snovKeyConfigured, setSnovKeyConfigured] = useState(false);
+  const [testingSnov, setTestingSnov] = useState(false);
 
   // Discovery
   const [defaultIndustry, setDefaultIndustry] = useState("");
@@ -553,6 +555,7 @@ export default function SettingsPage() {
     setOpenCorpKeyConfigured(settings.opencorporates_api_key_configured ?? false);
     setKlueKeyConfigured(settings.klue_api_key_configured ?? false);
     setRapidapiKeyConfigured(settings.rapidapi_key_configured ?? false);
+    setSnovKeyConfigured(settings.snov_key_configured ?? false);
   }, [settings]);
 
   const saveProfile = async () => {
@@ -1076,7 +1079,66 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Discovery Settings */}
+      {/* Snov.io Enrichment */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Zap className="h-5 w-5" />
+            Snov.io
+            <Badge variant="outline" className="ml-2 text-xs text-muted-foreground">Free: 50 credits/month</Badge>
+          </CardTitle>
+          <CardDescription>Email finding, verification, and prospect enrichment — Step 3 in the enrichment waterfall</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-2">
+            {snovKeyConfigured
+              ? <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 border-emerald-300"><CheckCircle2 className="h-3 w-3 mr-1" />Connected</Badge>
+              : <Badge variant="outline" className="text-muted-foreground"><Info className="h-3 w-3 mr-1" />Not configured</Badge>
+            }
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Sign up at <span className="font-mono text-foreground">snov.io</span> (any email works), then go to <span className="font-mono text-foreground">Account Settings → API</span> to find your User ID and API Secret. Add them as project secrets named <span className="font-mono text-foreground">SNOV_USER_ID</span> and <span className="font-mono text-foreground">SNOV_API_SECRET</span>.
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={testingSnov}
+              onClick={async () => {
+                setTestingSnov(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke("snov-enrichment", {
+                    body: { mode: "domain_search", domain: "adp.com" },
+                  });
+                  if (error) throw error;
+                  if (data?.error) {
+                    if (data.error === "snov_not_configured") {
+                      toast.error("SNOV_USER_ID / SNOV_API_SECRET not set. Add them to project secrets.");
+                    } else {
+                      throw new Error(data.error);
+                    }
+                    setSnovKeyConfigured(false);
+                    await updateSettings.mutateAsync({ ...settings, snov_key_configured: false });
+                    return;
+                  }
+                  toast.success(`Snov.io connection successful! ${data.email_count ?? 0} emails found at domain.`);
+                  setSnovKeyConfigured(true);
+                  await updateSettings.mutateAsync({ ...settings, snov_key_configured: true });
+                } catch (e: any) {
+                  toast.error(e.message || "Snov.io connection test failed");
+                  setSnovKeyConfigured(false);
+                  await updateSettings.mutateAsync({ ...settings, snov_key_configured: false });
+                }
+                setTestingSnov(false);
+              }}
+            >
+              {testingSnov ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Zap className="h-4 w-4 mr-1" />}
+              Test Connection
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Discovery Defaults</CardTitle>

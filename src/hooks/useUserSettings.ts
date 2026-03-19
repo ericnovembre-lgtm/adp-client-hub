@@ -28,6 +28,7 @@ export interface UserSettings {
   opencorporates_api_key_configured?: boolean;
   klue_api_key_configured?: boolean;
   rapidapi_key_configured?: boolean;
+  snov_key_configured?: boolean;
 }
 
 export function useUserSettings() {

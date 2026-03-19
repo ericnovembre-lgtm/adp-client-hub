@@ -21,7 +21,6 @@ import CompetitorBreakdownWidget from "@/components/CompetitorBreakdownWidget";
 import QuotaTrackerWidget from "@/components/QuotaTrackerWidget";
 import LeadDetailSheet from "@/components/LeadDetailSheet";
 import type { Lead } from "@/types/database";
-import type { Lead } from "@/types/database";
 
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v);

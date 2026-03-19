@@ -15,11 +15,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import {
-  Search, Clock, Play, Loader2, CheckCircle, AlertCircle, Sparkles, Zap, MapPin, Building2,
+  Search, Clock, Play, Loader2, CheckCircle, AlertCircle, Sparkles, Zap, MapPin, Building2, TrendingUp,
 } from "lucide-react";
 import IntentDiscoveryTab from "@/components/discovery/IntentDiscoveryTab";
 import YelpDiscoveryTab from "@/components/discovery/YelpDiscoveryTab";
 import RegistryDiscoveryTab from "@/components/discovery/RegistryDiscoveryTab";
+import GrowthSignalsPanel from "@/components/GrowthSignalsPanel";
 
 const US_STATES = [
   "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",

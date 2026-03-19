@@ -28,7 +28,9 @@ import {
   Building2, User, Mail, Phone, Globe, MapPin, Users, Briefcase,
   Zap, Clock, Sparkles, Tag, Pencil, X, Save, Loader2, FileText, ArrowRightLeft, Target,
   RefreshCw, CheckCircle2, AlertTriangle, SearchCheck, ListChecks, ClipboardCheck, Swords,
+  Flame, Snowflake,
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useLeadScore, type ScoreFactor } from "@/hooks/useLeadScores";
 import { Progress } from "@/components/ui/progress";
 

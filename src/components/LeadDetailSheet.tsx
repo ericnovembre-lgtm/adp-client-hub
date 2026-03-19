@@ -476,22 +476,66 @@ export default function LeadDetailSheet({
           {/* Lead Score */}
           <LeadScoreSection leadId={lead.id} lead={lead} />
 
+          {/* Deep Enrich Result */}
+          {deepEnrichResult && (
+            <>
+              <Separator />
+              <div>
+                <h3 className="font-semibold text-sm mb-3 flex items-center gap-1.5">
+                  <SearchCheck className="h-4 w-4 text-primary" />
+                  Enrichment Results
+                </h3>
+                <Card className="bg-muted/50">
+                  <CardContent className="p-4 space-y-3 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Fields Filled</span>
+                      <span className="font-medium">{deepEnrichResult.fields_before.filled} → {deepEnrichResult.fields_after.filled}/{deepEnrichResult.fields_after.total}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Score</span>
+                      <span className="font-medium">{deepEnrichResult.score_change.before} → {deepEnrichResult.score_change.after} ({deepEnrichResult.score_change.grade_before} → {deepEnrichResult.score_change.grade_after})</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Sources Used</span>
+                      <span className="font-medium">{deepEnrichResult.sources_succeeded.length > 0 ? deepEnrichResult.sources_succeeded.join(", ") : "none"}</span>
+                    </div>
+                    {Object.entries(deepEnrichResult.enrichment_details || {}).map(([provider, detail]: [string, any]) => (
+                      detail.status !== "skipped" && (
+                        <div key={provider} className="flex items-center gap-2 text-xs">
+                          {detail.status === "success" ? (
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                          ) : detail.status === "failed" ? (
+                            <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
+                          ) : (
+                            <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
+                          )}
+                          <span className="capitalize font-medium">{provider}</span>
+                          <span className="text-muted-foreground">
+                            {detail.fields_found.length > 0 ? detail.fields_found.join(", ") : detail.status}
+                          </span>
+                        </div>
+                      )
+                    ))}
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
+
           {/* Action Buttons */}
           {!isEditing && (
             <>
               <Separator />
               <div className="flex gap-2 flex-wrap">
-                {needsEnrichment && (
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={handleEnrich}
-                    disabled={isEnriching}
-                  >
-                    {isEnriching ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <SearchCheck className="h-4 w-4 mr-2" />}
-                    {isEnriching ? "Enriching…" : "Enrich Lead"}
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={handleDeepEnrich}
+                  disabled={isEnriching}
+                >
+                  {isEnriching ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <SearchCheck className="h-4 w-4 mr-2" />}
+                  {isEnriching ? "Deep Enriching…" : "Deep Enrich"}
+                </Button>
                 {onDraftEmail && (
                   <Button
                     variant="outline"

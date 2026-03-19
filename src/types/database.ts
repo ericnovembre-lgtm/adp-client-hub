@@ -96,6 +96,7 @@ export interface Lead {
   trigger_event: string | null;
   trigger_type: string | null;
   ai_pitch_summary: string | null;
+  notes: string | null;
   status: LeadStatus | string | null;
   source: string | null;
   user_id: string;

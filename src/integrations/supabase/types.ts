@@ -480,6 +480,7 @@ export type Database = {
           headcount: number | null
           id: string
           industry: string | null
+          notes: string | null
           source: string | null
           state: string | null
           status: string | null
@@ -499,6 +500,7 @@ export type Database = {
           headcount?: number | null
           id?: string
           industry?: string | null
+          notes?: string | null
           source?: string | null
           state?: string | null
           status?: string | null
@@ -518,6 +520,7 @@ export type Database = {
           headcount?: number | null
           id?: string
           industry?: string | null
+          notes?: string | null
           source?: string | null
           state?: string | null
           status?: string | null

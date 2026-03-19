@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Loader2, RefreshCw, Copy, Check } from "lucide-react";
+import { Phone, Loader2, RefreshCw, Copy, Check, StickyNote } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 const STATUS_STYLES: Record<string, string> = {
   clear: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300",
@@ -14,11 +16,13 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default function CallPrepPanel({ lead_id, contact_id }: { lead_id?: string; contact_id?: string }) {
+  const queryClient = useQueryClient();
   const [briefing, setBriefing] = useState<string | null>(null);
   const [industryStatus, setIndustryStatus] = useState<string>("clear");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const handleCopy = async () => {
     if (!briefing) return;
@@ -26,6 +30,39 @@ export default function CallPrepPanel({ lead_id, contact_id }: { lead_id?: strin
     setCopied(true);
     toast.success("Briefing copied to clipboard");
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSaveToNotes = async () => {
+    if (!briefing) return;
+    setSaving(true);
+    try {
+      const table = lead_id ? "leads" : "contacts";
+      const id = lead_id ?? contact_id;
+      if (!id) throw new Error("No lead or contact ID");
+
+      const { data: record, error: fetchErr } = await supabase
+        .from(table)
+        .select("notes")
+        .eq("id", id)
+        .single();
+      if (fetchErr) throw fetchErr;
+
+      const header = `\n\n--- Call Prep (${format(new Date(), "MMM d, yyyy h:mm a")}) ---\n`;
+      const updated = (record?.notes ?? "") + header + briefing;
+
+      const { error: updateErr } = await supabase
+        .from(table)
+        .update({ notes: updated })
+        .eq("id", id);
+      if (updateErr) throw updateErr;
+
+      queryClient.invalidateQueries({ queryKey: [table === "leads" ? "leads" : "contacts", id] });
+      toast.success("Briefing saved to notes");
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to save to notes");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handlePrep = async () => {
@@ -78,6 +115,10 @@ export default function CallPrepPanel({ lead_id, contact_id }: { lead_id?: strin
           <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={handleCopy}>
             {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
             {copied ? "Copied" : "Copy"}
+          </Button>
+           <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={handleSaveToNotes} disabled={saving}>
+            {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <StickyNote className="h-3 w-3" />}
+            {saving ? "Saving…" : "Save to Notes"}
           </Button>
           <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={handlePrep}>
             <RefreshCw className="h-3 w-3" />

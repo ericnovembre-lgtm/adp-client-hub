@@ -3,14 +3,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useOutreachAnalytics, generateInsights } from "@/hooks/useOutreachAnalytics";
-import { Mail, Send, TrendingUp, MousePointerClick, MessageSquareReply, Copy, Lightbulb, ArrowRight, Star } from "lucide-react";
+import { Mail, Send, TrendingUp, TrendingDown, Minus, MousePointerClick, MessageSquareReply, Copy, Lightbulb, ArrowRight, Star, Download, BarChart3 } from "lucide-react";
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Cell } from "recharts";
 import { toast } from "sonner";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
+import { exportToCSV } from "@/lib/exportCSV";
+import OutreachSubjectLeaderboard from "@/components/outreach/OutreachSubjectLeaderboard";
+import OutreachSendTimeHeatmap from "@/components/outreach/OutreachSendTimeHeatmap";
+import OutreachEmailTypeChart from "@/components/outreach/OutreachEmailTypeChart";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -21,10 +24,19 @@ function rateColor(rate: number, green: number, yellow: number) {
   return "text-red-600 dark:text-red-400";
 }
 
+interface TrendInfo { delta: number; direction: "up" | "down" | "flat" }
+
+function computeTrend(current: number, previous: number): TrendInfo {
+  const delta = current - previous;
+  if (delta > 0) return { delta, direction: "up" };
+  if (delta < 0) return { delta: Math.abs(delta), direction: "down" };
+  return { delta: 0, direction: "flat" };
+}
+
 export default function OutreachAnalyticsPage() {
   const [range, setRange] = useState("30");
   const filters = { range };
-  const { overall, timeSeries, competitorPerformance, subjectLeaderboard, sendTimeHeatmap } = useOutreachAnalytics(filters);
+  const { overall, timeSeries, competitorPerformance, subjectLeaderboard, sendTimeHeatmap, emailTypePerformance } = useOutreachAnalytics(filters);
 
   const metrics = overall.data;
   const isLoading = overall.isLoading;
@@ -47,8 +59,33 @@ export default function OutreachAnalyticsPage() {
     );
   }
 
-  // Best send time
   const bestSlots = [...(sendTimeHeatmap.data ?? [])].filter(s => s.sent >= 2).sort((a, b) => b.openRate - a.openRate).slice(0, 3);
+
+  const hasPrev = (metrics?.prevTotalSent ?? 0) > 0;
+
+  function handleExportReport() {
+    if (!metrics) return;
+    const rows = [
+      { metric: "Total Sent", value: metrics.totalSent, benchmark: "—", trend: hasPrev ? `${computeTrend(metrics.totalSent, metrics.prevTotalSent).direction} ${computeTrend(metrics.totalSent, metrics.prevTotalSent).delta}` : "—" },
+      { metric: "Open Rate", value: `${metrics.openRate}%`, benchmark: "20-25%", trend: hasPrev ? `${computeTrend(metrics.openRate, metrics.prevOpenRate).direction} ${computeTrend(metrics.openRate, metrics.prevOpenRate).delta}%` : "—" },
+      { metric: "Click Rate", value: `${metrics.clickRate}%`, benchmark: "2-5%", trend: hasPrev ? `${computeTrend(metrics.clickRate, metrics.prevClickRate).direction} ${computeTrend(metrics.clickRate, metrics.prevClickRate).delta}%` : "—" },
+      { metric: "Reply Rate", value: `${metrics.replyRate}%`, benchmark: "1-3%", trend: hasPrev ? `${computeTrend(metrics.replyRate, metrics.prevReplyRate).direction} ${computeTrend(metrics.replyRate, metrics.prevReplyRate).delta}%` : "—" },
+      { metric: "Click-to-Open Rate", value: `${metrics.clickToOpenRate}%`, benchmark: "10-15%", trend: hasPrev ? `${computeTrend(metrics.clickToOpenRate, metrics.prevClickToOpenRate).direction} ${computeTrend(metrics.clickToOpenRate, metrics.prevClickToOpenRate).delta}%` : "—" },
+    ];
+    exportToCSV(rows, `outreach-report-${range}d.csv`, [
+      { header: "Metric", accessor: r => r.metric },
+      { header: "Value", accessor: r => r.value },
+      { header: "Benchmark", accessor: r => r.benchmark },
+      { header: "Trend vs Previous Period", accessor: r => r.trend },
+    ]);
+    toast.success("Report downloaded!");
+  }
+
+  function handleCopyInsights() {
+    if (!insights.length) return;
+    navigator.clipboard.writeText(insights.join("\n"));
+    toast.success("Insights copied to clipboard!");
+  }
 
   return (
     <div className="space-y-6 p-4 md:p-6">
@@ -58,26 +95,34 @@ export default function OutreachAnalyticsPage() {
           <h1 className="text-2xl font-bold text-foreground">Outreach Intelligence</h1>
           <p className="text-sm text-muted-foreground">Analyze email performance to optimize your outreach strategy</p>
         </div>
-        <Select value={range} onValueChange={setRange}>
-          <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="7">Last 7 days</SelectItem>
-            <SelectItem value="30">Last 30 days</SelectItem>
-            <SelectItem value="90">Last 90 days</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          {metrics && metrics.totalSent > 0 && (
+            <Button variant="outline" size="sm" onClick={handleExportReport}>
+              <Download className="h-4 w-4 mr-1" /> Export
+            </Button>
+          )}
+          <Select value={range} onValueChange={setRange}>
+            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7">Last 7 days</SelectItem>
+              <SelectItem value="30">Last 30 days</SelectItem>
+              <SelectItem value="90">Last 90 days</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {isLoading ? Array.from({ length: 4 }).map((_, i) => (
+      {/* KPI Cards — 5 columns */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {isLoading ? Array.from({ length: 5 }).map((_, i) => (
           <Card key={i}><CardContent className="pt-6"><Skeleton className="h-12 w-full" /></CardContent></Card>
         )) : (
           <>
-            <KPICard title="Total Sent" value={metrics?.totalSent ?? 0} icon={Send} benchmark="" />
-            <KPICard title="Open Rate" value={`${metrics?.openRate ?? 0}%`} icon={TrendingUp} colorClass={rateColor(metrics?.openRate ?? 0, 25, 15)} benchmark="Benchmark: 20-25%" />
-            <KPICard title="Click Rate" value={`${metrics?.clickRate ?? 0}%`} icon={MousePointerClick} colorClass={rateColor(metrics?.clickRate ?? 0, 5, 2)} benchmark="Benchmark: 2-5%" />
-            <KPICard title="Reply Rate" value={`${metrics?.replyRate ?? 0}%`} icon={MessageSquareReply} colorClass={rateColor(metrics?.replyRate ?? 0, 3, 1)} benchmark="Benchmark: 1-3%" />
+            <KPICard title="Total Sent" value={metrics?.totalSent ?? 0} icon={Send} benchmark="" trend={hasPrev ? computeTrend(metrics!.totalSent, metrics!.prevTotalSent) : undefined} />
+            <KPICard title="Open Rate" value={`${metrics?.openRate ?? 0}%`} icon={TrendingUp} colorClass={rateColor(metrics?.openRate ?? 0, 25, 15)} benchmark="Benchmark: 20-25%" trend={hasPrev ? computeTrend(metrics!.openRate, metrics!.prevOpenRate) : undefined} />
+            <KPICard title="Click Rate" value={`${metrics?.clickRate ?? 0}%`} icon={MousePointerClick} colorClass={rateColor(metrics?.clickRate ?? 0, 5, 2)} benchmark="Benchmark: 2-5%" trend={hasPrev ? computeTrend(metrics!.clickRate, metrics!.prevClickRate) : undefined} />
+            <KPICard title="Reply Rate" value={`${metrics?.replyRate ?? 0}%`} icon={MessageSquareReply} colorClass={rateColor(metrics?.replyRate ?? 0, 3, 1)} benchmark="Benchmark: 1-3%" trend={hasPrev ? computeTrend(metrics!.replyRate, metrics!.prevReplyRate) : undefined} />
+            <KPICard title="CTO Rate" value={`${metrics?.clickToOpenRate ?? 0}%`} icon={BarChart3} colorClass={rateColor(metrics?.clickToOpenRate ?? 0, 15, 8)} benchmark="Benchmark: 10-15%" trend={hasPrev ? computeTrend(metrics!.clickToOpenRate, metrics!.prevClickToOpenRate) : undefined} />
           </>
         )}
       </div>
@@ -152,102 +197,26 @@ export default function OutreachAnalyticsPage() {
         </Card>
       )}
 
+      {/* Module 1: Email Type Performance */}
+      <OutreachEmailTypeChart data={emailTypePerformance.data} isLoading={emailTypePerformance.isLoading} />
+
       {/* Subject Line Leaderboard */}
-      {subjectLeaderboard.data && subjectLeaderboard.data.length > 0 && (
-        <Card>
-          <CardHeader><CardTitle className="text-lg">Subject Line Leaderboard</CardTitle></CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Subject Line</TableHead>
-                    <TableHead className="text-right">Sent</TableHead>
-                    <TableHead className="text-right">Opens</TableHead>
-                    <TableHead className="text-right">Open Rate</TableHead>
-                    <TableHead className="text-right">Clicks</TableHead>
-                    <TableHead className="text-right">Click Rate</TableHead>
-                    <TableHead className="w-10"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {subjectLeaderboard.data.map((s, i) => {
-                    const isTop = i < 5;
-                    const isBottom = i >= subjectLeaderboard.data!.length - 3 && subjectLeaderboard.data!.length > 5;
-                    return (
-                      <TableRow key={s.subject} className={cn(isTop && "bg-emerald-500/5", isBottom && "bg-red-500/5")}>
-                        <TableCell className="max-w-[300px] truncate font-medium">{s.subject}</TableCell>
-                        <TableCell className="text-right">{s.sent}</TableCell>
-                        <TableCell className="text-right">{s.opens}</TableCell>
-                        <TableCell className="text-right"><Badge variant={isTop ? "default" : isBottom ? "destructive" : "secondary"}>{s.openRate}%</Badge></TableCell>
-                        <TableCell className="text-right">{s.clicks}</TableCell>
-                        <TableCell className="text-right">{s.clickRate}%</TableCell>
-                        <TableCell>
-                          <Button size="icon" variant="ghost" onClick={() => { navigator.clipboard.writeText(s.subject); toast.success("Copied!"); }}>
-                            <Copy className="h-3.5 w-3.5" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <OutreachSubjectLeaderboard data={subjectLeaderboard.data} isLoading={subjectLeaderboard.isLoading} />
 
       {/* Send Time Heatmap */}
-      {sendTimeHeatmap.data && sendTimeHeatmap.data.length > 0 && (
-        <Card>
-          <CardHeader><CardTitle className="text-lg">Best Send Time</CardTitle></CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr>
-                    <th className="text-left pr-2 text-muted-foreground font-medium">Day</th>
-                    {HOURS.map(h => <th key={h} className="text-center w-8 text-muted-foreground font-normal">{h}</th>)}
-                  </tr>
-                </thead>
-                <tbody>
-                  {DAYS.map((dayName, dayIdx) => (
-                    <tr key={dayName}>
-                      <td className="pr-2 py-0.5 font-medium text-muted-foreground">{dayName}</td>
-                      {HOURS.map(h => {
-                        const slot = sendTimeHeatmap.data!.find(s => s.day === dayIdx && s.hour === h);
-                        const rate = slot?.openRate ?? 0;
-                        const isBest = bestSlots.some(b => b.day === dayIdx && b.hour === h);
-                        const opacity = slot ? Math.max(0.1, rate / 100) : 0;
-                        return (
-                          <td key={h} className="p-0.5" title={slot ? `${slot.sent} sent, ${rate}% open rate` : "No data"}>
-                            <div
-                              className={cn("w-6 h-6 rounded-sm flex items-center justify-center", isBest && "ring-2 ring-primary")}
-                              style={{ backgroundColor: slot ? `hsl(var(--chart-2) / ${opacity})` : "hsl(var(--muted) / 0.3)" }}
-                            >
-                              {isBest && <Star className="h-3 w-3 text-primary" />}
-                            </div>
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {bestSlots.length > 0 && (
-              <p className="text-sm text-muted-foreground mt-3">
-                Best time to send: <strong>{bestSlots[0].dayName} at {bestSlots[0].hour}:00</strong> ({bestSlots[0].openRate}% open rate)
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      <OutreachSendTimeHeatmap data={sendTimeHeatmap.data} isLoading={sendTimeHeatmap.isLoading} bestSlots={bestSlots} />
 
       {/* AI Insights */}
       {insights.length > 0 && (
         <Card>
-          <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Lightbulb className="h-5 w-5 text-amber-500" /> AI Insights</CardTitle></CardHeader>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center gap-2"><Lightbulb className="h-5 w-5 text-amber-500" /> AI Insights</CardTitle>
+              <Button variant="ghost" size="sm" onClick={handleCopyInsights}>
+                <Copy className="h-3.5 w-3.5 mr-1" /> Copy
+              </Button>
+            </div>
+          </CardHeader>
           <CardContent>
             <ul className="space-y-2">
               {insights.map((insight, i) => (
@@ -264,15 +233,28 @@ export default function OutreachAnalyticsPage() {
   );
 }
 
-function KPICard({ title, value, icon: Icon, colorClass, benchmark }: { title: string; value: string | number; icon: React.ElementType; colorClass?: string; benchmark: string }) {
+function KPICard({ title, value, icon: Icon, colorClass, benchmark, trend }: { title: string; value: string | number; icon: React.ElementType; colorClass?: string; benchmark: string; trend?: TrendInfo }) {
   return (
     <Card>
       <CardContent className="pt-6">
         <div className="flex items-center gap-3">
           <Icon className="h-5 w-5 text-muted-foreground shrink-0" />
-          <div>
+          <div className="min-w-0">
             <p className="text-xs text-muted-foreground">{title}</p>
-            <p className={cn("text-2xl font-bold", colorClass ?? "text-foreground")}>{value}</p>
+            <div className="flex items-center gap-1.5">
+              <p className={cn("text-2xl font-bold", colorClass ?? "text-foreground")}>{value}</p>
+              {trend && trend.direction !== "flat" && (
+                <span className={cn("flex items-center text-xs font-medium", trend.direction === "up" ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
+                  {trend.direction === "up" ? <TrendingUp className="h-3 w-3 mr-0.5" /> : <TrendingDown className="h-3 w-3 mr-0.5" />}
+                  {trend.delta}{typeof value === "string" && value.includes("%") ? "%" : ""}
+                </span>
+              )}
+              {trend && trend.direction === "flat" && (
+                <span className="flex items-center text-xs text-muted-foreground">
+                  <Minus className="h-3 w-3 mr-0.5" /> 0
+                </span>
+              )}
+            </div>
             {benchmark && <p className="text-[10px] text-muted-foreground">{benchmark}</p>}
           </div>
         </div>

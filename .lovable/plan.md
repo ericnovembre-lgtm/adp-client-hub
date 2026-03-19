@@ -1,22 +1,30 @@
 
 
-## Test Email Send via Draft Email Dialog
+## Add Formatting Rules After Opening Lines in Both Edge Functions
 
-Since I'm currently in read-only mode, I need to switch to build mode to interact with the preview. Here's what I'll do:
+### Current State
+- **ai-chat/index.ts**: Already has "RESPONSE FORMATTING RULES" at lines 15-24, immediately after the opening line. These rules match what you requested (plain text, no markdown, no HTML, no emoji, numbered paragraphs, conversational tone, etc.).
+- **crm-agent/index.ts**: Has "RESPONSE FORMATTING RULES" at lines 278-287, but at the **end** of the system prompt, not right after the opening line.
 
-### Steps
-1. Navigate to the Contacts page in the preview
-2. Open a contact detail sheet (e.g., Maria Santos who has an email address)
-3. Click "Draft Email" to open the dialog
-4. Click "Send Email" to trigger the Resend integration
-5. Check the response — success or error — and report back
-6. Verify the `email_send_log` table for the new entry
+### What Needs to Change
 
-### What to expect
-- If everything is configured correctly, the email will be sent from your verified `FROM_EMAIL` address via Resend to the contact's email
-- The edge function will log the send in `email_send_log` and create an activity record
-- A tracking pixel will be injected for open tracking
+**ai-chat/index.ts** — No change needed. The formatting rules are already positioned right after the opening line.
 
-### Risk
-This will send a **real email** to the contact's email address. You've confirmed this is acceptable.
+**crm-agent/index.ts** — Insert the following paragraph on line 206, right after the opening line ("You are the SavePlus24 AI Agent..."):
+
+```
+RESPONSE FORMAT RULES — follow these in every response:
+1. Write in plain text only. Do not use markdown syntax like **, ##, |---|, or triple backticks.
+2. Do not use HTML tags like <br>, <b>, or <table>.
+3. Do not use emoji or emoji codes.
+4. Use numbered paragraphs for multi-point responses.
+5. For comparisons, write them as numbered items with the name followed by a colon and comparison in sentence form. Do not use tables.
+6. Keep a professional, conversational tone.
+7. When presenting data, put numbers naturally into sentences instead of using tables or bullet lists.
+```
+
+The existing formatting rules block at lines 278-287 will be preserved (not removed), per your instruction.
+
+### Files Modified
+1. `supabase/functions/crm-agent/index.ts` — Insert formatting paragraph after line 205's opening sentence
 

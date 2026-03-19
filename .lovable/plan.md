@@ -1,32 +1,27 @@
 
 
-## Hunter.io Email Edge Function
+## Add Signals Count Badge to Dashboard
 
-### Overview
-Create a single edge function at `supabase/functions/hunter-email/index.ts` that proxies four Hunter.io API endpoints. No UI pages or components needed.
+### Approach
+Query leads with a non-null `trigger_event` updated in the last 7 days, count them, and display as a clickable card between the Territory Coverage and the two-column section. Clicking navigates to `/signals`.
 
-### Edge Function: `supabase/functions/hunter-email/index.ts`
+### Changes
 
-Same pattern as `enrich-lead/index.ts`:
-- CORS headers, auth via Bearer token + `getUser()`
-- Reads `HUNTER_API_KEY` from env; returns `hunter_not_configured` error if missing
-- Accepts POST with `{ mode, domain?, first_name?, last_name?, email?, company? }`
+**`src/hooks/useDashboardStats.ts`** — Add `useSignalsCount` hook:
+- Query `leads` table where `trigger_event` is not null and `created_at` >= 7 days ago
+- Use `count: "exact", head: true` for efficiency
+- Return `{ count, isLoading }`
 
-Four modes, each calling `https://api.hunter.io/v2/...?api_key={key}`:
-- `domain_search` → GET `/domain-search?domain={domain}` — returns emails array
-- `email_finder` → GET `/email-finder?domain={domain}&first_name=...&last_name=...` — returns email + confidence
-- `email_verifier` → GET `/email-verifier?email={email}` — returns verification status
-- `company_enrichment` → GET `/companies/find?domain={domain}` — returns company info
-
-Returns `{ mode, success, data, credits_used, error? }`
-
-### Config
-Add `[functions.hunter-email] verify_jwt = false` to `supabase/config.toml`.
-
-### Secret
-Will prompt for `HUNTER_API_KEY` secret (not currently in project secrets).
+**`src/pages/DashboardPage.tsx`**:
+- Import `Radio` from lucide-react (signal icon) and the new `useSignalsCount` hook
+- Add a new clickable card after the Territory Coverage section showing:
+  - Radio icon in a colored circle
+  - "High-Confidence Signals" label
+  - Count badge with the number
+  - "Last 7 days" subtitle
+  - `onClick={() => navigate("/signals")}`
 
 ### Files Changed
-- `supabase/functions/hunter-email/index.ts` — new
-- `supabase/config.toml` — add function config
+- `src/hooks/useDashboardStats.ts` — add `useSignalsCount` export
+- `src/pages/DashboardPage.tsx` — add signals card widget
 

@@ -24,8 +24,10 @@ import QuoteReadinessPage from "@/pages/QuoteReadinessPage";
 import RenewalsPage from "@/pages/RenewalsPage";
 import TerritoryAnalyticsPage from "@/pages/TerritoryAnalyticsPage";
 import BattlecardsPage from "@/pages/BattlecardsPage";
+import ObjectionHandlerPage from "@/pages/ObjectionHandlerPage";
 import NotFound from "@/pages/NotFound";
 import AgentPanel from "@/components/AgentPanel";
+import ObjectionHandlerFAB from "@/components/ObjectionHandlerFAB";
 import { toast } from "sonner";
 
 function handleGlobalError(error: unknown) {

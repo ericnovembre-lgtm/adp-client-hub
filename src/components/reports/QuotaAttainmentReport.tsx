@@ -3,14 +3,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from "recharts";
-import { useQuotaAttainment } from "@/hooks/useReportsData";
+import { useQuotaAttainment, type ReportsFilters } from "@/hooks/useReportsData";
 import { Target, Download } from "lucide-react";
 import { exportToCSV } from "@/lib/exportCSV";
 
 const fmt = (v: number) => `$${(v / 1000).toFixed(0)}k`;
 
-export default function QuotaAttainmentReport() {
-  const { data, isLoading } = useQuotaAttainment();
+export default function QuotaAttainmentReport({ filters }: { filters?: ReportsFilters }) {
+  const { data, isLoading } = useQuotaAttainment(filters);
 
   if (isLoading) {
     return (

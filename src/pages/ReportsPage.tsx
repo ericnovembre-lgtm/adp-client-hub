@@ -133,7 +133,7 @@ export default function ReportsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* NEW: Quota Attainment */}
-        <QuotaAttainmentReport />
+        <QuotaAttainmentReport filters={filters} />
 
         {/* NEW: Pipeline Velocity */}
         <PipelineVelocityReport filters={filters} />
@@ -142,7 +142,7 @@ export default function ReportsPage() {
         <ActivitySummaryReport filters={filters} />
 
         {/* NEW: Revenue Forecast - full width */}
-        <RevenueForecastReport />
+        <RevenueForecastReport filters={filters} />
 
         {/* NEW: Lead Source ROI - full width */}
         <LeadSourceROIReport filters={filters} />

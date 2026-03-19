@@ -151,17 +151,22 @@ export function useMonthlyRevenue() {
 }
 
 // ─── MODULE 1: Quota Attainment Report ───
-export function useQuotaAttainment() {
+export function useQuotaAttainment(filters?: ReportsFilters) {
   const { data: settings } = useUserSettings();
   const quota = settings?.quarterly_quota ?? 500000;
+  const bounds = filters ? getDateBounds(filters) : null;
 
   return useQuery({
-    queryKey: ["reports", "quota-attainment", quota],
+    queryKey: ["reports", "quota-attainment", quota, bounds?.from, bounds?.to],
     queryFn: async () => {
-      const { data: wonDeals, error } = await supabase
+      let query = supabase
         .from("deals")
         .select("value, closed_at, created_at")
         .eq("stage", "closed_won");
+      if (bounds) {
+        query = query.gte("closed_at", bounds.from).lte("closed_at", bounds.to);
+      }
+      const { data: wonDeals, error } = await query;
       if (error) throw error;
 
       const now = new Date();
@@ -324,14 +329,20 @@ const STAGE_WEIGHTS: Record<string, number> = {
   negotiation: 0.75,
 };
 
-export function useRevenueForecast() {
+export function useRevenueForecast(filters?: ReportsFilters) {
+  const bounds = filters ? getDateBounds(filters) : null;
+
   return useQuery({
-    queryKey: ["reports", "revenue-forecast"],
+    queryKey: ["reports", "revenue-forecast", bounds?.from, bounds?.to],
     queryFn: async () => {
-      const { data: deals, error } = await supabase
+      let query = supabase
         .from("deals")
-        .select("stage, value, expected_close_date")
+        .select("stage, value, expected_close_date, created_at")
         .not("stage", "in", "(closed_won,closed_lost)");
+      if (bounds) {
+        query = query.gte("created_at", bounds.from).lte("created_at", bounds.to);
+      }
+      const { data: deals, error } = await query;
       if (error) throw error;
 
       const openDeals = deals ?? [];

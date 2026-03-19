@@ -11,7 +11,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import {
   TrendingUp, TrendingDown, Phone, Mail, Calendar, FileText, Activity,
-  Users, DollarSign, Target, CheckSquare, Sparkles, MapPin,
+  Users, DollarSign, Target, CheckSquare, Sparkles, MapPin, Radio,
 } from "lucide-react";
 import { HEADCOUNT_MIN, HEADCOUNT_MAX } from "@/lib/constants";
 import DailyBriefWidget from "@/components/DailyBriefWidget";

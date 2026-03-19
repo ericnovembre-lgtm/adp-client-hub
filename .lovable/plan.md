@@ -1,88 +1,37 @@
 
 
-# Analytics Enhancement Plan
+# Post-Import Enrichment Pipeline Plan
 
 ## Summary
-Add 5 new analytics modules across DashboardPage and ReportsPage: Quota Tracker, Deal Velocity, Competitor Win/Loss, Lead Score Distribution, and Outreach Effectiveness. All existing content remains untouched.
+Enhance CSVImportDialog with a Step 4 enrichment phase for leads. Create a separate EnrichmentProgress component. After CSV leads import, users can trigger waterfall enrichment with progress tracking, batch safety limits, and activity logging.
 
-## New Files to Create
+## New File: `src/components/EnrichmentProgress.tsx`
 
-### 1. `src/hooks/useQuotaData.ts`
-- Reads `quarterly_quota` from `user_settings` (default $500,000)
-- Queries `deals` where `stage = 'closed_won'` in current quarter
-- Queries open deals for pipeline coverage ratio
-- Returns: quota, closedWon, gap, paceStatus, coverageRatio, daysRemaining, percentComplete
+Standalone component handling the enrichment flow:
+- **Props**: `leadIds: string[]`, `onComplete: (summary) => void`, `onSkip: () => void`
+- **Pre-enrichment view**: Shows count summary (imported / have email / need enrichment), auto-enrich toggle (persisted in localStorage `csv_import_auto_enrich`), batch warning if >20 leads
+- **During enrichment**: Scrollable list with per-lead status (pending/enriching/success/failed/skipped). Calls `supabase.functions.invoke("waterfall-enrich", { body: { lead_id } })` sequentially with 1s delay between calls
+- **Post-enrichment summary**: Enriched/failed/skipped counts, competitor breakdown, score grade distribution, "Done" button
+- **Batch safety**: If >20 need enrichment, show warning with "Enrich First 20" / "Enrich All" / "Skip" options
+- Fetches lead data (company_name, decision_maker_email) on mount to determine which need enrichment
+- After completion, logs a single summary activity to the `activities` table
 
-### 2. `src/components/QuotaTrackerWidget.tsx`
-- Horizontal progress bar (shadcn Progress) showing closed-won vs quota
-- Stat row: Quota, Closed Won, Gap, Pipeline Coverage (Xx)
-- Pace badge: On Track (green) / Behind Pace (yellow) / At Risk (red)
-- Days remaining in quarter
-- Pencil icon → Dialog to edit `quarterly_quota` via `useUpdateUserSettings`
+## Modified File: `src/components/CSVImportDialog.tsx`
 
-### 3. `src/hooks/useDealVelocity.ts`
-- Queries activities with `type = 'stage_change'` or descriptions containing "Stage changed"
-- Parses stage transitions, calculates avg days per stage
-- Avg days to close (won/lost)
-- Top 5 slowest open deals
-- Accepts ReportsFilters for date range
+Minimal changes to existing file:
 
-### 4. `src/components/DealVelocityChart.tsx`
-- Horizontal BarChart: avg days per stage
-- Summary: "Avg Sales Cycle: X days (won) | Y days (lost)"
-- Table of 5 slowest open deals with stage, value, age
-- Empty state if no stage_change activities
+1. **Step type**: `1 | 2 | 3` → `1 | 2 | 3 | 4`
+2. **New state**: `importedLeadIds: string[]` to track inserted lead IDs
+3. **Import loop** (lines 215-224): Capture returned IDs from `.insert().select("id")` into `importedLeadIds`
+4. **Step 3 "Done" button**: For `entityType === "leads"` with successful imports, change to "Continue to Enrichment" → sets step to 4. For contacts/companies, keep existing close behavior
+5. **Step 4 render**: Conditionally render `<EnrichmentProgress>` when `step === 4`, passing `importedLeadIds`, with `onComplete` and `onSkip` both closing the dialog
+6. **Reset function**: Clear `importedLeadIds` too
+7. **Import**: Add `EnrichmentProgress` and `Switch` imports
 
-### 5. `src/hooks/useCompetitorAnalytics.ts`
-- Queries closed deals, joins to leads by company_name match
-- Groups by `current_provider`: win rate, avg deal value, avg cycle, revenue won
-- Falls back to "Unknown" if no lead match
+## Technical Details
 
-### 6. `src/components/CompetitorWinLossChart.tsx`
-- Stacked bar chart: won (green) vs lost (red) per competitor
-- Win rate labels on bars
-- Summary table below
-- Empty state placeholder
-
-### 7. `src/hooks/useScoreDistribution.ts`
-- Queries `lead_scores` grouped by grade (A/B/C/D)
-- Joins to leads for conversion rate per grade
-- Returns counts, percentages, conversion rates
-
-### 8. `src/components/ScoreDistributionChart.tsx`
-- Donut chart with 4 grade segments
-- Horizontal bar chart: conversion rate by grade
-- Insight text auto-generated from data
-- Empty state if no scores
-
-### 9. `src/hooks/useOutreachMetrics.ts`
-- Queries `email_send_log` + `email_tracking_events` in date range
-- Calculates: total sent, open rate, click rate
-- Daily volume for line chart
-- Also queries `outreach_queue` for drafted/approved stats
-
-### 10. `src/components/OutreachMetricsChart.tsx`
-- 4 stat cards: Sent, Open Rate, Click Rate, Reply Rate
-- Line chart: daily volume + open rate (dual axis)
-- Empty state placeholder
-
-## Files to Modify
-
-### `src/pages/DashboardPage.tsx`
-- Import `QuotaTrackerWidget`
-- Insert it after the stat cards row, before the Benefits/Discovery section
-
-### `src/pages/ReportsPage.tsx`
-- Import all 4 new chart components and their hooks
-- Pass existing `filters` to new hooks
-- Add sections below Monthly Revenue in order: Outreach Effectiveness (full width), Deal Velocity + Competitor Win/Loss (2-col), Score Distribution (full width)
-
-### `src/hooks/useUserSettings.ts`
-- Add `quarterly_quota?: number` to the `UserSettings` interface
-
-## Technical Notes
-- All new hooks use `@tanstack/react-query` with appropriate query keys including date bounds
-- All charts use Recharts (already installed) matching existing style
-- Skeleton loading states for all new sections
-- No database migrations needed — all data already exists in current tables
+- The waterfall-enrich function already returns enrichment results including score, grade, competitor info, and sources_succeeded — parse these for the per-lead result display
+- Rate limiting via `await new Promise(r => setTimeout(r, 1000))` between sequential calls
+- localStorage key `csv_import_auto_enrich` stores boolean preference
+- Activity log uses existing pattern from `logActivity.ts` but inserts directly for the batch summary
 

@@ -173,6 +173,7 @@ export default function LeadDetailSheet({
   const [showCallPrep, setShowCallPrep] = useState(false);
   const [showFollowUp, setShowFollowUp] = useState(false);
   const [showQuoteReadiness, setShowQuoteReadiness] = useState(false);
+  const [showBattlecard, setShowBattlecard] = useState(false);
   const updateLead = useUpdateLead();
   const _queryClient = useQueryClient();
   const { data: knockoutRules = [] } = useKnockoutRules();

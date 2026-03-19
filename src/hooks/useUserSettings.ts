@@ -6,6 +6,7 @@ export interface UserSettings {
   aiModel?: string;
   aiChatEnabled?: boolean;
   auto_qualify_threshold?: number;
+  quarterly_quota?: number;
   defaultIndustry?: string;
   defaultState?: string;
   defaultHeadcountMin?: number;

@@ -21,6 +21,10 @@ import {
   useMonthlyRevenue,
   type DateRange,
 } from "@/hooks/useReportsData";
+import OutreachMetricsChart from "@/components/OutreachMetricsChart";
+import DealVelocityChart from "@/components/DealVelocityChart";
+import CompetitorWinLossChart from "@/components/CompetitorWinLossChart";
+import ScoreDistributionChart from "@/components/ScoreDistributionChart";
 
 const STAGE_COLORS: Record<string, string> = {
   lead: "hsl(225, 75%, 55%)",
@@ -263,6 +267,16 @@ export default function ReportsPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Outreach Effectiveness */}
+        <OutreachMetricsChart filters={filters} />
+
+        {/* Deal Velocity + Competitor Win/Loss */}
+        <DealVelocityChart filters={filters} />
+        <CompetitorWinLossChart filters={filters} />
+
+        {/* Score Distribution */}
+        <ScoreDistributionChart />
       </div>
     </div>
   );

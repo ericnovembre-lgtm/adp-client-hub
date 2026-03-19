@@ -18,6 +18,7 @@ import { HEADCOUNT_MIN, HEADCOUNT_MAX } from "@/lib/constants";
 import DailyBriefWidget from "@/components/DailyBriefWidget";
 import BenefitsEligibilityChecker from "@/components/BenefitsEligibilityChecker";
 import CompetitorBreakdownWidget from "@/components/CompetitorBreakdownWidget";
+import QuotaTrackerWidget from "@/components/QuotaTrackerWidget";
 import LeadDetailSheet from "@/components/LeadDetailSheet";
 import type { Lead } from "@/types/database";
 
@@ -154,6 +155,9 @@ export default function DashboardPage() {
         <StatCard label="Total Revenue" value={formatCurrency(stats?.totalRevenue.value ?? 0)} stat={stats?.totalRevenue} icon={DollarSign} isLoading={statsLoading} />
         <StatCard label="Tasks Due Today" value={String(stats?.tasksDueToday.value ?? 0)} stat={stats?.tasksDueToday} icon={CheckSquare} isLoading={statsLoading} />
       </div>
+
+      {/* Quota Tracker */}
+      <QuotaTrackerWidget />
 
       {/* Territory Coverage */}
       <Card>

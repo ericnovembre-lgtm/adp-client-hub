@@ -202,6 +202,7 @@ export default function AIDiscoveryPage() {
           </TabsTrigger>
           <TabsTrigger value="growth-signals" className="gap-1.5">
             <TrendingUp className="h-4 w-4" /> Growth Signals
+            <Badge variant="outline" className="ml-1 text-[10px] px-1.5 py-0 border-amber-400 text-amber-600 dark:text-amber-400">Deferred</Badge>
           </TabsTrigger>
         </TabsList>
 

@@ -1142,12 +1142,13 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Lead411 Growth Signals */}
-      <Card>
+      {/* Lead411 Growth Signals — DEFERRED */}
+      <Card className="border-amber-300/50 dark:border-amber-700/50">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
             Lead411
+            <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border-amber-400 ml-1">Deferred</Badge>
           </CardTitle>
           <CardDescription>Real-time growth intent signals — funding, hiring surges, exec hires, expansions</CardDescription>
         </CardHeader>
@@ -1158,14 +1159,20 @@ export default function SettingsPage() {
               : <Badge variant="outline" className="text-muted-foreground"><Info className="h-3 w-3 mr-1" />Not configured</Badge>
             }
           </div>
+          <div className="rounded-md border border-amber-300/50 bg-amber-50/50 dark:bg-amber-950/20 p-3 text-sm text-amber-800 dark:text-amber-300">
+            <p className="font-medium">Deferred — requires work email signup</p>
+            <p className="text-xs mt-1 text-amber-700 dark:text-amber-400">
+              Lead411 requires a work email for signup at <span className="font-mono">lead411.com/freetrial</span>. $99/month Spark plan with unlimited data. Add later when needed for trigger event data. For now, Apollo and Crunchbase provide basic funding/growth signals.
+            </p>
+          </div>
           <p className="text-xs text-muted-foreground">
-            Sign up at <span className="font-mono text-foreground">lead411.com</span>, then go to <span className="font-mono text-foreground">Account → API Settings</span> to get your API key. Add it as a project secret named <span className="font-mono text-foreground">LEAD411_API_KEY</span>.
+            When ready: sign up at <span className="font-mono text-foreground">lead411.com</span>, go to <span className="font-mono text-foreground">Account → API Settings</span>, and add your key as <span className="font-mono text-foreground">LEAD411_API_KEY</span>.
           </p>
           <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
-              disabled={testingLead411}
+              disabled={testingLead411 || !lead411KeyConfigured}
               onClick={async () => {
                 setTestingLead411(true);
                 try {

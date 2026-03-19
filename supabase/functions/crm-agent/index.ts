@@ -337,6 +337,7 @@ async function executeTool(toolName: string, input: Record<string, any>, supabas
       case "create_task": result = await toolCreateTask(supabase, input); break;
       case "log_activity": result = await toolLogActivity(supabase, input); break;
       case "draft_email": result = await toolDraftEmail(input); break;
+      case "search_klue": result = await toolSearchKlue(input); break;
       default: throw new Error(`Unknown tool: ${toolName}`);
     }
 

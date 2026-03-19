@@ -1,49 +1,52 @@
 
 
-## Lead Enrichment for Registry-Discovered Leads
+## Objection Handler Agent
 
-Registry leads lack headcount, website, and decision-maker contact info. This plan adds a post-discovery enrichment step using the Apollo API (already configured with `APOLLO_API_KEY`).
+### Overview
+Create an edge function for real-time objection handling during calls, a floating quick-access component, a dedicated page, and sidebar nav entry.
 
-### Architecture
+### 1. Edge Function: `supabase/functions/objection-handler/index.ts`
 
-```text
-Registry Discovery (OpenCorporates)
-        │
-        ▼
-   Leads saved (no headcount/contact)
-        │
-        ▼
-   Enrichment step (Apollo People Search)
-        │
-        ▼
-   Update leads with headcount, website,
-   decision maker name/title/email/phone
-```
+Same pattern as `call-prep/index.ts`:
+- CORS headers, Anthropic API (`claude-sonnet-4-20250514`), auth via Bearer token + `getUser()`
+- Accepts POST `{ objection, industry?, headcount?, context? }`
+- Full system prompt with common objection patterns and required response structure (immediate response, data point, redirect question, fallback)
+- Returns `{ response, data_point, redirect_question, fallback }`
 
-### Changes
+Config: add `[functions.objection-handler] verify_jwt = false` to `supabase/config.toml`
 
-**1. `supabase/functions/registry-discovery/index.ts`**
-- After saving all registry leads, add an enrichment pass using Apollo's `organizations/enrich` endpoint
-- For each saved lead, call Apollo with the company name + state to get: headcount, website, industry (refined), and a decision-maker contact via `mixed_people/search`
-- Only enrich if `APOLLO_API_KEY` is present (graceful skip otherwise)
-- Update the lead record with enriched data
-- Log enrichment activity
-- Add enrichment stats to the response (`enriched` count)
-- Rate-limit Apollo calls (200ms delay between)
+### 2. Component: `src/components/ObjectionHandler.tsx`
 
-**2. `src/components/discovery/RegistryDiscoveryTab.tsx`**
-- Show enrichment results in the summary: "Found X, saved Y, enriched Z"
-- Add an "Enriched" badge on leads that received contact info
-- Show decision maker name/email columns in the results table when available
-- Add a note: "Leads enriched via Apollo (headcount + contacts)" when Apollo key is configured, or "Configure Apollo API key in Settings to auto-enrich leads with headcount & contacts" when not
+- Large textarea for the objection heard
+- Optional industry and headcount fields (compact, collapsible)
+- Prominent "Handle It" button with loading state
+- Response displayed in large, readable font in a clean Card — optimized for glancing during a call
+- Four clearly separated sections: What to Say, Supporting Stat, Redirect Question, If They Push Back
+- Minimal, distraction-free design
 
-### Technical Detail
+### 3. Floating Quick-Access: `src/components/ObjectionHandlerFAB.tsx`
 
-The enrichment uses two Apollo endpoints per lead:
-1. `POST /v1/organizations/enrich` with `domain` or `name` — returns headcount, website, industry
-2. `POST /v1/mixed_people/search` with company name + decision-maker titles — returns contact info
+- Fixed-position button in bottom-right, offset from the AgentPanel FAB (e.g. `bottom-6 right-24`)
+- Shield icon (`ShieldAlert` from lucide)
+- Opens the ObjectionHandler in a Sheet (slide-in panel)
+- Rendered globally in `App.tsx` alongside `AgentPanel`
 
-Fields updated on the lead: `headcount`, `website`, `industry` (if null), `decision_maker_name`, `decision_maker_title`, `decision_maker_email`, `decision_maker_phone`
+### 4. Page: `src/pages/ObjectionHandlerPage.tsx`
 
-Leads outside territory range (2-20 employees) after enrichment get flagged with a warning activity, consistent with existing scoring behavior.
+Simple wrapper rendering `<ObjectionHandler />` as a full page (for sidebar nav)
+
+### 5. Navigation & Routing
+
+- Add `{ title: "Objection Handler", path: "/objection-handler", icon: ShieldAlert }` to `AppSidebar.tsx`
+- Add `/objection-handler` route in `App.tsx` with `ProtectedPage` wrapper
+- Import `ObjectionHandlerPage` and `ObjectionHandlerFAB`
+
+### Files Changed
+- `supabase/config.toml` — add function config
+- `supabase/functions/objection-handler/index.ts` — new edge function
+- `src/components/ObjectionHandler.tsx` — new component
+- `src/components/ObjectionHandlerFAB.tsx` — new floating button + sheet
+- `src/pages/ObjectionHandlerPage.tsx` — new page
+- `src/components/AppSidebar.tsx` — add nav item
+- `src/App.tsx` — add route, import page, render FAB
 

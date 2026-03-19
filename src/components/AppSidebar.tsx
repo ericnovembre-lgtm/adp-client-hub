@@ -10,6 +10,7 @@ import {
   Mail,
   BarChart3,
   ClipboardCheck,
+  RefreshCw,
   Settings,
   LogOut,
   ChevronLeft,

@@ -512,6 +512,8 @@ export default function SettingsPage() {
   const [testingCensus, setTestingCensus] = useState(false);
   const [openCorpKeyConfigured, setOpenCorpKeyConfigured] = useState(false);
   const [testingOpenCorp, setTestingOpenCorp] = useState(false);
+  const [klueKeyConfigured, setKlueKeyConfigured] = useState(false);
+  const [testingKlue, setTestingKlue] = useState(false);
 
   // Discovery
   const [defaultIndustry, setDefaultIndustry] = useState("");

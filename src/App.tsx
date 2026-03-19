@@ -108,6 +108,7 @@ const App = () => (
               <Route path="/market-intelligence">{() => <ProtectedPage><MarketIntelligencePage /></ProtectedPage>}</Route>
               <Route path="/territory-analytics">{() => <ProtectedPage><TerritoryAnalyticsPage /></ProtectedPage>}</Route>
               <Route path="/quote-readiness">{() => <ProtectedPage><QuoteReadinessPage /></ProtectedPage>}</Route>
+              <Route path="/battlecards">{() => <ProtectedPage><BattlecardsPage /></ProtectedPage>}</Route>
               <Route path="/renewals">{() => <ProtectedPage><RenewalsPage /></ProtectedPage>}</Route>
               <Route path="/email-templates">{() => <ProtectedPage><EmailTemplatesPage /></ProtectedPage>}</Route>
               <Route path="/settings">{() => <ProtectedPage><SettingsPage /></ProtectedPage>}</Route>

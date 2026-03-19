@@ -589,6 +589,31 @@ export default function LeadDetailSheet({
             </>
           )}
 
+          {showBattlecard && (
+            <>
+              <Separator />
+              <div>
+                <h3 className="font-semibold text-sm mb-3 flex items-center gap-1.5">
+                  <Swords className="h-4 w-4 text-primary" />
+                  Competitive Battlecard
+                </h3>
+                <BattlecardPanel
+                  lead_id={lead.id}
+                  defaultCompetitor={
+                    lead.trigger_event
+                      ? ["Rippling", "TriNet", "Paychex", "Insperity", "Justworks", "VensureHR", "Gusto", "BambooHR"].find(
+                          (c) => lead.trigger_event!.toLowerCase().includes(c.toLowerCase())
+                        ) ?? ""
+                      : ""
+                  }
+                  defaultIndustry={lead.industry ?? ""}
+                  defaultHeadcount={lead.headcount ?? undefined}
+                  defaultState={lead.state ?? ""}
+                />
+              </div>
+            </>
+          )}
+
           {/* Activity Timeline */}
           <Separator />
           <ActivityTimeline entityType="lead" entityId={lead.id} showAddForm />

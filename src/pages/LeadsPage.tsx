@@ -239,6 +239,9 @@ function LeadFormDialog({
 }
 
 export default function LeadsPage() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialFilter = urlParams.get("filter") || "";
+
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -256,6 +259,7 @@ export default function LeadsPage() {
   const [territoryOnly, setTerritoryOnly] = useState(true);
   const [sourceFilter, setSourceFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [hotEasyFilter, setHotEasyFilter] = useState(initialFilter === "hot-easy");
   const [bulkConvertOpen, setBulkConvertOpen] = useState(false);
   const [bulkEnriching, setBulkEnriching] = useState(false);
   const [bulkEnrichProgress, setBulkEnrichProgress] = useState({ current: 0, total: 0, currentName: "" });

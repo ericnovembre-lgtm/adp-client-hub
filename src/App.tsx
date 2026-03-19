@@ -115,6 +115,8 @@ const App = () => (
               <Route path="/battlecards">{() => <ProtectedPage><BattlecardsPage /></ProtectedPage>}</Route>
               <Route path="/objection-handler">{() => <ProtectedPage><ObjectionHandlerPage /></ProtectedPage>}</Route>
               <Route path="/renewals">{() => <ProtectedPage><RenewalsPage /></ProtectedPage>}</Route>
+              <Route path="/signals">{() => <ProtectedPage><SignalsPage /></ProtectedPage>}</Route>
+              <Route path="/compliance">{() => <ProtectedPage><CompliancePage /></ProtectedPage>}</Route>
               <Route path="/email-templates">{() => <ProtectedPage><EmailTemplatesPage /></ProtectedPage>}</Route>
               <Route path="/settings">{() => <ProtectedPage><SettingsPage /></ProtectedPage>}</Route>
               <Route component={NotFound} />

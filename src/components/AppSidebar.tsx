@@ -41,6 +41,8 @@ const navItems = [
   { title: "Battlecards", path: "/battlecards", icon: Swords },
   { title: "Objection Handler", path: "/objection-handler", icon: ShieldAlert },
   { title: "Renewals", path: "/renewals", icon: RefreshCw },
+  { title: "Signals", path: "/signals", icon: Radio },
+  { title: "Compliance", path: "/compliance", icon: AlertTriangle },
   { title: "Email Templates", path: "/email-templates", icon: Mail },
   { title: "Settings", path: "/settings", icon: Settings },
 ];

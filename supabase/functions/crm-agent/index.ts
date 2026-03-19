@@ -193,6 +193,18 @@ const CRM_TOOLS = [
       required: ["recipient_name", "company_name", "email_type"],
     },
   },
+  {
+    name: "search_klue",
+    description: "Search Klue competitive intelligence for live battlecard data about a specific competitor. Returns the latest competitive positioning, pricing intel, win/loss insights, and talk tracks from the organization's Klue instance.",
+    input_schema: {
+      type: "object",
+      properties: {
+        competitor: { type: "string", description: "Competitor name to search for (e.g., Rippling, TriNet, Paychex)" },
+        question: { type: "string", description: "Specific competitive question to answer" },
+      },
+      required: ["competitor"],
+    },
+  },
 ];
 
 const TOOL_RISK: Record<string, string> = {

@@ -7,6 +7,7 @@ import {
   CheckSquare,
   Sparkles,
   TrendingUp,
+  Map,
   Mail,
   BarChart3,
   ClipboardCheck,

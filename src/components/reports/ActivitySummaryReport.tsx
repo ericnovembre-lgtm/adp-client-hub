@@ -56,10 +56,10 @@ export default function ActivitySummaryReport({ filters }: { filters: ReportsFil
   const handleExport = () => {
     const rows = data.weekly.map((w) => ({
       week: w.week,
-      calls: w.call,
-      emails: w.email,
-      meetings: w.meeting,
-      notes: w.note,
+      calls: (w as Record<string, number>)["call"] ?? 0,
+      emails: (w as Record<string, number>)["email"] ?? 0,
+      meetings: (w as Record<string, number>)["meeting"] ?? 0,
+      notes: (w as Record<string, number>)["note"] ?? 0,
       total: w.total,
     }));
     exportToCSV(rows, "activity-summary.csv", [

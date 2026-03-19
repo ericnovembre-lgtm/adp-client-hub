@@ -92,6 +92,22 @@ export default function DashboardPage() {
   const { data: signalsCount, isLoading: signalsLoading } = useSignalsCount();
   const { data: userSettings } = useUserSettings();
   const [, navigate] = useLocation();
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+
+  const { data: selectedLead } = useQuery({
+    queryKey: ["dashboard-lead-detail", selectedLeadId],
+    queryFn: async () => {
+      if (!selectedLeadId) return null;
+      const { data, error } = await supabase
+        .from("leads")
+        .select("*")
+        .eq("id", selectedLeadId)
+        .single();
+      if (error) throw error;
+      return data as Lead;
+    },
+    enabled: !!selectedLeadId,
+  });
 
   const schedulerEnabled = userSettings?.scheduler_enabled;
   const lastRun = userSettings?.scheduler_last_run;

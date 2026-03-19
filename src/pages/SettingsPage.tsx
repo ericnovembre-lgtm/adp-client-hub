@@ -514,6 +514,8 @@ export default function SettingsPage() {
   const [testingOpenCorp, setTestingOpenCorp] = useState(false);
   const [klueKeyConfigured, setKlueKeyConfigured] = useState(false);
   const [testingKlue, setTestingKlue] = useState(false);
+  const [rapidapiKeyConfigured, setRapidapiKeyConfigured] = useState(false);
+  const [testingRapidapi, setTestingRapidapi] = useState(false);
 
   // Discovery
   const [defaultIndustry, setDefaultIndustry] = useState("");
@@ -550,6 +552,7 @@ export default function SettingsPage() {
     setCensusKeyConfigured(settings.census_api_key_configured ?? false);
     setOpenCorpKeyConfigured(settings.opencorporates_api_key_configured ?? false);
     setKlueKeyConfigured(settings.klue_api_key_configured ?? false);
+    setRapidapiKeyConfigured(settings.rapidapi_key_configured ?? false);
   }, [settings]);
 
   const saveProfile = async () => {
@@ -1007,6 +1010,66 @@ export default function SettingsPage() {
               }}
             >
               {testingKlue ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Zap className="h-4 w-4 mr-1" />}
+              Test Connection
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Crunchbase (RapidAPI) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            Crunchbase (RapidAPI)
+            <Badge variant="outline" className="ml-2 text-xs text-muted-foreground">Free: 500 req/month</Badge>
+          </CardTitle>
+          <CardDescription>Funding intelligence via RapidAPI's Crunchbase Basic plan — only queries when funding signals are detected</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-2">
+            {rapidapiKeyConfigured
+              ? <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 border-emerald-300"><CheckCircle2 className="h-3 w-3 mr-1" />Connected</Badge>
+              : <Badge variant="outline" className="text-muted-foreground"><Info className="h-3 w-3 mr-1" />Not configured</Badge>
+            }
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Sign up at <span className="font-mono text-foreground">rapidapi.com/crunchbase-team1-crunchbase/api/crunchbase</span>, subscribe to the Basic plan (free), and copy your <span className="font-mono text-foreground">X-RapidAPI-Key</span>. Add it as a project secret named <span className="font-mono text-foreground">RAPIDAPI_KEY</span>.
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={testingRapidapi}
+              onClick={async () => {
+                setTestingRapidapi(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke("crunchbase-intel", {
+                    body: { mode: "lookup_company", company_name: "ADP" },
+                  });
+                  if (error) throw error;
+                  if (data?.error) {
+                    if (data.error === "rapidapi_not_configured") {
+                      toast.error("RAPIDAPI_KEY not set. Add it to Edge Function secrets.");
+                    } else {
+                      throw new Error(data.error);
+                    }
+                    setRapidapiKeyConfigured(false);
+                    await updateSettings.mutateAsync({ ...settings, rapidapi_key_configured: false });
+                    return;
+                  }
+                  toast.success(`Crunchbase connection successful! ${data.found ? "Company found." : "No match found."}`);
+                  setRapidapiKeyConfigured(true);
+                  await updateSettings.mutateAsync({ ...settings, rapidapi_key_configured: true });
+                } catch (e: any) {
+                  toast.error(e.message || "Crunchbase connection test failed");
+                  setRapidapiKeyConfigured(false);
+                  await updateSettings.mutateAsync({ ...settings, rapidapi_key_configured: false });
+                }
+                setTestingRapidapi(false);
+              }}
+            >
+              {testingRapidapi ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Zap className="h-4 w-4 mr-1" />}
               Test Connection
             </Button>
           </div>

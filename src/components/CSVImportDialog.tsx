@@ -68,7 +68,8 @@ export default function CSVImportDialog({ entityType, open, onOpenChange, onImpo
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [importedLeadIds, setImportedLeadIds] = useState<string[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
   const [rows, setRows] = useState<Record<string, string>[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});

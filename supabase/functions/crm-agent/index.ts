@@ -656,7 +656,70 @@ async function toolSearchKlue(input: Record<string, any>) {
   }
 }
 
-function getDateFilter(period: string): string {
+async function toolRunLeadGenPipeline(supabase: SupabaseClient, input: Record<string, any>, userId: string) {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  try {
+    const resp = await fetch(`${supabaseUrl}/functions/v1/lead-gen-agent`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        trigger_type: "agent",
+        config: {
+          industry: input.industry,
+          state: input.state,
+          skip_discovery: input.skip_discovery ?? false,
+          max_leads: input.max_leads ?? 10,
+        },
+      }),
+    });
+    if (!resp.ok) {
+      const errText = await resp.text();
+      return { error: `Pipeline trigger failed: ${resp.status} ${errText}` };
+    }
+    const result = await resp.json();
+    return { success: true, run_id: result.run_id, message: "Lead gen pipeline started. Use get_lead_gen_status to track progress." };
+  } catch (err) {
+    return { error: `Failed to trigger pipeline: ${err instanceof Error ? err.message : String(err)}` };
+  }
+}
+
+async function toolGetLeadGenStatus(supabase: SupabaseClient, input: Record<string, any>, userId: string) {
+  let query = supabase.from("lead_gen_runs").select("*");
+  if (input.run_id) {
+    query = query.eq("id", input.run_id);
+  } else {
+    query = query.eq("user_id", userId).order("created_at", { ascending: false }).limit(1);
+  }
+  const { data, error } = await query;
+  if (error) return { error: error.message };
+  if (!data || data.length === 0) return { message: "No pipeline runs found." };
+  const run = data[0];
+
+  // Get outreach queue counts for this run
+  const { data: queueItems } = await supabase.from("outreach_queue").select("status").eq("run_id", run.id);
+  const queueCounts: Record<string, number> = {};
+  for (const item of queueItems ?? []) {
+    queueCounts[item.status] = (queueCounts[item.status] ?? 0) + 1;
+  }
+
+  return { run, outreach_queue: queueCounts };
+}
+
+async function toolGetOutreachQueue(supabase: SupabaseClient, input: Record<string, any>, userId: string) {
+  const status = input.status ?? "pending_review";
+  const limit = Math.min(input.limit ?? 10, 50);
+  const { data, error } = await supabase
+    .from("outreach_queue")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("status", status)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) return { error: error.message };
+  return { emails: data ?? [], count: (data ?? []).length, status_filter: status };
+}
+
   const now = new Date();
   switch (period) {
     case "today": return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();

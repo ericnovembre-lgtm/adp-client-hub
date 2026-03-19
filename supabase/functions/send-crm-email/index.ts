@@ -137,6 +137,7 @@ Deno.serve(async (req) => {
       contact_id: contact_id || null,
       status: "sent",
       user_id: userId,
+      metadata,
     });
 
     // Log activity

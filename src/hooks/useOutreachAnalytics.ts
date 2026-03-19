@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { subDays, startOfDay, format, getDay, getHours, differenceInDays } from "date-fns";
+import { subDays, startOfDay, format, getDay, getHours } from "date-fns";
 
 interface Filters { range: string; from?: Date; to?: Date }
 

@@ -334,7 +334,13 @@ export default function DashboardPage() {
       </div>
 
       {/* Competitor Breakdown */}
-      <CompetitorBreakdownWidget />
+      <CompetitorBreakdownWidget onLeadClick={(id) => setSelectedLeadId(id)} />
+
+      <LeadDetailSheet
+        lead={selectedLead ?? null}
+        open={!!selectedLeadId && !!selectedLead}
+        onOpenChange={(open) => { if (!open) setSelectedLeadId(null); }}
+      />
 
       {/* Pipeline Chart */}
       <Card>

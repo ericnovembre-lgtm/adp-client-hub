@@ -720,6 +720,7 @@ async function toolGetOutreachQueue(supabase: SupabaseClient, input: Record<stri
   return { emails: data ?? [], count: (data ?? []).length, status_filter: status };
 }
 
+function getDateFilter(period: string): string {
   const now = new Date();
   switch (period) {
     case "today": return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();

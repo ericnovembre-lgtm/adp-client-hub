@@ -52,7 +52,13 @@ export default function DraftEmailDialog({ open, onOpenChange, mergeFields, cont
 
   useEffect(() => {
     if (open) {
-      applyTemplate(EMAIL_TEMPLATES[0].id);
+      if (competitorTemplate) {
+        setSelectedTemplateId("competitor");
+        setSubject(competitorTemplate.subject);
+        setBody(competitorTemplate.body);
+      } else {
+        applyTemplate(EMAIL_TEMPLATES[0].id);
+      }
       setCopied(false);
     }
   }, [open]);

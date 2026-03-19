@@ -514,6 +514,8 @@ export default function SettingsPage() {
   const [testingOpenCorp, setTestingOpenCorp] = useState(false);
   const [klueKeyConfigured, setKlueKeyConfigured] = useState(false);
   const [testingKlue, setTestingKlue] = useState(false);
+  const [rapidapiKeyConfigured, setRapidapiKeyConfigured] = useState(false);
+  const [testingRapidapi, setTestingRapidapi] = useState(false);
 
   // Discovery
   const [defaultIndustry, setDefaultIndustry] = useState("");

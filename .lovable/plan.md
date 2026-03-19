@@ -1,49 +1,63 @@
 
 
-## Lead Enrichment for Registry-Discovered Leads
+## Klue Competitive Intelligence Integration
 
-Registry leads lack headcount, website, and decision-maker contact info. This plan adds a post-discovery enrichment step using the Apollo API (already configured with `APOLLO_API_KEY`).
+### Overview
+Four-part integration: new edge function, Settings UI section, new KlueIntelPanel component on Battlecards page, and search_klue tool in crm-agent.
 
-### Architecture
+### 1. Edge Function: `supabase/functions/klue-intelligence/index.ts`
 
-```text
-Registry Discovery (OpenCorporates)
-        │
-        ▼
-   Leads saved (no headcount/contact)
-        │
-        ▼
-   Enrichment step (Apollo People Search)
-        │
-        ▼
-   Update leads with headcount, website,
-   decision maker name/title/email/phone
-```
+New function following existing patterns (CORS headers, auth via getUser). Connects to Klue Content API (`https://app.klue.com/extract/cards.json`) with Bearer token from `KLUE_API_KEY` secret. Two modes:
+- `cards`: fetches raw cards filtered by competitor/tags
+- `search`: fetches cards then sends to Anthropic for AI analysis of a specific question
 
-### Changes
+Returns `{ cards, card_count, analysis? }`. Handles missing API key gracefully with `klue_not_configured` error.
 
-**1. `supabase/functions/registry-discovery/index.ts`**
-- After saving all registry leads, add an enrichment pass using Apollo's `organizations/enrich` endpoint
-- For each saved lead, call Apollo with the company name + state to get: headcount, website, industry (refined), and a decision-maker contact via `mixed_people/search`
-- Only enrich if `APOLLO_API_KEY` is present (graceful skip otherwise)
-- Update the lead record with enriched data
-- Log enrichment activity
-- Add enrichment stats to the response (`enriched` count)
-- Rate-limit Apollo calls (200ms delay between)
+Config: add `[functions.klue-intelligence] verify_jwt = false` to `supabase/config.toml`.
 
-**2. `src/components/discovery/RegistryDiscoveryTab.tsx`**
-- Show enrichment results in the summary: "Found X, saved Y, enriched Z"
-- Add an "Enriched" badge on leads that received contact info
-- Show decision maker name/email columns in the results table when available
-- Add a note: "Leads enriched via Apollo (headcount + contacts)" when Apollo key is configured, or "Configure Apollo API key in Settings to auto-enrich leads with headcount & contacts" when not
+### 2. Settings Page: Klue Section
 
-### Technical Detail
+Add to `src/pages/SettingsPage.tsx` after the OpenCorporates section (~line 951):
+- New state variables: `klueKeyConfigured`, `testingKlue`
+- Load from `settings.klue_api_key_configured` in the useEffect
+- Card with "Klue Competitive Intelligence" title, description about Content API
+- Status badge (Connected/Not configured)
+- "Test Connection" button that invokes `klue-intelligence` with `{ mode: "cards" }` and shows card count
 
-The enrichment uses two Apollo endpoints per lead:
-1. `POST /v1/organizations/enrich` with `domain` or `name` — returns headcount, website, industry
-2. `POST /v1/mixed_people/search` with company name + decision-maker titles — returns contact info
+Update `UserSettings` interface in `useUserSettings.ts` to add `klue_api_key_configured?: boolean`.
 
-Fields updated on the lead: `headcount`, `website`, `industry` (if null), `decision_maker_name`, `decision_maker_title`, `decision_maker_email`, `decision_maker_phone`
+### 3. Component: `src/components/KlueIntelPanel.tsx`
 
-Leads outside territory range (2-20 employees) after enrichment get flagged with a warning activity, consistent with existing scoring behavior.
+- Competitor dropdown (All Competitors + the standard list)
+- Free-form question text input
+- "Search Klue" button
+- Displays AI analysis when in search mode, or raw card summaries when browsing all
+- Shows card count
+
+### 4. Battlecards Page Update
+
+Convert `src/pages/BattlecardsPage.tsx` to use Tabs:
+- Tab 1: "AI Battlecard" — existing BattlecardPanel
+- Tab 2: "Klue Intel" — new KlueIntelPanel
+
+### 5. CRM Agent: search_klue Tool
+
+In `supabase/functions/crm-agent/index.ts`:
+- Add `search_klue` to CRM_TOOLS array (line ~196) with competitor + question input schema
+- Add `search_klue: "low"` to TOOL_RISK map
+- Add tool handler in executeTool switch that fetches from klue-intelligence function internally
+- Append Klue integration note to SYSTEM_PROMPT before the closing backtick (line ~296)
+
+### 6. Secret Setup
+
+Use `add_secret` tool to prompt user for `KLUE_API_KEY`.
+
+### Files Changed
+- `supabase/config.toml` — add function config
+- `supabase/functions/klue-intelligence/index.ts` — new
+- `src/components/KlueIntelPanel.tsx` — new
+- `src/pages/BattlecardsPage.tsx` — add tabs with Klue panel
+- `src/pages/SettingsPage.tsx` — add Klue settings section
+- `src/hooks/useUserSettings.ts` — add klue_api_key_configured
+- `supabase/functions/crm-agent/index.ts` — add search_klue tool + handler + system prompt update
 

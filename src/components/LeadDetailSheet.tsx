@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import CallPrepPanel from "@/components/CallPrepPanel";
+import FollowUpSequencePanel from "@/components/FollowUpSequencePanel";
 import { format } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Lead } from "@/types/database";
@@ -23,7 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Building2, User, Mail, Phone, Globe, MapPin, Users, Briefcase,
   Zap, Clock, Sparkles, Tag, Pencil, X, Save, Loader2, FileText, ArrowRightLeft, Target,
-  RefreshCw, CheckCircle2, AlertTriangle, SearchCheck,
+  RefreshCw, CheckCircle2, AlertTriangle, SearchCheck, ListChecks,
 } from "lucide-react";
 import { useLeadScore, type ScoreFactor } from "@/hooks/useLeadScores";
 import { Progress } from "@/components/ui/progress";
@@ -168,6 +169,7 @@ export default function LeadDetailSheet({
   const [editData, setEditData] = useState<Partial<Lead>>({});
   const [isEnriching, setIsEnriching] = useState(false);
   const [showCallPrep, setShowCallPrep] = useState(false);
+  const [showFollowUp, setShowFollowUp] = useState(false);
   const updateLead = useUpdateLead();
   const _queryClient = useQueryClient();
   const { data: knockoutRules = [] } = useKnockoutRules();
@@ -501,6 +503,14 @@ export default function LeadDetailSheet({
                   <Phone className="h-4 w-4 mr-2" />
                   {showCallPrep ? "Hide Prep" : "Prep Call"}
                 </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowFollowUp((v) => !v)}
+                >
+                  <ListChecks className="h-4 w-4 mr-2" />
+                  {showFollowUp ? "Hide Sequence" : "Follow-Up Sequence"}
+                </Button>
                 {onConvertToDeal && lead.status !== "converted" && (
                   <Button
                     variant="outline"
@@ -516,6 +526,19 @@ export default function LeadDetailSheet({
           )}
 
           {/* Call Prep Panel */}
+          {showFollowUp && (
+            <>
+              <Separator />
+              <div>
+                <h3 className="font-semibold text-sm mb-3 flex items-center gap-1.5">
+                  <ListChecks className="h-4 w-4 text-primary" />
+                  Follow-Up Sequence
+                </h3>
+                <FollowUpSequencePanel lead_id={lead.id} />
+              </div>
+            </>
+          )}
+
           {showCallPrep && (
             <>
               <Separator />

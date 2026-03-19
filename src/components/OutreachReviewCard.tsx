@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, X, Pencil, Send, User, Building2, Trophy, Mail } from "lucide-react";
+import { Check, X, Pencil, Send, User, Building2, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";

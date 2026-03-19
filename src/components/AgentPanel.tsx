@@ -47,31 +47,40 @@ function isMediumRisk(name: string) {
 
 function ToolCallCard({ tc }: { tc: AgentToolCall }) {
   const Icon = getToolIcon(tc.name);
+  const outreachEmails = tc.name === "get_outreach_queue" && tc.success && tc.result?.emails?.length > 0
+    ? tc.result.emails
+    : null;
+
   return (
-    <Collapsible>
-      <CollapsibleTrigger asChild>
-        <button
-          className={cn(
-            "flex items-center gap-2 w-full text-left text-xs px-3 py-2 rounded-lg border bg-card hover:bg-accent/50 transition-colors",
-            isMediumRisk(tc.name) && "border-l-4 border-l-yellow-500"
+    <div className="space-y-2">
+      <Collapsible>
+        <CollapsibleTrigger asChild>
+          <button
+            className={cn(
+              "flex items-center gap-2 w-full text-left text-xs px-3 py-2 rounded-lg border bg-card hover:bg-accent/50 transition-colors",
+              isMediumRisk(tc.name) && "border-l-4 border-l-yellow-500"
+            )}
+          >
+            <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <span className="flex-1 font-medium truncate">{formatToolName(tc.name)}</span>
+            {tc.success === true && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">done</Badge>}
+            {tc.success === false && <Badge variant="destructive" className="text-[10px] px-1.5 py-0">error</Badge>}
+            {tc.result === undefined && (
+              <span className="h-3 w-3 rounded-full border-2 border-muted-foreground border-t-transparent animate-spin" />
+            )}
+            <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground transition-transform [[data-state=open]>&]:rotate-180" />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          {!outreachEmails && (
+            <pre className="mt-1 p-2 rounded bg-muted text-[11px] overflow-x-auto max-h-40 whitespace-pre-wrap break-all">
+              {tc.result !== undefined ? JSON.stringify(tc.result, null, 2) : "Running…"}
+            </pre>
           )}
-        >
-          <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          <span className="flex-1 font-medium truncate">{formatToolName(tc.name)}</span>
-          {tc.success === true && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">done</Badge>}
-          {tc.success === false && <Badge variant="destructive" className="text-[10px] px-1.5 py-0">error</Badge>}
-          {tc.result === undefined && (
-            <span className="h-3 w-3 rounded-full border-2 border-muted-foreground border-t-transparent animate-spin" />
-          )}
-          <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground transition-transform [[data-state=open]>&]:rotate-180" />
-        </button>
-      </CollapsibleTrigger>
-      <CollapsibleContent>
-        <pre className="mt-1 p-2 rounded bg-muted text-[11px] overflow-x-auto max-h-40 whitespace-pre-wrap break-all">
-          {tc.result !== undefined ? JSON.stringify(tc.result, null, 2) : "Running…"}
-        </pre>
-      </CollapsibleContent>
-    </Collapsible>
+        </CollapsibleContent>
+      </Collapsible>
+      {outreachEmails && <OutreachReviewList emails={outreachEmails} />}
+    </div>
   );
 }
 

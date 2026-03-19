@@ -558,6 +558,7 @@ export default function SettingsPage() {
     setKlueKeyConfigured(settings.klue_api_key_configured ?? false);
     setRapidapiKeyConfigured(settings.rapidapi_key_configured ?? false);
     setSnovKeyConfigured(settings.snov_key_configured ?? false);
+    setLead411KeyConfigured(settings.lead411_api_key_configured ?? false);
   }, [settings]);
 
   const saveProfile = async () => {

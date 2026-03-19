@@ -120,6 +120,7 @@ const App = () => (
               <Route path="/compliance">{() => <ProtectedPage><CompliancePage /></ProtectedPage>}</Route>
               <Route path="/email-templates">{() => <ProtectedPage><EmailTemplatesPage /></ProtectedPage>}</Route>
               <Route path="/settings">{() => <ProtectedPage><SettingsPage /></ProtectedPage>}</Route>
+              <Route path="/pipeline-history">{() => <ProtectedPage><PipelineHistoryPage /></ProtectedPage>}</Route>
               <Route component={NotFound} />
             </Switch>
             <AgentPanel />

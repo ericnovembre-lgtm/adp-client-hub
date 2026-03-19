@@ -36,6 +36,7 @@ const navItems = [
   { title: "Tasks", path: "/tasks", icon: CheckSquare },
   { title: "Reports", path: "/reports", icon: BarChart3 },
   { title: "AI Discovery", path: "/ai-discovery", icon: Sparkles },
+  { title: "Pipeline History", path: "/pipeline-history", icon: Rocket },
   { title: "Market Intel", path: "/market-intelligence", icon: TrendingUp },
   { title: "Territory Analytics", path: "/territory-analytics", icon: Map },
   { title: "Quote Readiness", path: "/quote-readiness", icon: ClipboardCheck },

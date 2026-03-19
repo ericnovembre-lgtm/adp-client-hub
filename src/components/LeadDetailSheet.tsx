@@ -493,6 +493,14 @@ export default function LeadDetailSheet({
                     Draft Email
                   </Button>
                 )}
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowCallPrep((v) => !v)}
+                >
+                  <Phone className="h-4 w-4 mr-2" />
+                  {showCallPrep ? "Hide Prep" : "Prep Call"}
+                </Button>
                 {onConvertToDeal && lead.status !== "converted" && (
                   <Button
                     variant="outline"
@@ -503,6 +511,20 @@ export default function LeadDetailSheet({
                     Convert to Deal
                   </Button>
                 )}
+              </div>
+            </>
+          )}
+
+          {/* Call Prep Panel */}
+          {showCallPrep && (
+            <>
+              <Separator />
+              <div>
+                <h3 className="font-semibold text-sm mb-3 flex items-center gap-1.5">
+                  <Phone className="h-4 w-4 text-primary" />
+                  Call Prep Briefing
+                </h3>
+                <CallPrepPanel lead_id={lead.id} />
               </div>
             </>
           )}

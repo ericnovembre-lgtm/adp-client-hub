@@ -1269,7 +1269,7 @@ export default function LeadsPage() {
         open={!!detailLead}
         onOpenChange={(v) => { if (!v) setDetailLead(null); }}
         onLeadUpdated={() => setDetailLead(null)}
-        onDraftEmail={(lead) => { setDetailLead(null); setEmailLead(lead); }}
+        onDraftEmail={(lead) => { setDetailLead(null); setCompetitorEmailTemplate(buildCompetitorEmail(lead)); setEmailLead(lead); }}
         onConvertToDeal={(lead) => { setDetailLead(null); initiateConvert(lead); }}
       />
 

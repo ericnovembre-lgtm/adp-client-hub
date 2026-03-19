@@ -608,7 +608,7 @@ export default function LeadDetailSheet({
                   disabled={isEnriching}
                 >
                   {isEnriching ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <SearchCheck className="h-4 w-4 mr-2" />}
-                  {isEnriching ? "Deep Enriching…" : "Deep Enrich"}
+                  {isEnriching ? `Step ${enrichStep + 1}/7: ${ENRICH_STEPS[enrichStep]?.label ?? "Processing…"}` : "Deep Enrich"}
                 </Button>
                 {onDraftEmail && (
                   <Button

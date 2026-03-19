@@ -20,6 +20,7 @@ import ReportsPage from "@/pages/ReportsPage";
 import EmailTemplatesPage from "@/pages/EmailTemplatesPage";
 import SettingsPage from "@/pages/SettingsPage";
 import MarketIntelligencePage from "@/pages/MarketIntelligencePage";
+import QuoteReadinessPage from "@/pages/QuoteReadinessPage";
 import NotFound from "@/pages/NotFound";
 import AgentPanel from "@/components/AgentPanel";
 import { toast } from "sonner";

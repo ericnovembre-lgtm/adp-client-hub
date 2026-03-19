@@ -17,6 +17,8 @@ import { HEADCOUNT_MIN, HEADCOUNT_MAX } from "@/lib/constants";
 import DailyBriefWidget from "@/components/DailyBriefWidget";
 import BenefitsEligibilityChecker from "@/components/BenefitsEligibilityChecker";
 import CompetitorBreakdownWidget from "@/components/CompetitorBreakdownWidget";
+import LeadDetailSheet from "@/components/LeadDetailSheet";
+import type { Lead } from "@/types/database";
 
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v);

@@ -18,6 +18,15 @@ export default function CallPrepPanel({ lead_id, contact_id }: { lead_id?: strin
   const [industryStatus, setIndustryStatus] = useState<string>("clear");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    if (!briefing) return;
+    await navigator.clipboard.writeText(briefing);
+    setCopied(true);
+    toast.success("Briefing copied to clipboard");
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const handlePrep = async () => {
     setLoading(true);

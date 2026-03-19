@@ -24,6 +24,7 @@ interface DraftEmailDialogProps {
   mergeFields: MergeFields;
   contactId?: string | null;
   contactEmail?: string | null;
+  competitorTemplate?: { subject: string; body: string } | null;
 }
 
 export default function DraftEmailDialog({ open, onOpenChange, mergeFields, contactId, contactEmail }: DraftEmailDialogProps) {

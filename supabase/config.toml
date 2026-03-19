@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.compliance-alerts]
 verify_jwt = false
+
+[functions.klue-intelligence]
+verify_jwt = false

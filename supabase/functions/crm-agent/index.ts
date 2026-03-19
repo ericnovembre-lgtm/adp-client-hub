@@ -193,6 +193,18 @@ const CRM_TOOLS = [
       required: ["recipient_name", "company_name", "email_type"],
     },
   },
+  {
+    name: "search_klue",
+    description: "Search Klue competitive intelligence for live battlecard data about a specific competitor. Returns the latest competitive positioning, pricing intel, win/loss insights, and talk tracks from the organization's Klue instance.",
+    input_schema: {
+      type: "object",
+      properties: {
+        competitor: { type: "string", description: "Competitor name to search for (e.g., Rippling, TriNet, Paychex)" },
+        question: { type: "string", description: "Specific competitive question to answer" },
+      },
+      required: ["competitor"],
+    },
+  },
 ];
 
 const TOOL_RISK: Record<string, string> = {
@@ -200,6 +212,7 @@ const TOOL_RISK: Record<string, string> = {
   search_companies: "low", get_pipeline_stats: "low", get_activity_history: "low",
   check_knockout_rules: "low", log_activity: "low", draft_email: "low",
   update_lead: "medium", update_deal: "medium", create_task: "medium",
+  search_klue: "low",
 };
 
 const SYSTEM_PROMPT = `You are the SavePlus24 AI Agent — an autonomous CRM assistant for ADP TotalSource down-market sales. You have direct access to the user's CRM database through tools.
@@ -293,7 +306,9 @@ RESPONSE FORMATTING RULES (STRICTLY ENFORCED — violating these is a critical e
 - When presenting priority groups, use plain header lines like "HIGH PRIORITY — Contact Today" followed by numbered leads.
 - Keep language professional and conversational, as if briefing a sales rep verbally.
 - Always include: company name, contact name and title, headcount, score/grade, and a 2-3 sentence explanation of why this lead matters and what action to take.
-- Never use emoji. Use plain English instead.`;
+- Never use emoji. Use plain English instead.
+
+KLUE INTEGRATION: You have access to the search_klue tool which connects to the organization's Klue competitive intelligence platform. When a user asks about a competitor, ALWAYS use search_klue first to get the latest intelligence before responding. Klue data is more current than your built-in knowledge. If Klue is not configured, fall back to your built-in competitive knowledge.`;
 
 async function executeTool(toolName: string, input: Record<string, any>, supabase: SupabaseClient, userId: string): Promise<any> {
   // Inject userId into input for tools that insert data
@@ -322,6 +337,7 @@ async function executeTool(toolName: string, input: Record<string, any>, supabas
       case "create_task": result = await toolCreateTask(supabase, input); break;
       case "log_activity": result = await toolLogActivity(supabase, input); break;
       case "draft_email": result = await toolDraftEmail(input); break;
+      case "search_klue": result = await toolSearchKlue(input); break;
       default: throw new Error(`Unknown tool: ${toolName}`);
     }
 
@@ -498,6 +514,36 @@ function toolDraftEmail(input: Record<string, any>) {
     context: { recipient: input.recipient_name, title: input.recipient_title ?? "Decision Maker", company: input.company_name, industry: input.industry ?? "unknown", headcount: input.headcount, trigger: input.trigger_event ?? "general outreach", type: input.email_type, extra: input.additional_context },
     instructions: "Generate the email now using the ADP TotalSource product knowledge and sales email guidelines in your system prompt. Return a JSON with 'subject' and 'body' fields. Tailor to the prospect's industry, headcount, and trigger event.",
   };
+}
+
+async function toolSearchKlue(input: Record<string, any>) {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  try {
+    const response = await fetch(`${supabaseUrl}/functions/v1/klue-intelligence`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        competitor: input.competitor,
+        query: input.question,
+        mode: input.question ? "search" : "cards",
+      }),
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      return { error: `Klue API returned ${response.status}: ${errText}` };
+    }
+    const data = await response.json();
+    if (data.error === "klue_not_configured") {
+      return { error: "Klue is not configured. The KLUE_API_KEY secret needs to be set. Falling back to built-in competitive knowledge." };
+    }
+    return { cards: data.cards, analysis: data.analysis ?? null, card_count: data.card_count ?? 0 };
+  } catch (err) {
+    return { error: `Failed to reach Klue: ${err instanceof Error ? err.message : String(err)}` };
+  }
 }
 
 function getDateFilter(period: string): string {

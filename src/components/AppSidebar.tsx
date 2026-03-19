@@ -19,6 +19,7 @@ import {
   Settings,
   LogOut,
   ChevronLeft,
+  Rocket,
 } from "lucide-react";
 import { useLocation, Link } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";

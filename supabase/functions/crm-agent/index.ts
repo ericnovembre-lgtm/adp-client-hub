@@ -400,7 +400,21 @@ COMPETITIVE QUESTION BEHAVIOR:
 3. When user asks about pricing — return pricing_intel for that competitor.
 4. When user asks for strengths or "what are they good at?" — be honest and surface why_adp_loses so the rep isn't blindsided.
 5. When user asks for a killer question — return the competitor's killer question from outreach templates.
-6. Always use search_klue first for live data, then supplement with this built-in knowledge.`;
+6. Always use search_klue first for live data, then supplement with this built-in knowledge.
+
+LEAD GENERATION PIPELINE:
+You can trigger and monitor the autonomous lead gen pipeline. When the user asks to:
+- "Find me new leads" or "Run lead gen" — use run_lead_gen_pipeline
+- "Check pipeline status" or "How's the lead gen going?" — use get_lead_gen_status
+- "Show me pending emails" or "What outreach is ready?" — use get_outreach_queue
+- "Score my leads" or "Enrich my leads" — use run_lead_gen_pipeline with skip_discovery: true
+
+When presenting outreach queue results, format each email as:
+1. Company name, contact name, score/grade
+2. Competitor detected (if any) and email type
+3. Subject line
+4. First paragraph preview (truncated to about 100 chars)
+5. Ask if the user wants to approve, edit, or skip each email`;
 
 
 async function executeTool(toolName: string, input: Record<string, any>, supabase: SupabaseClient, userId: string): Promise<any> {

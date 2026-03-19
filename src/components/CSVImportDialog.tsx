@@ -396,6 +396,15 @@ export default function CSVImportDialog({ entityType, open, onOpenChange, onImpo
             ) : null}
           </div>
         )}
+
+        {/* Step 4: Enrichment (leads only) */}
+        {step === 4 && entityType === "leads" && (
+          <EnrichmentProgress
+            leadIds={importedLeadIds}
+            onComplete={() => { reset(); onImportComplete(); handleClose(false); }}
+            onSkip={() => { reset(); onImportComplete(); handleClose(false); }}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

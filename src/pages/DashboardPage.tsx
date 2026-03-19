@@ -16,6 +16,7 @@ import {
 import { HEADCOUNT_MIN, HEADCOUNT_MAX } from "@/lib/constants";
 import DailyBriefWidget from "@/components/DailyBriefWidget";
 import BenefitsEligibilityChecker from "@/components/BenefitsEligibilityChecker";
+import CompetitorBreakdownWidget from "@/components/CompetitorBreakdownWidget";
 
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v);
@@ -313,6 +314,9 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
       </div>
+
+      {/* Competitor Breakdown */}
+      <CompetitorBreakdownWidget />
 
       {/* Pipeline Chart */}
       <Card>

@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useOutreachAnalytics, generateInsights } from "@/hooks/useOutreachAnalytics";
-import { Mail, Send, TrendingUp, TrendingDown, Minus, MousePointerClick, MessageSquareReply, Copy, Lightbulb, ArrowRight, Star, Download, BarChart3 } from "lucide-react";
+import { Mail, Send, TrendingUp, TrendingDown, Minus, MousePointerClick, MessageSquareReply, Copy, Lightbulb, ArrowRight, Download, BarChart3 } from "lucide-react";
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Cell } from "recharts";
 import { toast } from "sonner";
 import { Link } from "wouter";
@@ -14,9 +13,6 @@ import { exportToCSV } from "@/lib/exportCSV";
 import OutreachSubjectLeaderboard from "@/components/outreach/OutreachSubjectLeaderboard";
 import OutreachSendTimeHeatmap from "@/components/outreach/OutreachSendTimeHeatmap";
 import OutreachEmailTypeChart from "@/components/outreach/OutreachEmailTypeChart";
-
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
-const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function rateColor(rate: number, green: number, yellow: number) {
   if (rate >= green) return "text-emerald-600 dark:text-emerald-400";

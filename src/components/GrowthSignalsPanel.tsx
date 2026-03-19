@@ -271,13 +271,13 @@ export default function GrowthSignalsPanel() {
         </Card>
       )}
 
-      {/* Empty state */}
+      {/* Empty state — deferred */}
       {results.length === 0 && !searchMutation.isPending && (
         <div className="rounded-lg border bg-muted/30 p-8 text-center text-muted-foreground">
           <TrendingUp className="h-10 w-10 mx-auto mb-3 opacity-50" />
-          <p className="font-medium">No growth signals yet</p>
+          <p className="font-medium">Growth Signals — Deferred</p>
           <p className="text-sm mt-1 max-w-md mx-auto">
-            Select trigger types above and click "Find Growing Companies" to discover businesses with active growth intent.
+            This feature requires a Lead411 API key. For now, use the AI Generated, Intent-Based, or New Businesses tabs for lead discovery. Apollo and Crunchbase provide basic funding/growth signals.
           </p>
         </div>
       )}

@@ -3,6 +3,7 @@ import CallPrepPanel from "@/components/CallPrepPanel";
 import FollowUpSequencePanel from "@/components/FollowUpSequencePanel";
 import QuoteReadinessPanel from "@/components/QuoteReadinessPanel";
 import BattlecardPanel from "@/components/BattlecardPanel";
+import CompetitorBadge from "@/components/CompetitorBadge";
 import { format } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Lead } from "@/types/database";

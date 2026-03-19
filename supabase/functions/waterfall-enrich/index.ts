@@ -159,6 +159,48 @@ function splitName(fullName: string): { first: string; last: string } {
   return { first: parts[0], last: parts.slice(1).join(" ") };
 }
 
+// ─── COMPETITOR-AWARE SCORING CONSTANTS ───
+const COMPETITOR_SCORE_ADJUSTMENTS: Record<string, number> = {
+  "Intuit QuickBooks": 20,
+  "Gusto": 18,
+  "BambooHR": 15,
+  "Justworks": 12,
+  "Paychex": 10,
+  "isolved": 8,
+  "Rippling": 8,
+  "Paycom": 6,
+  "Paylocity": 6,
+  "Insperity": 5,
+  "TriNet": 5,
+  "Dayforce": 3,
+  "UKG": 2,
+  "Workday": 1,
+  "SAP SuccessFactors": 1,
+  "DIY/None": 25,
+  "Unknown": 0,
+};
+
+const TRIGGER_BONUSES: Record<string, number> = {
+  competitor_price_increase: 15,
+  competitor_outage: 10,
+  competitor_negative_review: 8,
+  competitor_contract_renewal: 20,
+  recent_funding: 15,
+  recently_funded: 15,
+  funding_raised: 15,
+  hiring_surge: 12,
+  new_executive_hire: 10,
+  new_office_location: 8,
+  revenue_growth: 10,
+};
+
+const CONFIDENCE_MULTIPLIER: Record<string, number> = {
+  Confirmed: 1.0,
+  Likely: 0.75,
+  Possible: 0.5,
+  Unknown: 0.25,
+};
+
 function computeScore(lead: Record<string, unknown>): { score: number; grade: string; factors: Array<{ factor: string; points: number; max: number; reason: string }> } {
   const factors: Array<{ factor: string; points: number; max: number; reason: string }> = [];
 
@@ -228,8 +270,63 @@ function computeScore(lead: Record<string, unknown>): { score: number; grade: st
   else if (hasName) compPts = 3;
   factors.push({ factor: "Contact Completeness", points: compPts, max: 10, reason: `${[hasName && "name", hasTitle && "title", hasEmail && "email", hasPhone && "phone"].filter(Boolean).join(", ") || "none"}` });
 
-  const score = hcPts + indPts + dmPts + trigPts + compPts;
-  const grade = score >= 75 ? "A" : score >= 55 ? "B" : score >= 35 ? "C" : "D";
+  const baseScore = hcPts + indPts + dmPts + trigPts + compPts;
+
+  // ─── COMPETITOR ADVANTAGE SCORING (max 60) ───
+  const provider = (lead.current_provider as string) || "Unknown";
+  const confidence = (lead.provider_confidence as string) || "Unknown";
+  const displacement = (lead.displacement_difficulty as string) || "";
+  const triggerType = tt;
+
+  let competitorAdj = 0;
+  const reasons: string[] = [];
+
+  // 1. Base competitor adjustment
+  const providerBonus = COMPETITOR_SCORE_ADJUSTMENTS[provider] ?? 0;
+  const confidenceMultiplied = Math.round(providerBonus * (CONFIDENCE_MULTIPLIER[confidence] ?? 0.25));
+  if (confidenceMultiplied > 0) {
+    reasons.push(`${provider} (${confidence}): +${confidenceMultiplied}`);
+  }
+
+  // 2. Trigger event bonuses
+  let triggerBonus = 0;
+  const trigBonus = TRIGGER_BONUSES[triggerType] ?? 0;
+  if (trigBonus > 0) {
+    triggerBonus += trigBonus;
+    reasons.push(`Trigger ${triggerType}: +${trigBonus}`);
+  }
+
+  // 3. Headcount sweet spot bonuses
+  let hcBonus = 0;
+  if (hc != null) {
+    if (hc >= 11 && hc <= 20) { hcBonus = 15; reasons.push(`Headcount 11-20: +15`); }
+    else if (hc >= 5 && hc <= 10) { hcBonus = 10; reasons.push(`Headcount 5-10: +10`); }
+    else if (hc >= 21 && hc <= 50) { hcBonus = 5; reasons.push(`Headcount 21-50: +5`); }
+  }
+
+  competitorAdj = confidenceMultiplied + triggerBonus + hcBonus;
+
+  // 4. Combo bonus: Easy displacement + 2+ trigger signals
+  const triggerSignalCount = (te ? 1 : 0) + (triggerType && triggerType !== "latent_need" ? 1 : 0);
+  if (displacement === "Easy" && triggerSignalCount >= 2) {
+    competitorAdj += 10;
+    reasons.push("Combo bonus (Easy + triggers): +10");
+  }
+
+  // 5. Cap at 60
+  competitorAdj = Math.min(competitorAdj, 60);
+
+  if (competitorAdj > 0 || provider !== "Unknown") {
+    factors.push({
+      factor: "Competitor Advantage",
+      points: competitorAdj,
+      max: 60,
+      reason: reasons.length > 0 ? reasons.join("; ") : "No competitor advantage detected",
+    });
+  }
+
+  const score = baseScore + competitorAdj;
+  const grade = score >= 80 ? "A" : score >= 60 ? "B" : score >= 40 ? "C" : "D";
   return { score, grade, factors };
 }
 

@@ -320,6 +320,13 @@ export default function LeadDetailSheet({
               </Badge>
               {lead.source && <Badge variant="secondary">{lead.source}</Badge>}
               {knockoutResult && <EligibilityBadge tier={knockoutResult.tier} message={knockoutResult.message} />}
+              <CompetitorBadge
+                currentProvider={lead.current_provider ?? null}
+                providerType={lead.provider_type ?? null}
+                displacementDifficulty={lead.displacement_difficulty ?? null}
+                providerConfidence={lead.provider_confidence ?? null}
+                onOpenBattlecard={() => setShowBattlecard(true)}
+              />
             </div>
           )}
 

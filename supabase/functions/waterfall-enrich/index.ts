@@ -709,16 +709,19 @@ Deno.serve(async (req) => {
 
     // ─── Step 9: Log activity ───
     const allFieldsFound = Object.values(details).flatMap(d => d.fields_found);
+    const competitorLog = competitorResult.current_provider !== "Unknown"
+      ? ` Competitor detected: ${competitorResult.current_provider} (${competitorResult.provider_confidence}, via ${competitorResult.competitor_source}).`
+      : "";
     await serviceClient.from("activities").insert({
       type: "system",
-      description: `Waterfall enrichment completed for ${working.company_name}. Sources: ${sourcesSucceeded.length > 0 ? sourcesSucceeded.join(", ") : "none succeeded"}. Fields enriched: ${allFieldsFound.length > 0 ? allFieldsFound.join(", ") : "none"}. Score: ${scoreBefore} → ${score}.`,
+      description: `Waterfall enrichment completed for ${working.company_name}. Sources: ${sourcesSucceeded.length > 0 ? sourcesSucceeded.join(", ") : "none succeeded"}. Fields enriched: ${allFieldsFound.length > 0 ? allFieldsFound.join(", ") : "none"}. Score: ${scoreBefore} → ${score}.${competitorLog}`,
       lead_id,
       user_id: user.id,
     });
 
     const fieldsAfter = countFilled(working);
 
-    const result: EnrichmentResult = {
+    const result = {
       lead_id,
       company_name: working.company_name as string,
       sources_tried: sourcesTried,
@@ -728,6 +731,7 @@ Deno.serve(async (req) => {
       enrichment_details: details,
       score_change: { before: scoreBefore, after: score, grade_before: gradeBefore, grade_after: grade },
       trigger_updated: triggerUpdated,
+      competitor: competitorResult,
     };
 
     return new Response(JSON.stringify(result), {

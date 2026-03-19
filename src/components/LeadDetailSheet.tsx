@@ -203,6 +203,7 @@ export default function LeadDetailSheet({
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<Partial<Lead>>({});
   const [isEnriching, setIsEnriching] = useState(false);
+  const [enrichStep, setEnrichStep] = useState(0);
   const [deepEnrichResult, setDeepEnrichResult] = useState<any>(null);
   const [showCallPrep, setShowCallPrep] = useState(false);
   const [showFollowUp, setShowFollowUp] = useState(false);

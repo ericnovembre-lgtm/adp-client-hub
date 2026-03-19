@@ -655,11 +655,13 @@ export default function LeadDetailSheet({
                 <BattlecardPanel
                   lead_id={lead.id}
                   defaultCompetitor={
-                    lead.trigger_event
-                      ? ["Rippling", "TriNet", "Paychex", "Insperity", "Justworks", "VensureHR", "Gusto", "BambooHR"].find(
-                          (c) => lead.trigger_event!.toLowerCase().includes(c.toLowerCase())
-                        ) ?? ""
-                      : ""
+                    lead.current_provider && lead.current_provider !== "Unknown" && lead.current_provider !== "DIY/None"
+                      ? lead.current_provider
+                      : lead.trigger_event
+                        ? ["Rippling", "TriNet", "Paychex", "Insperity", "Justworks", "VensureHR", "Gusto", "BambooHR"].find(
+                            (c) => lead.trigger_event!.toLowerCase().includes(c.toLowerCase())
+                          ) ?? ""
+                        : ""
                   }
                   defaultIndustry={lead.industry ?? ""}
                   defaultHeadcount={lead.headcount ?? undefined}

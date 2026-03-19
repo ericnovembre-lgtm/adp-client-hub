@@ -186,6 +186,31 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
+      {/* Signals Badge */}
+      <Card
+        className="cursor-pointer hover:bg-muted/50 transition-colors"
+        onClick={() => navigate("/signals")}
+      >
+        <CardContent className="p-4 flex items-center gap-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+            <Radio className="h-5 w-5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-foreground">High-Confidence Signals</span>
+              {signalsLoading ? (
+                <Skeleton className="h-5 w-8 rounded-full" />
+              ) : (
+                <Badge variant={signalsCount && signalsCount > 0 ? "default" : "outline"}>
+                  {signalsCount ?? 0}
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">Last 7 days</p>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Two columns */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Activity */}

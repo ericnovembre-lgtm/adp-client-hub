@@ -129,6 +129,24 @@ export function useTerritoryStats() {
   });
 }
 
+export function useSignalsCount() {
+  return useQuery({
+    queryKey: ["dashboard-signals-count"],
+    queryFn: async () => {
+      const sevenDaysAgo = subDays(new Date(), 7).toISOString();
+      const { count, error } = await supabase
+        .from("leads")
+        .select("id", { count: "exact", head: true })
+        .not("trigger_event", "is", null)
+        .gte("created_at", sevenDaysAgo)
+        .neq("status", "dismissed");
+      if (error) throw error;
+      return count ?? 0;
+    },
+    staleTime: 30_000,
+  });
+}
+
 export function usePipelineData() {
   return useQuery({
     queryKey: ["dashboard-pipeline"],

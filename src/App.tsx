@@ -24,8 +24,10 @@ import QuoteReadinessPage from "@/pages/QuoteReadinessPage";
 import RenewalsPage from "@/pages/RenewalsPage";
 import TerritoryAnalyticsPage from "@/pages/TerritoryAnalyticsPage";
 import BattlecardsPage from "@/pages/BattlecardsPage";
+import ObjectionHandlerPage from "@/pages/ObjectionHandlerPage";
 import NotFound from "@/pages/NotFound";
 import AgentPanel from "@/components/AgentPanel";
+import ObjectionHandlerFAB from "@/components/ObjectionHandlerFAB";
 import { toast } from "sonner";
 
 function handleGlobalError(error: unknown) {
@@ -109,12 +111,14 @@ const App = () => (
               <Route path="/territory-analytics">{() => <ProtectedPage><TerritoryAnalyticsPage /></ProtectedPage>}</Route>
               <Route path="/quote-readiness">{() => <ProtectedPage><QuoteReadinessPage /></ProtectedPage>}</Route>
               <Route path="/battlecards">{() => <ProtectedPage><BattlecardsPage /></ProtectedPage>}</Route>
+              <Route path="/objection-handler">{() => <ProtectedPage><ObjectionHandlerPage /></ProtectedPage>}</Route>
               <Route path="/renewals">{() => <ProtectedPage><RenewalsPage /></ProtectedPage>}</Route>
               <Route path="/email-templates">{() => <ProtectedPage><EmailTemplatesPage /></ProtectedPage>}</Route>
               <Route path="/settings">{() => <ProtectedPage><SettingsPage /></ProtectedPage>}</Route>
               <Route component={NotFound} />
             </Switch>
             <AgentPanel />
+            <ObjectionHandlerFAB />
           </TooltipProvider>
         </AuthProvider>
       </QueryClientProvider>

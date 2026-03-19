@@ -401,7 +401,36 @@ export default function LeadsPage() {
     toast.success(`Exported ${selected.length} lead(s)`);
   };
 
-  // Bulk convert — compute eligible vs skipped
+  // Bulk enrich
+  const handleBulkEnrich = async () => {
+    const candidates = allLeads.filter(
+      l => l.status === "new" && (!l.decision_maker_email || !l.headcount)
+    );
+    if (candidates.length === 0) {
+      toast.info("No new leads with incomplete data to enrich.");
+      return;
+    }
+    setBulkEnriching(true);
+    setBulkEnrichProgress({ current: 0, total: candidates.length, currentName: "" });
+    let succeeded = 0;
+    let failed = 0;
+    for (let i = 0; i < candidates.length; i++) {
+      const lead = candidates[i];
+      setBulkEnrichProgress({ current: i + 1, total: candidates.length, currentName: lead.company_name });
+      try {
+        const { error } = await supabase.functions.invoke("waterfall-enrich", {
+          body: { lead_id: lead.id },
+        });
+        if (error) throw error;
+        succeeded++;
+      } catch {
+        failed++;
+      }
+    }
+    setBulkEnriching(false);
+    toast.success(`Bulk enrichment complete: ${succeeded} succeeded, ${failed} failed out of ${candidates.length}`);
+  };
+
   const bulkConvertAnalysis = useMemo(() => {
     if (!bulkConvertOpen) return null;
     const selected = leads.filter(l => selectedIds.has(l.id));

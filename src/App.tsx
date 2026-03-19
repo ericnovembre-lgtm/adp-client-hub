@@ -23,6 +23,7 @@ import MarketIntelligencePage from "@/pages/MarketIntelligencePage";
 import QuoteReadinessPage from "@/pages/QuoteReadinessPage";
 import RenewalsPage from "@/pages/RenewalsPage";
 import TerritoryAnalyticsPage from "@/pages/TerritoryAnalyticsPage";
+import BattlecardsPage from "@/pages/BattlecardsPage";
 import NotFound from "@/pages/NotFound";
 import AgentPanel from "@/components/AgentPanel";
 import { toast } from "sonner";

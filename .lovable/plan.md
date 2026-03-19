@@ -1,36 +1,62 @@
 
 
-## Create PDL Enrichment Edge Function
+## Replace PDL with Snov.io Enrichment
 
 ### Overview
-New edge function for People Data Labs API integration, providing person enrichment, company enrichment, and person search as a secondary data source when Apollo is incomplete.
+Replace `supabase/functions/pdl-enrichment/index.ts` with a new `supabase/functions/snov-enrichment/index.ts` edge function that uses Snov.io's OAuth 2.0 API for email finding, email verification, prospect enrichment, and domain search. Add a Snov.io settings card to the Settings page. Delete the old PDL function.
 
-### Edge Function: `supabase/functions/pdl-enrichment/index.ts`
-- Same CORS/auth pattern as `crunchbase-intel` (imports, corsHeaders, Bearer token → getUser)
-- Reads `PDL_API_KEY` from env; returns signup instructions if missing (free tier: 100 lookups/month)
-- API base: `https://api.peopledatalabs.com/v5`, auth via `X-Api-Key` header
+### Changes
 
-**Three modes:**
+#### 1. New Edge Function: `supabase/functions/snov-enrichment/index.ts`
+- Same CORS/auth pattern as `crunchbase-intel`
+- Reads `SNOV_USER_ID` and `SNOV_API_SECRET` from env; returns setup instructions if missing
+- Internal OAuth token helper: POST to `https://api.snov.io/v1/oauth/access_token` with client_credentials grant, caches token for 1 hour
+- Conditional logic: accepts `enrichment_hints` (apollo results, hunter results, lead score) and runs `shouldQuerySnov()` — only fires when there are data gaps (missing email, phone, linkedin, profile) AND lead score >= 40
 
-1. **`person_enrich`** — GET `/person/enrich` with query params built from email, phone, name, company, linkedin_url, location. Extracts: full_name, first/last name, job_title, company info, work_email, personal_emails, phone_numbers, linkedin_url, location, experience, education, skills. Returns `match_likelihood` from PDL response.
+**Five modes:**
 
-2. **`company_enrich`** — GET `/company/enrich` with `website={domain}` or `name={company}`. Extracts: name, display_name, size, industry, location, founded, description, linkedin_url, employee_count, tags, recent_exec_hires, technologies.
+1. **`find_email`** — POST `/v1/get-emails-from-names` with first_name, last_name, domain. Returns matched emails with confidence/type/status. 1 credit.
 
-3. **`person_search`** — POST `/person/search` with Elasticsearch-style bool query built from provided filters (job_company_name, job_title, location). Size defaults to 10. Returns array of person profiles.
+2. **`verify_email`** — POST `/v1/add-emails-to-verification` then `/v1/get-emails-verification-status` (with 3s poll delay). Returns valid/invalid/unverifiable. 1 credit.
 
-All modes return `{ mode, success, data, match_likelihood?, error? }`.
+3. **`enrich_prospect`** — POST `/v1/get-prospect-by-email`. Extracts first/last name, industry, country, locality, social_links, current_jobs (company, title, domain, size, industry, founded), previous_jobs. 1 credit.
 
-### Config
-Add to `supabase/config.toml`:
+4. **`domain_search`** — POST `/v1/get-domain-emails-count` (free) then `/v2/domain-emails-with-info` (1 credit per batch of 10). Returns email list with names/positions.
+
+5. **`check_gaps`** — The primary orchestrator mode. Accepts lead data + enrichment_hints. Runs shouldQuerySnov(). If gaps exist and budget allows, calls find_email → verify_email → enrich_prospect in sequence, filling gaps. Returns combined results with credits_used tally.
+
+Returns: `{ mode, success, data, credits_used, skipped?, skip_reason? }`
+
+#### 2. Delete: `supabase/functions/pdl-enrichment/index.ts`
+Remove the old PDL function entirely.
+
+#### 3. Config: `supabase/config.toml`
+Add:
 ```toml
-[functions.pdl-enrichment]
+[functions.snov-enrichment]
 verify_jwt = false
 ```
 
-### Secret
-Prompt user for `PDL_API_KEY` (not currently configured).
+#### 4. Secrets
+Prompt user for `SNOV_USER_ID` and `SNOV_API_SECRET` (get from snov.io account settings).
+
+#### 5. Settings Page: `src/pages/SettingsPage.tsx`
+- Add `snovKeyConfigured` / `testingSnov` state variables
+- Load/save `snov_key_configured` from user settings
+- Add a "Snov.io" card (after Crunchbase card) with:
+  - Connection status badge
+  - "Free: 50 credits/month" note
+  - Test Connection button (invokes `snov-enrichment` with `{ mode: "domain_search", domain: "adp.com" }` — domain count is free)
+  - Setup instructions
+
+#### 6. UserSettings: `src/hooks/useUserSettings.ts`
+- Add `snov_key_configured?: boolean` to interface
+- Remove `pdl_api_key_configured` if present (it's not — confirmed)
 
 ### Files Changed
-- `supabase/functions/pdl-enrichment/index.ts` — new
-- `supabase/config.toml` — add function entry
+- `supabase/functions/snov-enrichment/index.ts` — new
+- `supabase/functions/pdl-enrichment/index.ts` — delete
+- `supabase/config.toml` — add snov-enrichment entry
+- `src/pages/SettingsPage.tsx` — add Snov.io settings card
+- `src/hooks/useUserSettings.ts` — add snov_key_configured
 

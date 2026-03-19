@@ -310,7 +310,7 @@ export default function LeadsPage() {
     }
     if (hotEasyFilter) {
       filtered = filtered.filter(l => {
-        const score = leadScores.find(s => s.lead_id === l.id);
+        const score = leadScores.get(l.id);
         return (score?.score ?? 0) >= 80 && l.displacement_difficulty === "Easy";
       });
     }

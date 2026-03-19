@@ -778,6 +778,19 @@ export default function LeadsPage() {
               <SelectItem value="dismissed">Dismissed</SelectItem>
             </SelectContent>
           </Select>
+          {hotEasyFilter && (
+            <Badge
+              variant="secondary"
+              className="cursor-pointer gap-1 shrink-0 bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200"
+              onClick={() => {
+                setHotEasyFilter(false);
+                window.history.replaceState({}, "", window.location.pathname);
+              }}
+            >
+              🔥 Hot + Easy
+              <X className="h-3 w-3" />
+            </Badge>
+          )}
           <Button
             variant="outline"
             onClick={() => {

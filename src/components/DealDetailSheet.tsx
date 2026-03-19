@@ -69,6 +69,7 @@ export default function DealDetailSheet({
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<Partial<Deal>>({});
+  const [showCoach, setShowCoach] = useState(false);
   const updateDeal = useUpdateDeal();
   const { data: contactsData } = useContacts({ limit: 200 });
   const { data: companiesData } = useCompanies({ limit: 200 });

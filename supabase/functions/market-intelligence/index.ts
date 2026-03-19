@@ -219,13 +219,14 @@ async function fetchCBP(
       return null;
     }
 
-    const contentType = response.headers.get("content-type") || "";
-    if (!contentType.includes("json")) {
-      console.error(`Census CBP returned non-JSON for state ${stateFips}, NAICS ${naics}, year ${year}`);
+    const text = await response.text();
+    let data: unknown;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      console.error(`Census CBP returned non-JSON for state ${stateFips}, NAICS ${naics}, year ${year}:`, text.substring(0, 300));
       return null;
     }
-
-    const data = await response.json();
 
     if (!data || !Array.isArray(data) || data.length < 2) {
       console.error(`Census CBP returned no data for state ${stateFips}, NAICS ${naics}, year ${year}`);

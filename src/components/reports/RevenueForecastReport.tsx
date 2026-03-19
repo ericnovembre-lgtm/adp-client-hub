@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, AreaChart, Area } from "recharts";
-import { useRevenueForecast } from "@/hooks/useReportsData";
+import { useRevenueForecast, type ReportsFilters } from "@/hooks/useReportsData";
 import { TrendingUp, DollarSign, Download } from "lucide-react";
 import { exportToCSV } from "@/lib/exportCSV";
 
@@ -15,8 +15,8 @@ const STAGE_COLORS: Record<string, string> = {
 
 const fmt = (v: number) => `$${(v / 1000).toFixed(0)}k`;
 
-export default function RevenueForecastReport() {
-  const { data, isLoading } = useRevenueForecast();
+export default function RevenueForecastReport({ filters }: { filters?: ReportsFilters }) {
+  const { data, isLoading } = useRevenueForecast(filters);
 
   if (isLoading) {
     return (

@@ -142,7 +142,7 @@ export default function ReportsPage() {
         <ActivitySummaryReport filters={filters} />
 
         {/* NEW: Revenue Forecast - full width */}
-        <RevenueForecastReport />
+        <RevenueForecastReport filters={filters} />
 
         {/* NEW: Lead Source ROI - full width */}
         <LeadSourceROIReport filters={filters} />

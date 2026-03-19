@@ -431,6 +431,9 @@ async function executeTool(toolName: string, input: Record<string, any>, supabas
       case "log_activity": result = await toolLogActivity(supabase, input); break;
       case "draft_email": result = await toolDraftEmail(input); break;
       case "search_klue": result = await toolSearchKlue(input); break;
+      case "run_lead_gen_pipeline": result = await toolRunLeadGenPipeline(supabase, input, userId); break;
+      case "get_lead_gen_status": result = await toolGetLeadGenStatus(supabase, input, userId); break;
+      case "get_outreach_queue": result = await toolGetOutreachQueue(supabase, input, userId); break;
       default: throw new Error(`Unknown tool: ${toolName}`);
     }
 

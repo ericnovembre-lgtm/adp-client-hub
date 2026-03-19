@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import CallPrepPanel from "@/components/CallPrepPanel";
 import FollowUpSequencePanel from "@/components/FollowUpSequencePanel";
 import QuoteReadinessPanel from "@/components/QuoteReadinessPanel";
+import BattlecardPanel from "@/components/BattlecardPanel";
 import { format } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Lead } from "@/types/database";
@@ -25,7 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Building2, User, Mail, Phone, Globe, MapPin, Users, Briefcase,
   Zap, Clock, Sparkles, Tag, Pencil, X, Save, Loader2, FileText, ArrowRightLeft, Target,
-  RefreshCw, CheckCircle2, AlertTriangle, SearchCheck, ListChecks, ClipboardCheck,
+  RefreshCw, CheckCircle2, AlertTriangle, SearchCheck, ListChecks, ClipboardCheck, Swords,
 } from "lucide-react";
 import { useLeadScore, type ScoreFactor } from "@/hooks/useLeadScores";
 import { Progress } from "@/components/ui/progress";
@@ -172,6 +173,7 @@ export default function LeadDetailSheet({
   const [showCallPrep, setShowCallPrep] = useState(false);
   const [showFollowUp, setShowFollowUp] = useState(false);
   const [showQuoteReadiness, setShowQuoteReadiness] = useState(false);
+  const [showBattlecard, setShowBattlecard] = useState(false);
   const updateLead = useUpdateLead();
   const _queryClient = useQueryClient();
   const { data: knockoutRules = [] } = useKnockoutRules();
@@ -521,6 +523,14 @@ export default function LeadDetailSheet({
                   <ClipboardCheck className="h-4 w-4 mr-2" />
                   {showQuoteReadiness ? "Hide Readiness" : "Quote Readiness"}
                 </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowBattlecard((v) => !v)}
+                >
+                  <Swords className="h-4 w-4 mr-2" />
+                  {showBattlecard ? "Hide Battlecard" : "Battlecard"}
+                </Button>
                 {onConvertToDeal && lead.status !== "converted" && (
                   <Button
                     variant="outline"
@@ -574,6 +584,31 @@ export default function LeadDetailSheet({
                   lead_id={lead.id}
                   defaultState={lead.state}
                   defaultHeadcount={lead.headcount}
+                />
+              </div>
+            </>
+          )}
+
+          {showBattlecard && (
+            <>
+              <Separator />
+              <div>
+                <h3 className="font-semibold text-sm mb-3 flex items-center gap-1.5">
+                  <Swords className="h-4 w-4 text-primary" />
+                  Competitive Battlecard
+                </h3>
+                <BattlecardPanel
+                  lead_id={lead.id}
+                  defaultCompetitor={
+                    lead.trigger_event
+                      ? ["Rippling", "TriNet", "Paychex", "Insperity", "Justworks", "VensureHR", "Gusto", "BambooHR"].find(
+                          (c) => lead.trigger_event!.toLowerCase().includes(c.toLowerCase())
+                        ) ?? ""
+                      : ""
+                  }
+                  defaultIndustry={lead.industry ?? ""}
+                  defaultHeadcount={lead.headcount ?? undefined}
+                  defaultState={lead.state ?? ""}
                 />
               </div>
             </>

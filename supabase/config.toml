@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.territory-analytics]
 verify_jwt = false
+
+[functions.battlecard]
+verify_jwt = false

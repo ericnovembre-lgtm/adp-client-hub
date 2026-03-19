@@ -555,6 +555,7 @@ export default function SettingsPage() {
     setOpenCorpKeyConfigured(settings.opencorporates_api_key_configured ?? false);
     setKlueKeyConfigured(settings.klue_api_key_configured ?? false);
     setRapidapiKeyConfigured(settings.rapidapi_key_configured ?? false);
+    setSnovKeyConfigured(settings.snov_key_configured ?? false);
   }, [settings]);
 
   const saveProfile = async () => {

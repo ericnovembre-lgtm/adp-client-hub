@@ -116,6 +116,10 @@ export default function CallPrepPanel({ lead_id, contact_id }: { lead_id?: strin
             {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
             {copied ? "Copied" : "Copy"}
           </Button>
+           <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={handleSaveToNotes} disabled={saving}>
+            {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <StickyNote className="h-3 w-3" />}
+            {saving ? "Saving…" : "Save to Notes"}
+          </Button>
           <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={handlePrep}>
             <RefreshCw className="h-3 w-3" />
             Refresh

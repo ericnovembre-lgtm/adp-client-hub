@@ -989,7 +989,7 @@ export default function LeadsPage() {
                               <DropdownMenuItem onClick={() => initiateConvert(lead)}>
                                 <ArrowRightLeft className="h-4 w-4 mr-2" /> Convert to Deal
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setEmailLead(lead)}>
+                              <DropdownMenuItem onClick={() => { setCompetitorEmailTemplate(buildCompetitorEmail(lead)); setEmailLead(lead); }}>
                                 <FileText className="h-4 w-4 mr-2" /> Draft Email
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleStatusAction(lead, "dismissed", "status_change", `Lead "${lead.company_name}" dismissed`)}>

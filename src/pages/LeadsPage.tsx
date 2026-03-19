@@ -1252,7 +1252,7 @@ export default function LeadsPage() {
       {emailLead && (
         <DraftEmailDialog
           open={!!emailLead}
-          onOpenChange={(v) => { if (!v) setEmailLead(null); }}
+          onOpenChange={(v) => { if (!v) { setEmailLead(null); setCompetitorEmailTemplate(null); } }}
           mergeFields={{
             contact_name: emailLead.decision_maker_name ?? emailLead.company_name,
             contact_title: emailLead.decision_maker_title ?? "",
@@ -1260,6 +1260,7 @@ export default function LeadsPage() {
             headcount: emailLead.headcount ? String(emailLead.headcount) : "",
           }}
           contactEmail={emailLead.decision_maker_email}
+          competitorTemplate={competitorEmailTemplate}
         />
       )}
 

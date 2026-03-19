@@ -1,61 +1,38 @@
 
 
-## Competitor Detection Engine
+## Competitor-Aware Lead Scoring
 
 ### Overview
-Add competitor detection that runs automatically after waterfall enrichment. Detects the prospect's current payroll/HR/PEO provider by scanning enrichment data against a registry of known competitors. Displays results as a color-coded badge on the lead detail page.
+Extend the existing `computeScore` function in `waterfall-enrich` to add a 6th scoring factor: **Competitor Score** (max 60 points). This layers competitor displacement bonuses, trigger event bonuses, confidence multipliers, and combo bonuses on top of the existing 5 base factors (max 100). The total possible score becomes 160, but displayed as a composite with breakdown.
 
-### 1. Database Migration — Add 6 columns to `leads` table
+### 1. Update `computeScore` in `waterfall-enrich/index.ts`
 
-```sql
-ALTER TABLE leads ADD COLUMN current_provider text;
-ALTER TABLE leads ADD COLUMN provider_type text;
-ALTER TABLE leads ADD COLUMN provider_confidence text;
-ALTER TABLE leads ADD COLUMN competitor_detected_at timestamptz;
-ALTER TABLE leads ADD COLUMN competitor_source text;
-ALTER TABLE leads ADD COLUMN displacement_difficulty text;
-```
+Add competitor-aware scoring after the existing 5 factors:
 
-### 2. Edge Function: Update `waterfall-enrich/index.ts`
+- **COMPETITOR_SCORE_ADJUSTMENTS** constant — maps each provider name to bonus points (QuickBooks +20, Gusto +18, DIY/None +25, etc.)
+- **TRIGGER_BONUSES** constant — maps trigger types to bonus points (recent_funding +15, hiring_surge +12, etc.)
+- **Confidence multiplier** — multiply competitor portion by 1.0/0.75/0.5/0.25 based on `provider_confidence`
+- **Headcount sweet spot bonuses** — employee_count_5_to_10 (+10), 11_to_20 (+15), 21_to_50 (+5)
+- **Combo bonus** — Easy displacement + 2+ triggers = +10 extra
+- **Cap** at 60 points total for competitor adjustment
+- Add as a new factor: `{ factor: "Competitor Advantage", points, max: 60, reason: "..." }`
 
-Add competitor detection as **Step 6.5** (after Lead411, before lead update):
+The base score remains max 100. Competitor score adds up to 60. Total max = 160. Grade thresholds shift:
+- A = 80+ (Hot — reach out TODAY)
+- B = 60-79 (Warm — reach out this week)  
+- C = 40-59 (Nurture — drip sequence)
+- D = below 40 (Cold — monitor)
 
-- Define `COMPETITOR_REGISTRY` constant with all 15 competitors, their aliases, types, priorities, displacement difficulty, and Klue card counts
-- Add `detectCompetitor()` function that:
-  1. Collects all text from enrichment results (company description, technologies, job postings, trigger events, notes)
-  2. Normalizes to lowercase and scans for alias matches
-  3. Picks highest-priority match (by priority tier, then Klue card count)
-  4. Sets confidence: "Confirmed" (tech stack/job posting), "Likely" (description/profiles), "Possible" (news/loose mentions)
-  5. Also detects "DIY/None" patterns: "manual payroll", "spreadsheet payroll", "excel payroll"
-  6. Falls back to "Unknown" if nothing detected
-- Write `current_provider`, `provider_type`, `provider_confidence`, `competitor_detected_at`, `competitor_source`, `displacement_difficulty` to the lead update
-- Add competitor detection details to the enrichment result response
-- Update `TRACKED_FIELDS` to include the new fields in field counting
-- Include competitor info in the activity log
+### 2. Update `LeadScoreSection` in `LeadDetailSheet.tsx`
 
-### 3. Component: `src/components/CompetitorBadge.tsx` (new)
+- Show score breakdown on hover/tooltip: "Base: 45 + Competitor: 20 = 65"
+- Add tier icon next to score: fire (Hot 80+), orange circle (Warm 60-79), yellow (Nurture 40-59), blue snowflake (Cold <40)
+- Parse factors to separate base vs competitor for the tooltip display
 
-A clickable badge component:
-- Props: `currentProvider`, `providerType`, `displacementDifficulty`, `providerConfidence`, `onOpenBattlecard`
-- Color coding by displacement difficulty: green (Easy), yellow (Medium), red (Hard)
-- "No Provider — Hot Lead" green badge for DIY/None
-- Gray badge for Unknown
-- Clicking opens the battlecard panel pre-filled with the detected competitor
-
-### 4. Update `src/components/LeadDetailSheet.tsx`
-
-- Import and render `CompetitorBadge` in the status/badges area (next to existing status badge)
-- When badge is clicked, auto-open the battlecard panel with the detected competitor pre-selected
-- Show competitor info in the enrichment results card
-
-### 5. Update `src/types/database.ts`
-
-Add the 6 new fields to the `Lead` interface.
+### 3. No database changes needed
+The `lead_scores` table already stores `score` (integer), `grade` (text), and `factors` (jsonb). The new competitor factor gets stored alongside existing factors.
 
 ### Files Changed
-- `supabase/functions/waterfall-enrich/index.ts` — add competitor detection logic
-- `src/components/CompetitorBadge.tsx` — new component
-- `src/components/LeadDetailSheet.tsx` — add competitor badge display
-- `src/types/database.ts` — update Lead interface
-- Migration: add 6 columns to leads table
+- `supabase/functions/waterfall-enrich/index.ts` — expand `computeScore` with competitor scoring
+- `src/components/LeadDetailSheet.tsx` — enhance score display with tier icons and breakdown tooltip
 

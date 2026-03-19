@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useDashboardStats, usePipelineData, useTerritoryStats, useSignalsCount, type StatItem } from "@/hooks/useDashboardStats";
@@ -17,6 +18,8 @@ import { HEADCOUNT_MIN, HEADCOUNT_MAX } from "@/lib/constants";
 import DailyBriefWidget from "@/components/DailyBriefWidget";
 import BenefitsEligibilityChecker from "@/components/BenefitsEligibilityChecker";
 import CompetitorBreakdownWidget from "@/components/CompetitorBreakdownWidget";
+import LeadDetailSheet from "@/components/LeadDetailSheet";
+import type { Lead } from "@/types/database";
 
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v);
@@ -90,6 +93,22 @@ export default function DashboardPage() {
   const { data: signalsCount, isLoading: signalsLoading } = useSignalsCount();
   const { data: userSettings } = useUserSettings();
   const [, navigate] = useLocation();
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+
+  const { data: selectedLead } = useQuery({
+    queryKey: ["dashboard-lead-detail", selectedLeadId],
+    queryFn: async () => {
+      if (!selectedLeadId) return null;
+      const { data, error } = await supabase
+        .from("leads")
+        .select("*")
+        .eq("id", selectedLeadId)
+        .single();
+      if (error) throw error;
+      return data as Lead;
+    },
+    enabled: !!selectedLeadId,
+  });
 
   const schedulerEnabled = userSettings?.scheduler_enabled;
   const lastRun = userSettings?.scheduler_last_run;
@@ -316,7 +335,13 @@ export default function DashboardPage() {
       </div>
 
       {/* Competitor Breakdown */}
-      <CompetitorBreakdownWidget />
+      <CompetitorBreakdownWidget onLeadClick={(id) => setSelectedLeadId(id)} />
+
+      <LeadDetailSheet
+        lead={selectedLead ?? null}
+        open={!!selectedLeadId && !!selectedLead}
+        onOpenChange={(open) => { if (!open) setSelectedLeadId(null); }}
+      />
 
       {/* Pipeline Chart */}
       <Card>

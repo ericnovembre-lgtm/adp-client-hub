@@ -106,7 +106,7 @@ const GRADE_COLORS: Record<string, string> = {
   D: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
 };
 
-export default function CompetitorBreakdownWidget() {
+export default function CompetitorBreakdownWidget({ onLeadClick }: { onLeadClick?: (leadId: string) => void } = {}) {
   const { data, isLoading } = useCompetitorBreakdown();
   const [, navigate] = useLocation();
 
@@ -203,7 +203,7 @@ export default function CompetitorBreakdownWidget() {
               </TableHeader>
               <TableBody>
                 {data.topLeads.map((lead) => (
-                  <TableRow key={lead.id} className="cursor-pointer" onClick={() => navigate("/leads")}>
+                  <TableRow key={lead.id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => onLeadClick ? onLeadClick(lead.id) : navigate("/leads")}>
                     <TableCell className="font-medium">{lead.company_name}</TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="text-xs">{lead.current_provider}</Badge>

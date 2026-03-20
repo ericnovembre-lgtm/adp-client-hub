@@ -69,7 +69,16 @@ export default function ReportsPage() {
   const [forecastOpen, setForecastOpen] = useState(true);
   const [roiOpen, setRoiOpen] = useState(true);
 
-  const filters = {
+  const allOpen = quotaOpen && velocityOpen && activitySummaryOpen && forecastOpen && roiOpen;
+  const toggleAll = () => {
+    const next = !allOpen;
+    setQuotaOpen(next);
+    setVelocityOpen(next);
+    setActivitySummaryOpen(next);
+    setForecastOpen(next);
+    setRoiOpen(next);
+  };
+
     range,
     from: customFrom,
     to: customTo,

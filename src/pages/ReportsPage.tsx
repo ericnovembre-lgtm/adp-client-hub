@@ -31,6 +31,7 @@ import PipelineVelocityReport from "@/components/reports/PipelineVelocityReport"
 import ActivitySummaryReport from "@/components/reports/ActivitySummaryReport";
 import RevenueForecastReport from "@/components/reports/RevenueForecastReport";
 import LeadSourceROIReport from "@/components/reports/LeadSourceROIReport";
+import KPISummaryBar from "@/components/reports/KPISummaryBar";
 
 const STAGE_COLORS: Record<string, string> = {
   lead: "hsl(225, 75%, 55%)",

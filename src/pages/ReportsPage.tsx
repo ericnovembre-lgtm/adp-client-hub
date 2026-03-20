@@ -61,6 +61,9 @@ function ChartSkeleton() {
 }
 
 export default function ReportsPage() {
+  const { data: settings, isSuccess: settingsLoaded } = useUserSettings();
+  const { mutate: updateSettings } = useUpdateUserSettings();
+
   const [range, setRange] = useState<DateRange>("30");
   const [customFrom, setCustomFrom] = useState<Date>();
   const [customTo, setCustomTo] = useState<Date>();
@@ -69,6 +72,37 @@ export default function ReportsPage() {
   const [activitySummaryOpen, setActivitySummaryOpen] = useState(true);
   const [forecastOpen, setForecastOpen] = useState(true);
   const [roiOpen, setRoiOpen] = useState(true);
+  const [initialized, setInitialized] = useState(false);
+
+  // Sync from saved settings once on load
+  useEffect(() => {
+    if (settingsLoaded && !initialized) {
+      const rs = settings?.reportSections;
+      if (rs) {
+        setQuotaOpen(rs.quota ?? true);
+        setVelocityOpen(rs.velocity ?? true);
+        setActivitySummaryOpen(rs.activitySummary ?? true);
+        setForecastOpen(rs.forecast ?? true);
+        setRoiOpen(rs.roi ?? true);
+      }
+      setInitialized(true);
+    }
+  }, [settingsLoaded, initialized, settings]);
+
+  // Debounced save
+  const saveTimer = useRef<ReturnType<typeof setTimeout>>();
+  const saveState = useCallback((sections: ReportSectionsState) => {
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      updateSettings({ ...settings, reportSections: sections });
+    }, 500);
+  }, [settings, updateSettings]);
+
+  // Persist on change (only after initial load)
+  useEffect(() => {
+    if (!initialized) return;
+    saveState({ quota: quotaOpen, velocity: velocityOpen, activitySummary: activitySummaryOpen, forecast: forecastOpen, roi: roiOpen });
+  }, [quotaOpen, velocityOpen, activitySummaryOpen, forecastOpen, roiOpen, initialized, saveState]);
 
   const allOpen = quotaOpen && velocityOpen && activitySummaryOpen && forecastOpen && roiOpen;
   const toggleAll = () => {

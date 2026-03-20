@@ -220,13 +220,13 @@ export default function ReportsPage() {
 
       <KPISummaryBar filters={filters} />
 
-      <div className="flex justify-end">
+      <div className="flex justify-end print:hidden">
         <Button variant="outline" size="sm" onClick={toggleAll}>
           {allOpen ? "Collapse All" : "Expand All"}
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 reports-grid">
         {/* Quota Attainment */}
         <Collapsible open={quotaOpen} onOpenChange={setQuotaOpen} className="lg:col-span-2">
           <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border bg-card px-4 py-2.5 text-sm font-medium text-foreground hover:bg-accent/50 transition-colors">

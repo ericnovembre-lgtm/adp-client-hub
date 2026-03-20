@@ -7,9 +7,11 @@ import { useUserSettings, useUpdateUserSettings, type ReportSectionsState } from
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
-import { BarChart3, CalendarIcon, ChevronDown } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { BarChart3, CalendarIcon, ChevronDown, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { exportToCSV, exportMultiSectionCSV, type CSVSection } from "@/lib/exportCSV";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, AreaChart, Area,

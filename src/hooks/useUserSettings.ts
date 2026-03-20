@@ -2,6 +2,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
+export interface ReportSectionsState {
+  quota?: boolean;
+  velocity?: boolean;
+  activitySummary?: boolean;
+  forecast?: boolean;
+  roi?: boolean;
+}
+
 export interface UserSettings {
   aiModel?: string;
   aiChatEnabled?: boolean;
@@ -31,6 +39,7 @@ export interface UserSettings {
   rapidapi_key_configured?: boolean;
   snov_key_configured?: boolean;
   lead411_api_key_configured?: boolean;
+  reportSections?: ReportSectionsState;
 }
 
 export function useUserSettings() {

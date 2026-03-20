@@ -284,8 +284,11 @@ export default function ReportsPage() {
 
         {/* Lead Conversion Funnel */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">Lead Conversion Funnel</CardTitle>
+            <Button variant="ghost" size="icon" className="h-7 w-7 print:hidden" onClick={() => funnel.data && exportToCSV(funnel.data, "lead-funnel.csv", [{ header: "Stage", accessor: (r) => r.stage }, { header: "Count", accessor: (r) => r.value }])}>
+              <Download className="h-4 w-4" />
+            </Button>
           </CardHeader>
           <CardContent>
             {funnel.isLoading ? <ChartSkeleton /> : (

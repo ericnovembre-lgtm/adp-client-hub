@@ -63,6 +63,11 @@ export default function ReportsPage() {
   const [range, setRange] = useState<DateRange>("30");
   const [customFrom, setCustomFrom] = useState<Date>();
   const [customTo, setCustomTo] = useState<Date>();
+  const [quotaOpen, setQuotaOpen] = useState(true);
+  const [velocityOpen, setVelocityOpen] = useState(true);
+  const [activitySummaryOpen, setActivitySummaryOpen] = useState(true);
+  const [forecastOpen, setForecastOpen] = useState(true);
+  const [roiOpen, setRoiOpen] = useState(true);
 
   const filters = {
     range,

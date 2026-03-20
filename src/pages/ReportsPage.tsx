@@ -149,9 +149,10 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
-        <KPISummaryBar filters={filters} />
-        <Button variant="outline" size="sm" onClick={toggleAll} className="shrink-0 ml-4">
+      <KPISummaryBar filters={filters} />
+
+      <div className="flex justify-end">
+        <Button variant="outline" size="sm" onClick={toggleAll}>
           {allOpen ? "Collapse All" : "Expand All"}
         </Button>
       </div>

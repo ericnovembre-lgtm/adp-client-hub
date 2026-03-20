@@ -1,27 +1,26 @@
 
 
-# Assessment: Quota Tracker Widget on Dashboard
+## Add KPI Summary Stats Bar to Reports Page
 
-The QuotaTrackerWidget is **already implemented and active** on the Dashboard (line 160 of `DashboardPage.tsx`). It includes:
+### What we're building
+A horizontal stats bar between the header/filter section and the report modules, showing 4-5 key KPIs: Total Revenue (closed-won), Win Rate, Total Deals, Open Pipeline Value, and Average Days to Close.
 
-- Progress bar showing % of quarterly quota achieved
-- Pace status badge (On Track / Behind Pace / At Risk)
-- Days remaining in quarter
-- 4-column KPI grid: Quota, Closed Won, Gap, Pipeline Coverage
-- Editable quota via pencil icon + dialog
-- Data sourced from `useQuotaData` hook querying the `deals` table
+### Implementation
 
-No changes are needed. The widget is fully functional.
+**1. New hook: `useReportsSummaryKPIs` in `src/hooks/useReportsData.ts`**
+- Single query fetching all deals within the current date range
+- Computes: total closed-won revenue, win rate (won / (won + lost)), total deal count, open pipeline value (sum of non-closed deals), avg days to close
+- Respects the existing `ReportsFilters` type and `getDateBounds` helper
 
-## Next Step: Reports Page Modules
+**2. KPI bar UI in `src/pages/ReportsPage.tsx`**
+- Insert a row of 5 small `Card` components in a responsive grid (`grid-cols-2 sm:grid-cols-3 lg:grid-cols-5`) between the header (line 132) and the report modules grid (line 134)
+- Each card shows: icon, label, formatted value (currency for revenue/pipeline, percentage for win rate, number for count/days)
+- Skeleton loading state while data loads
+- Uses existing Card, Skeleton components and lucide icons (DollarSign, TrendingUp, Target, Clock, Layers)
 
-When you're ready, tell me which modules you want on the Reports page and I'll plan those out. Based on the existing codebase, likely candidates:
-
-1. **Quota Attainment Report** — quarterly/monthly breakdown with historical trends
-2. **Pipeline Velocity Report** — avg days per stage, conversion rates
-3. **Activity Summary** — calls/emails/meetings by period
-4. **Revenue Forecast** — weighted pipeline projection
-5. **Lead Source ROI** — performance by lead source/discovery method
-
-Let me know which Reports modules to build, or say "all of the above" and I'll plan the full implementation.
+### Technical details
+- Reuses `getDateBounds(filters)` for date filtering
+- Single Supabase query on `deals` table (select stage, value, created_at, closed_at)
+- Computed client-side from the result set — no new tables or migrations needed
+- Currency formatting with `Intl.NumberFormat`
 

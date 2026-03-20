@@ -7,9 +7,11 @@ import { useUserSettings, useUpdateUserSettings, type ReportSectionsState } from
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
-import { BarChart3, CalendarIcon, ChevronDown } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { BarChart3, CalendarIcon, ChevronDown, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { exportToCSV, exportMultiSectionCSV, type CSVSection } from "@/lib/exportCSV";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, AreaChart, Area,
@@ -126,6 +128,26 @@ export default function ReportsPage() {
   const sources = useLeadSources(filters);
   const revenue = useMonthlyRevenue();
 
+  const handleExportAllCSV = useCallback(() => {
+    const sections: CSVSection[] = [];
+    if (funnel.data?.length) {
+      sections.push({ title: "Lead Conversion Funnel", headers: ["Stage", "Count"], rows: funnel.data.map((d) => [d.stage, d.value]) });
+    }
+    if (pipeline.data?.length) {
+      sections.push({ title: "Deal Pipeline Value", headers: ["Stage", "Value"], rows: pipeline.data.map((d) => [d.stage, d.value]) });
+    }
+    if (activity.data?.length) {
+      sections.push({ title: "Activity Over Time", headers: ["Date", "Call", "Email", "Meeting", "Note"], rows: activity.data.map((d) => [d.date, d.call, d.email, d.meeting, d.note]) });
+    }
+    if (sources.data?.length) {
+      sections.push({ title: "Lead Sources", headers: ["Source", "Count"], rows: sources.data.map((d) => [d.name, d.value]) });
+    }
+    if (revenue.data?.length) {
+      sections.push({ title: "Monthly Revenue", headers: ["Month", "Revenue"], rows: revenue.data.map((d) => [d.month, d.revenue]) });
+    }
+    exportMultiSectionCSV(sections, `reports-export-${format(new Date(), "yyyy-MM-dd")}`);
+  }, [funnel.data, pipeline.data, activity.data, sources.data, revenue.data]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -138,6 +160,18 @@ export default function ReportsPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="print:hidden">
+                <Download className="h-4 w-4 mr-1" /> Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExportAllCSV}>Export All as CSV</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => window.print()}>Export All as PDF</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Select value={range} onValueChange={(v) => setRange(v as DateRange)}>
             <SelectTrigger className="w-[150px]">
               <SelectValue />
@@ -186,13 +220,13 @@ export default function ReportsPage() {
 
       <KPISummaryBar filters={filters} />
 
-      <div className="flex justify-end">
+      <div className="flex justify-end print:hidden">
         <Button variant="outline" size="sm" onClick={toggleAll}>
           {allOpen ? "Collapse All" : "Expand All"}
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 reports-grid">
         {/* Quota Attainment */}
         <Collapsible open={quotaOpen} onOpenChange={setQuotaOpen} className="lg:col-span-2">
           <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border bg-card px-4 py-2.5 text-sm font-medium text-foreground hover:bg-accent/50 transition-colors">
@@ -250,8 +284,11 @@ export default function ReportsPage() {
 
         {/* Lead Conversion Funnel */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">Lead Conversion Funnel</CardTitle>
+            <Button variant="ghost" size="icon" className="h-7 w-7 print:hidden" onClick={() => funnel.data && exportToCSV(funnel.data, "lead-funnel.csv", [{ header: "Stage", accessor: (r) => r.stage }, { header: "Count", accessor: (r) => r.value }])}>
+              <Download className="h-4 w-4" />
+            </Button>
           </CardHeader>
           <CardContent>
             {funnel.isLoading ? <ChartSkeleton /> : (
@@ -286,8 +323,11 @@ export default function ReportsPage() {
 
         {/* Deal Pipeline Value */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">Deal Pipeline Value</CardTitle>
+            <Button variant="ghost" size="icon" className="h-7 w-7 print:hidden" onClick={() => pipeline.data && exportToCSV(pipeline.data, "deal-pipeline.csv", [{ header: "Stage", accessor: (r) => r.stage }, { header: "Value", accessor: (r) => r.value }])}>
+              <Download className="h-4 w-4" />
+            </Button>
           </CardHeader>
           <CardContent>
             {pipeline.isLoading ? <ChartSkeleton /> : (
@@ -310,8 +350,11 @@ export default function ReportsPage() {
 
         {/* Activity Over Time */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">Activity Over Time</CardTitle>
+            <Button variant="ghost" size="icon" className="h-7 w-7 print:hidden" onClick={() => activity.data && exportToCSV(activity.data, "activity-over-time.csv", [{ header: "Date", accessor: (r) => r.date }, { header: "Call", accessor: (r) => r.call }, { header: "Email", accessor: (r) => r.email }, { header: "Meeting", accessor: (r) => r.meeting }, { header: "Note", accessor: (r) => r.note }])}>
+              <Download className="h-4 w-4" />
+            </Button>
           </CardHeader>
           <CardContent>
             {activity.isLoading ? <ChartSkeleton /> : (
@@ -334,8 +377,11 @@ export default function ReportsPage() {
 
         {/* Lead Sources */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">Lead Sources</CardTitle>
+            <Button variant="ghost" size="icon" className="h-7 w-7 print:hidden" onClick={() => sources.data && exportToCSV(sources.data, "lead-sources.csv", [{ header: "Source", accessor: (r) => r.name }, { header: "Count", accessor: (r) => r.value }])}>
+              <Download className="h-4 w-4" />
+            </Button>
           </CardHeader>
           <CardContent>
             {sources.isLoading ? <ChartSkeleton /> : (
@@ -365,8 +411,11 @@ export default function ReportsPage() {
 
         {/* Monthly Revenue Trend - full width */}
         <Card className="lg:col-span-2">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">Monthly Revenue Trend (Closed Won)</CardTitle>
+            <Button variant="ghost" size="icon" className="h-7 w-7 print:hidden" onClick={() => revenue.data && exportToCSV(revenue.data, "monthly-revenue.csv", [{ header: "Month", accessor: (r) => r.month }, { header: "Revenue", accessor: (r) => r.revenue }])}>
+              <Download className="h-4 w-4" />
+            </Button>
           </CardHeader>
           <CardContent>
             {revenue.isLoading ? <ChartSkeleton /> : (

@@ -323,8 +323,11 @@ export default function ReportsPage() {
 
         {/* Deal Pipeline Value */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">Deal Pipeline Value</CardTitle>
+            <Button variant="ghost" size="icon" className="h-7 w-7 print:hidden" onClick={() => pipeline.data && exportToCSV(pipeline.data, "deal-pipeline.csv", [{ header: "Stage", accessor: (r) => r.stage }, { header: "Value", accessor: (r) => r.value }])}>
+              <Download className="h-4 w-4" />
+            </Button>
           </CardHeader>
           <CardContent>
             {pipeline.isLoading ? <ChartSkeleton /> : (

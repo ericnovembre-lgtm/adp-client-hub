@@ -350,8 +350,11 @@ export default function ReportsPage() {
 
         {/* Activity Over Time */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">Activity Over Time</CardTitle>
+            <Button variant="ghost" size="icon" className="h-7 w-7 print:hidden" onClick={() => activity.data && exportToCSV(activity.data, "activity-over-time.csv", [{ header: "Date", accessor: (r) => r.date }, { header: "Call", accessor: (r) => r.call }, { header: "Email", accessor: (r) => r.email }, { header: "Meeting", accessor: (r) => r.meeting }, { header: "Note", accessor: (r) => r.note }])}>
+              <Download className="h-4 w-4" />
+            </Button>
           </CardHeader>
           <CardContent>
             {activity.isLoading ? <ChartSkeleton /> : (

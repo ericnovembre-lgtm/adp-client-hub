@@ -128,6 +128,26 @@ export default function ReportsPage() {
   const sources = useLeadSources(filters);
   const revenue = useMonthlyRevenue();
 
+  const handleExportAllCSV = useCallback(() => {
+    const sections: CSVSection[] = [];
+    if (funnel.data?.length) {
+      sections.push({ title: "Lead Conversion Funnel", headers: ["Stage", "Count"], rows: funnel.data.map((d) => [d.stage, d.value]) });
+    }
+    if (pipeline.data?.length) {
+      sections.push({ title: "Deal Pipeline Value", headers: ["Stage", "Value"], rows: pipeline.data.map((d) => [d.stage, d.value]) });
+    }
+    if (activity.data?.length) {
+      sections.push({ title: "Activity Over Time", headers: ["Date", "Call", "Email", "Meeting", "Note"], rows: activity.data.map((d) => [d.date, d.call, d.email, d.meeting, d.note]) });
+    }
+    if (sources.data?.length) {
+      sections.push({ title: "Lead Sources", headers: ["Source", "Count"], rows: sources.data.map((d) => [d.name, d.value]) });
+    }
+    if (revenue.data?.length) {
+      sections.push({ title: "Monthly Revenue", headers: ["Month", "Revenue"], rows: revenue.data.map((d) => [d.month, d.revenue]) });
+    }
+    exportMultiSectionCSV(sections, `reports-export-${format(new Date(), "yyyy-MM-dd")}`);
+  }, [funnel.data, pipeline.data, activity.data, sources.data, revenue.data]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

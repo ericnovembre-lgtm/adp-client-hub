@@ -19,6 +19,7 @@ import {
   useActivityOverTime,
   useLeadSources,
   useMonthlyRevenue,
+  useReportsSummaryKPIs,
   type DateRange,
 } from "@/hooks/useReportsData";
 import OutreachMetricsChart from "@/components/OutreachMetricsChart";

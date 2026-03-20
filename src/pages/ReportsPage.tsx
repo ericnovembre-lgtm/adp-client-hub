@@ -132,6 +132,8 @@ export default function ReportsPage() {
         </div>
       </div>
 
+      <KPISummaryBar filters={filters} />
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* NEW: Quota Attainment */}
         <QuotaAttainmentReport filters={filters} />

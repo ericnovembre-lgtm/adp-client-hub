@@ -142,20 +142,60 @@ export default function ReportsPage() {
       <KPISummaryBar filters={filters} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* NEW: Quota Attainment */}
-        <QuotaAttainmentReport filters={filters} />
+        {/* Quota Attainment */}
+        <Collapsible open={quotaOpen} onOpenChange={setQuotaOpen} className="lg:col-span-2">
+          <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border bg-card px-4 py-2.5 text-sm font-medium text-foreground hover:bg-accent/50 transition-colors">
+            Quota Attainment
+            <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", quotaOpen && "rotate-180")} />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-2">
+            <QuotaAttainmentReport filters={filters} />
+          </CollapsibleContent>
+        </Collapsible>
 
-        {/* NEW: Pipeline Velocity */}
-        <PipelineVelocityReport filters={filters} />
+        {/* Pipeline Velocity */}
+        <Collapsible open={velocityOpen} onOpenChange={setVelocityOpen} className="lg:col-span-2">
+          <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border bg-card px-4 py-2.5 text-sm font-medium text-foreground hover:bg-accent/50 transition-colors">
+            Pipeline Velocity
+            <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", velocityOpen && "rotate-180")} />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-2">
+            <PipelineVelocityReport filters={filters} />
+          </CollapsibleContent>
+        </Collapsible>
 
-        {/* NEW: Activity Summary - full width */}
-        <ActivitySummaryReport filters={filters} />
+        {/* Activity Summary */}
+        <Collapsible open={activitySummaryOpen} onOpenChange={setActivitySummaryOpen} className="lg:col-span-2">
+          <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border bg-card px-4 py-2.5 text-sm font-medium text-foreground hover:bg-accent/50 transition-colors">
+            Activity Summary
+            <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", activitySummaryOpen && "rotate-180")} />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-2">
+            <ActivitySummaryReport filters={filters} />
+          </CollapsibleContent>
+        </Collapsible>
 
-        {/* NEW: Revenue Forecast - full width */}
-        <RevenueForecastReport filters={filters} />
+        {/* Revenue Forecast */}
+        <Collapsible open={forecastOpen} onOpenChange={setForecastOpen} className="lg:col-span-2">
+          <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border bg-card px-4 py-2.5 text-sm font-medium text-foreground hover:bg-accent/50 transition-colors">
+            Revenue Forecast
+            <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", forecastOpen && "rotate-180")} />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-2">
+            <RevenueForecastReport filters={filters} />
+          </CollapsibleContent>
+        </Collapsible>
 
-        {/* NEW: Lead Source ROI - full width */}
-        <LeadSourceROIReport filters={filters} />
+        {/* Lead Source ROI */}
+        <Collapsible open={roiOpen} onOpenChange={setRoiOpen} className="lg:col-span-2">
+          <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg border bg-card px-4 py-2.5 text-sm font-medium text-foreground hover:bg-accent/50 transition-colors">
+            Lead Source ROI
+            <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", roiOpen && "rotate-180")} />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-2">
+            <LeadSourceROIReport filters={filters} />
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* Lead Conversion Funnel */}
         <Card>

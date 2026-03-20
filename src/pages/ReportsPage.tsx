@@ -69,6 +69,16 @@ export default function ReportsPage() {
   const [forecastOpen, setForecastOpen] = useState(true);
   const [roiOpen, setRoiOpen] = useState(true);
 
+  const allOpen = quotaOpen && velocityOpen && activitySummaryOpen && forecastOpen && roiOpen;
+  const toggleAll = () => {
+    const next = !allOpen;
+    setQuotaOpen(next);
+    setVelocityOpen(next);
+    setActivitySummaryOpen(next);
+    setForecastOpen(next);
+    setRoiOpen(next);
+  };
+
   const filters = {
     range,
     from: customFrom,
@@ -140,6 +150,12 @@ export default function ReportsPage() {
       </div>
 
       <KPISummaryBar filters={filters} />
+
+      <div className="flex justify-end">
+        <Button variant="outline" size="sm" onClick={toggleAll}>
+          {allOpen ? "Collapse All" : "Expand All"}
+        </Button>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Quota Attainment */}

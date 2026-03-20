@@ -140,6 +140,18 @@ export default function ReportsPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="print:hidden">
+                <Download className="h-4 w-4 mr-1" /> Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExportAllCSV}>Export All as CSV</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => window.print()}>Export All as PDF</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Select value={range} onValueChange={(v) => setRange(v as DateRange)}>
             <SelectTrigger className="w-[150px]">
               <SelectValue />

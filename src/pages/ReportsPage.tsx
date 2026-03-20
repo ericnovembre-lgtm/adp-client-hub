@@ -411,8 +411,11 @@ export default function ReportsPage() {
 
         {/* Monthly Revenue Trend - full width */}
         <Card className="lg:col-span-2">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">Monthly Revenue Trend (Closed Won)</CardTitle>
+            <Button variant="ghost" size="icon" className="h-7 w-7 print:hidden" onClick={() => revenue.data && exportToCSV(revenue.data, "monthly-revenue.csv", [{ header: "Month", accessor: (r) => r.month }, { header: "Revenue", accessor: (r) => r.revenue }])}>
+              <Download className="h-4 w-4" />
+            </Button>
           </CardHeader>
           <CardContent>
             {revenue.isLoading ? <ChartSkeleton /> : (

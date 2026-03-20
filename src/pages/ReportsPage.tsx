@@ -79,6 +79,7 @@ export default function ReportsPage() {
     setRoiOpen(next);
   };
 
+  const filters = {
     range,
     from: customFrom,
     to: customTo,

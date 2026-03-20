@@ -19,6 +19,7 @@ import {
   useActivityOverTime,
   useLeadSources,
   useMonthlyRevenue,
+  
   type DateRange,
 } from "@/hooks/useReportsData";
 import OutreachMetricsChart from "@/components/OutreachMetricsChart";
@@ -30,6 +31,7 @@ import PipelineVelocityReport from "@/components/reports/PipelineVelocityReport"
 import ActivitySummaryReport from "@/components/reports/ActivitySummaryReport";
 import RevenueForecastReport from "@/components/reports/RevenueForecastReport";
 import LeadSourceROIReport from "@/components/reports/LeadSourceROIReport";
+import KPISummaryBar from "@/components/reports/KPISummaryBar";
 
 const STAGE_COLORS: Record<string, string> = {
   lead: "hsl(225, 75%, 55%)",
@@ -130,6 +132,8 @@ export default function ReportsPage() {
           )}
         </div>
       </div>
+
+      <KPISummaryBar filters={filters} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* NEW: Quota Attainment */}

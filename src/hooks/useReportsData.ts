@@ -456,3 +456,37 @@ export function useLeadSourceROI(filters: ReportsFilters) {
     },
   });
 }
+
+// ─── KPI Summary Stats ───
+export function useReportsSummaryKPIs(filters: ReportsFilters) {
+  const { from, to } = getDateBounds(filters);
+
+  return useQuery({
+    queryKey: ["reports", "summary-kpis", from, to],
+    queryFn: async () => {
+      const { data: deals, error } = await supabase
+        .from("deals")
+        .select("stage, value, created_at, closed_at")
+        .gte("created_at", from)
+        .lte("created_at", to);
+      if (error) throw error;
+
+      const all = deals ?? [];
+      const won = all.filter((d) => d.stage === "closed_won");
+      const lost = all.filter((d) => d.stage === "closed_lost");
+      const open = all.filter((d) => d.stage !== "closed_won" && d.stage !== "closed_lost");
+
+      const totalRevenue = won.reduce((s, d) => s + (d.value ?? 0), 0);
+      const closedCount = won.length + lost.length;
+      const winRate = closedCount > 0 ? Math.round((won.length / closedCount) * 100) : 0;
+      const openPipeline = open.reduce((s, d) => s + (d.value ?? 0), 0);
+
+      const wonWithDates = won.filter((d) => d.closed_at);
+      const avgDaysToClose = wonWithDates.length > 0
+        ? Math.round(wonWithDates.reduce((s, d) => s + differenceInDays(new Date(d.closed_at!), new Date(d.created_at!)), 0) / wonWithDates.length)
+        : 0;
+
+      return { totalRevenue, winRate, totalDeals: all.length, openPipeline, avgDaysToClose };
+    },
+  });
+}

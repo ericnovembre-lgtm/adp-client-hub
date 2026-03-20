@@ -1,18 +1,34 @@
 
 
-## Make 5 Report Modules Collapsible
+## Persist Report Section Collapse State in User Settings
 
 ### Approach
-Wrap each of the 5 new report modules (Quota Attainment, Pipeline Velocity, Activity Summary, Revenue Forecast, Lead Source ROI) in a `Collapsible` component from the existing `@/components/ui/collapsible` library. Each section gets a clickable header with a chevron indicator that toggles visibility of the report content. All sections default to open.
+Store the open/closed state of each collapsible report section in the existing `user_settings` JSONB field. On page load, read from settings; on toggle, debounce-write back. No database changes needed.
 
 ### Changes
 
-**`src/pages/ReportsPage.tsx`**
-- Import `Collapsible`, `CollapsibleTrigger`, `CollapsibleContent` from `@/components/ui/collapsible`
-- Import `ChevronDown` from lucide-react
-- Add 5 `useState<boolean>` hooks (all defaulting to `true`)
-- Wrap each of the 5 report components in a `Collapsible` block with:
-  - A styled trigger bar showing section name + rotating chevron
-  - The report component inside `CollapsibleContent`
-- Each collapsible section spans full width (`lg:col-span-2`) so the trigger header sits cleanly above the report card
+**1. `src/hooks/useUserSettings.ts`**
+- Add `reportSections` field to `UserSettings` interface:
+  ```ts
+  reportSections?: {
+    quota?: boolean;
+    velocity?: boolean;
+    activitySummary?: boolean;
+    forecast?: boolean;
+    roi?: boolean;
+  };
+  ```
+
+**2. `src/pages/ReportsPage.tsx`**
+- Import `useUserSettings` and `useUpdateUserSettings`
+- Initialize the 5 `useState` hooks from `settings.reportSections` (default `true` if not set)
+- Use a `useEffect` to sync initial values once settings load
+- Add a debounced save (via `useRef` + `setTimeout`, ~500ms) that calls `updateSettings` with the merged settings whenever any section state changes
+- The `toggleAll` function triggers the same save path
+
+### Technical details
+- Reuses existing `user_settings` table and JSONB `settings` column -- no migration needed
+- Debounce prevents excessive writes when rapidly toggling
+- Merges with existing settings via spread operator to avoid overwriting other preferences
+- Falls back to all-open if no saved state exists
 

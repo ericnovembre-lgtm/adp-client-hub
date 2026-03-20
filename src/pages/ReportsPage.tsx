@@ -377,8 +377,11 @@ export default function ReportsPage() {
 
         {/* Lead Sources */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">Lead Sources</CardTitle>
+            <Button variant="ghost" size="icon" className="h-7 w-7 print:hidden" onClick={() => sources.data && exportToCSV(sources.data, "lead-sources.csv", [{ header: "Source", accessor: (r) => r.name }, { header: "Count", accessor: (r) => r.value }])}>
+              <Download className="h-4 w-4" />
+            </Button>
           </CardHeader>
           <CardContent>
             {sources.isLoading ? <ChartSkeleton /> : (

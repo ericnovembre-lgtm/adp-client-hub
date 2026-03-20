@@ -149,7 +149,12 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      <KPISummaryBar filters={filters} />
+      <div className="flex items-center justify-between">
+        <KPISummaryBar filters={filters} />
+        <Button variant="outline" size="sm" onClick={toggleAll} className="shrink-0 ml-4">
+          {allOpen ? "Collapse All" : "Expand All"}
+        </Button>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Quota Attainment */}

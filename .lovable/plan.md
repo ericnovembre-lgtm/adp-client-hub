@@ -1,26 +1,18 @@
 
 
-## Add KPI Summary Stats Bar to Reports Page
+## Make 5 Report Modules Collapsible
 
-### What we're building
-A horizontal stats bar between the header/filter section and the report modules, showing 4-5 key KPIs: Total Revenue (closed-won), Win Rate, Total Deals, Open Pipeline Value, and Average Days to Close.
+### Approach
+Wrap each of the 5 new report modules (Quota Attainment, Pipeline Velocity, Activity Summary, Revenue Forecast, Lead Source ROI) in a `Collapsible` component from the existing `@/components/ui/collapsible` library. Each section gets a clickable header with a chevron indicator that toggles visibility of the report content. All sections default to open.
 
-### Implementation
+### Changes
 
-**1. New hook: `useReportsSummaryKPIs` in `src/hooks/useReportsData.ts`**
-- Single query fetching all deals within the current date range
-- Computes: total closed-won revenue, win rate (won / (won + lost)), total deal count, open pipeline value (sum of non-closed deals), avg days to close
-- Respects the existing `ReportsFilters` type and `getDateBounds` helper
-
-**2. KPI bar UI in `src/pages/ReportsPage.tsx`**
-- Insert a row of 5 small `Card` components in a responsive grid (`grid-cols-2 sm:grid-cols-3 lg:grid-cols-5`) between the header (line 132) and the report modules grid (line 134)
-- Each card shows: icon, label, formatted value (currency for revenue/pipeline, percentage for win rate, number for count/days)
-- Skeleton loading state while data loads
-- Uses existing Card, Skeleton components and lucide icons (DollarSign, TrendingUp, Target, Clock, Layers)
-
-### Technical details
-- Reuses `getDateBounds(filters)` for date filtering
-- Single Supabase query on `deals` table (select stage, value, created_at, closed_at)
-- Computed client-side from the result set — no new tables or migrations needed
-- Currency formatting with `Intl.NumberFormat`
+**`src/pages/ReportsPage.tsx`**
+- Import `Collapsible`, `CollapsibleTrigger`, `CollapsibleContent` from `@/components/ui/collapsible`
+- Import `ChevronDown` from lucide-react
+- Add 5 `useState<boolean>` hooks (all defaulting to `true`)
+- Wrap each of the 5 report components in a `Collapsible` block with:
+  - A styled trigger bar showing section name + rotating chevron
+  - The report component inside `CollapsibleContent`
+- Each collapsible section spans full width (`lg:col-span-2`) so the trigger header sits cleanly above the report card
 
